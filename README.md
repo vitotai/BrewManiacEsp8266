@@ -1,5 +1,6 @@
 # BrewManiacEx
 ![BrweManiacEx Architecture](./docs/bmex_arch.jpg)
+
 BrewManiacEx is a brew controller based on ESP8266. It was started by mimicking famous Arduino-based Open ArdBir, so most of Open ArdBir functions are included.
 
  * Manual and Automation brewing process control
