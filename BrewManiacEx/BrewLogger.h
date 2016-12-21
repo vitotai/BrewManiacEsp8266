@@ -13,8 +13,8 @@
 #define MAX_FILE_NUMBER 20
 #define MAX_FILE_INDEX 9999
 
-//#define LogBufferSize 1024
-#define LogBufferSize 128
+#define LogBufferSize 1024
+//#define LogBufferSize 128
 
 
 #define EventTag 0xF2
