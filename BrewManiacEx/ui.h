@@ -26,7 +26,8 @@ SSD1306  display(0x3C,I2C_SDA,I2C_SCL);
 #else
 
 #include <LiquidCrystal_I2C.h>
-LiquidCrystal_I2C lcd(0x27,20,4);
+
+LiquidCrystal_I2C lcd(0x27, 20,4,YWROBOT);
 
 #endif
 
@@ -248,6 +249,8 @@ const byte PumpSymbol[8]  PROGMEM  = {B00000, B01110, B01010, B01110, B01000, B0
 const byte RevPumpSymbol[8] PROGMEM = {B11111, B10001, B10101, B10001, B10111, B10111, B10111, B11111};  // [4] Reverse PUMP Symbol
 const byte HeatingSymbol[8] PROGMEM   = {	B00000, B01010, B01010, B01110, B01110, B01010, B01010, B00000};  // [5] HEAT symbol
 const byte RevHeatingSymbol[8] PROGMEM = {B11111, B10101, B10101, B10001, B10001, B10101, B10101, B11111};  // [6] reverse HEAT symbol
+const byte RevSpargeHeatingSymbol[8] PROGMEM={B11111,B10001,B1111,B10001,B11110,B1110,B10001,B11111};
+
 
 #define CreatecCustomChar(buff,idx,bm) uiGetBitmap((byte*)buff,bm); lcd.createChar(idx,(byte*)buff)
 
@@ -335,7 +338,7 @@ void uiLcdInitialize(void)
 {
 	char buffer[12];
 	uiScanLcdAddress();
-	lcd.begin();
+	lcd.begin(20,4);
     if(gIsUseFahrenheit)
     {
        	CreatecCustomChar(buffer,LcdCharDegree,FahrenheitSymbol);
@@ -351,7 +354,7 @@ void uiLcdInitialize(void)
    	CreatecCustomChar(buffer,LcdCharRevPump,RevPumpSymbol);
    	CreatecCustomChar(buffer,LcdCharHeating,HeatingSymbol);
    	CreatecCustomChar(buffer,LcdCharRevHeating,RevHeatingSymbol);
-   	//CreatecCustomChar(buffer,LcdCharWireless,WirelessSymbol);
+   	CreatecCustomChar(buffer,LcdCharRevSpargeHeating,RevSpargeHeatingSymbol);
 }
 #endif //#if LCD_USE_SSD1306 == true
 
