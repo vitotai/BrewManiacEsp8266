@@ -20,7 +20,7 @@ extern void wiReadRecipe(AutomationRecipe *recipe);
 extern byte readSetting(int addr);
 extern void updateSetting(int addr,byte value);
 
-extern void wiSetDeviceAddress(byte ip[]);
+extern void wiSetDeviceAddress(byte ip[],bool apmode);
 extern void wiUpdateSetting(int address,byte value);
 
 #if MaximumNumberOfSensors > 1
@@ -213,9 +213,9 @@ void BrewManiacProxy::setButtonLabel(byte btns)
 	if(_eventHandler) _eventHandler(BMNotifyButtonLabel);
 }
 
-void BrewManiacProxy::setIp(byte ip[])
+void BrewManiacProxy::setIp(byte ip[], bool apmode)
 {
-	wiSetDeviceAddress(ip);
+	wiSetDeviceAddress(ip,apmode);
 }
 
 

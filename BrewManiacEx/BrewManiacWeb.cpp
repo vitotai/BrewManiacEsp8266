@@ -57,9 +57,9 @@ void BrewManiacWeb::updateSensorSetting(String& json)
 #endif
 
 
-void BrewManiacWeb::setIp(uint8_t ip[])
+void BrewManiacWeb::setIp(uint8_t ip[],bool apmode)
 {
-	bmproxy.setIp(ip);
+	bmproxy.setIp(ip,apmode);
 }
 
 BrewManiacWeb::BrewManiacWeb(void)

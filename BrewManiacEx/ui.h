@@ -59,6 +59,7 @@ Constant definition
 
 #define WiStateNotConnected 0
 #define WiStateConnected 1
+#define WiStateAccessPoint 2
 
 #define PumpStatus_On 1
 #define PumpStatus_On_PROGRAM_OFF 2
@@ -238,7 +239,10 @@ void uiLcdInitialize(void)
 ***********************************************************************/
 
 
-const byte WirelessSymbol[8] PROGMEM ={B00000,B01110,B10001,B00100,B01010,B00000,B00100,B00000};
+const byte WirelessSymbol[8] PROGMEM =  {B00000,B01110,B10001,B00100,B01010,B00000,B00100,B00000};
+const byte WirelessAPSymbol[8] PROGMEM ={B00000,B10001,B01010,B10101,B00100,B00100,B00100,B01110};
+
+	
 
 const byte CelsiusSymbol[8]  PROGMEM  = {B01000, B10100, B01000, B00111, B01000, B01000, B01000, B00111};  // [0] degree c sybmol 
 const byte FahrenheitSymbol[8] PROGMEM = {B01000, B10100, B01000, B00111, B00100, B00110, B00100, B00100};  // [0] degree f symbol
@@ -415,9 +419,13 @@ void uiDisplayWirelessIcon(void)
 	{
 	   	uiLcdClear(19,0,1);
 	}
-	else // ==WiStateConnected
+	else if(_wiStatus == WiStateConnected)
 	{
 		uiLcdDrawSymbolBmp(19,0,WirelessSymbol);
+	}
+	else
+	{
+		uiLcdDrawSymbolBmp(19,0,WirelessAPSymbol);	
 	}
 }
 
@@ -427,7 +435,7 @@ void uiSetWirelessStatus(byte status)
 	_wiStatus=status;
 	uiDisplayWirelessIcon();
 
-	if(_wiStatus !=WiStateConnected){
+	if(_wiStatus == WiStateNotConnected){
 		ipSet = false;
 	}
 
@@ -453,6 +461,7 @@ void uiPrintIpAddress(void)
 		}
 		buffer[idx]='\0';
 		uiLcdPrint(1,2,buffer);
+		uiLcdClear(idx+1,2,17-idx);
 	}
 }
 
@@ -860,6 +869,35 @@ void uiInitialize(void)
 }
 
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

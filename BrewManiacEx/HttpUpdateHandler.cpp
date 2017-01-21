@@ -334,7 +334,7 @@ void HttpFileDownloader::download(void)
 
     _http.begin(_url);
 
-    DEBUGF("[HTTP] GET...\n");
+    DEBUGF("[HTTP] GET %s...\n",_url.c_str());
     // start connection and send HTTP header
     int httpCode = _http.GET();
     if(httpCode > 0) {

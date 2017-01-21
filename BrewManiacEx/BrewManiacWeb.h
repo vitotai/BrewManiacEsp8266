@@ -37,7 +37,7 @@ public:
 	bool  isBrewing(void);
 	byte   brewingStage(void);
 	byte   lastBrewEvent(void);
-	void setIp(uint8_t ip[]);
+	void setIp(uint8_t ip[],bool apmode=false);
 	
 	void loop(void);
 	// get data

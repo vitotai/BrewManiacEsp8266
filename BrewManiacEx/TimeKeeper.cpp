@@ -36,15 +36,20 @@ void TimeKeeperClass::setCurrentTime(time_t now)
 //	saveTime(now);
 }
 
-void TimeKeeperClass::begin(void)
+void TimeKeeperClass::begin(bool useSaved)
 {
 	//_online = false;
-
-	_referenceSeconds=loadTime();
-	_referenceSeconds += 300; // add 5 minutes.
-  	_referenceSystemTime = millis();
-	_lastSaved=_referenceSeconds;
-	DBG_PRINTF("Load saved time:%ld\n",_referenceSeconds);
+	if(useSaved){
+/*		_referenceSeconds=loadTime();
+		_referenceSeconds += 300; // add 5 minutes.
+  		_referenceSystemTime = millis();
+		_lastSaved=_referenceSeconds;
+		DBG_PRINTF("Load saved time:%ld\n",_referenceSeconds);
+*/
+	}else{
+  		_referenceSystemTime = millis();
+  		_referenceSeconds = 0;		
+	}
 }
 
 void TimeKeeperClass::begin(char* server1,char* server2,char* server3)

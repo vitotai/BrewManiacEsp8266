@@ -36,6 +36,9 @@
 
 extern void brewmaniac_setup();
 extern void brewmaniac_loop();
+
+#define ResponseAppleCNA true
+
 /**************************************************************************************/
 /**************************************************************************************/
 
@@ -161,6 +164,7 @@ R"END(
 }
 )END";
 
+void requestRestart(bool disc);
 
 class NetworkConfig:public AsyncWebHandler
 {
@@ -189,6 +193,12 @@ public:
 			 	request->send(400);
 			 	return;
 			}
+			if(root.containsKey("disconnect")){ 
+				requestRestart(true);
+  				request->send(200);
+  				return;
+			}
+			
 			File config=SPIFFS.open(CONFIG_FILENAME,"w+");
   			if(!config){
   				request->send(500);
@@ -538,16 +548,37 @@ void bmwEventHandler(BrewManiacWeb* bmw, BmwEventType event)
 	}
 }
 
+#if ResponseAppleCNA == true
+
+class AppleCNAHandler: public AsyncWebHandler 
+{
+public:
+	AppleCNAHandler(){}
+	void handleRequest(AsyncWebServerRequest *request){
+		request->send(200, "text/html", "<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>");
+	}
+	bool canHandle(AsyncWebServerRequest *request){
+		String host=request->host();
+		//DBG_PRINTF("Request host:");
+		//DBG_PRINTF(host.c_str());
+		//DBG_PRINTF("\n");
+  		if(host.indexOf(String("apple")) >=0
+  		|| host.indexOf(String("itools")) >=0 
+  		|| host.indexOf(String("ibook")) >=0 
+  		|| host.indexOf(String("airport")) >=0 
+  		|| host.indexOf(String("thinkdifferent")) >=0 
+  		|| host.indexOf(String("akamai")) >=0 ){
+  			return true;
+  		}
+  		return false;
+	}
+};
+
+AppleCNAHandler appleCNAHandler;
+
+#endif //#if ResponseAppleCNA == true
 
 HttpUpdateHandler httpUpdateHandler(FIRMWARE_UPDATE_URL,JS_UPDATE_URL);
-unsigned long _connectionTime;
-byte _wifiState;
-
-#define WiFiStateConnected 0
-#define WiFiStateWaitToConnect 1
-#define WiFiStateConnecting 2
-#define TIME_WAIT_TO_CONNECT 10000
-#define TIME_RECONNECT_TIMEOUT 10000
 
 bool testSPIFFS(void)
 {
@@ -574,11 +605,22 @@ bool testSPIFFS(void)
 	DebugOut(c.c_str());
 	return true;
 }
-#define PROFILING true
+#define PROFILING false
 #if PROFILING == true
 unsigned long _profileMaximumLoop=0;
 unsigned long _profileLoopBegin;
 #endif
+
+void displayIP(bool apmode){
+	IPV4Address ip;
+	if(apmode){
+		ip.dword = WiFi.softAPIP();
+		bmWeb.setIp(ip.bytes,true);
+	}else{
+		ip.dword = WiFi.localIP();
+		bmWeb.setIp(ip.bytes);
+	}
+}
 
 void setup(void){
 	//0. initilze debug port
@@ -611,8 +653,7 @@ void setup(void){
 
 		  	
 	//3. Start WiFi  
-	WiFiSetup::begin(_gHostname);
-	_wifiState=WiFiStateConnected;
+	WiFiSetup.begin(_gHostname);
 
   	DebugOut("Connected! IP address: ");
   	DebugOut(WiFi.localIP());
@@ -620,8 +661,10 @@ void setup(void){
 		DebugOut("Error setting mDNS responder");
 	}	
 	// TODO: SSDP responder
-
-	TimeKeeper.begin("time.nist.gov","time.windows.com","de.pool.ntp.org");
+	if(WiFiSetup.isApMode())
+		TimeKeeper.begin(false);
+	else
+		TimeKeeper.begin("time.nist.gov","time.windows.com","de.pool.ntp.org");
 
 	//4. check version
 	bool forcedUpdate;
@@ -656,17 +699,21 @@ void setup(void){
 		//5.2 Normal serving pages 
 		//5.2.1 status report through SSE
 #if UseWebSocket == true
-	ws.onEvent(onWsEvent);
-  	server.addHandler(&ws);
+		ws.onEvent(onWsEvent);
+  		server.addHandler(&ws);
 #endif
 
 #if	UseServerSideEvent == true
-  	sse.onConnect(sseConnect);
-  	server.addHandler(&sse);
+  		sse.onConnect(sseConnect);
+  		server.addHandler(&sse);
 #endif 
 		server.addHandler(&networkConfig);
 		server.addHandler(&bmwHandler);
 
+#if ResponseAppleCNA == true
+		if(WiFiSetup.isApMode())
+			server.addHandler(&appleCNAHandler);
+#endif 
 		server.addHandler(&logHandler);
 		//5.2.2 SPIFFS is part of the serving pages
 		//securedAccess need additional check
@@ -705,12 +752,27 @@ void setup(void){
 	ESPUpdateServer_setup(_gUsername,_gPassword);
 
 	// 9. display IP
-	IPV4Address ip;
-	ip.dword = WiFi.localIP();
-	bmWeb.setIp(ip.bytes);
+	displayIP(WiFiSetup.isApMode());
+	
 	DebugOut("End Setup\n");
 }
 
+#define SystemStateOperating 0
+#define SystemStateRestartPending 1
+#define SystemStateWaitRestart 2
+
+#define TIME_RESTART_TIMEOUT 3000
+
+bool _disconnectBeforeRestart;
+static unsigned long _time;
+byte _systemState=SystemStateOperating;
+void requestRestart(bool disc)
+{
+	_disconnectBeforeRestart=disc;
+	_systemState =SystemStateRestartPending;
+}
+
+#define IS_RESTARTING (_systemState!=SystemStateOperating)
 
 
 void loop(void){
@@ -723,38 +785,36 @@ void loop(void){
 
   	brewmaniac_loop();
  
- 	if(WiFi.status() != WL_CONNECTED)
- 	{
- 		if(_wifiState==WiFiStateConnected)
- 		{
-			byte nullIp[4]={0,0,0,0};
-			bmWeb.setIp(nullIp);
-
-			_connectionTime=millis();
-			_wifiState = WiFiStateWaitToConnect;
-		}
-		else if(_wifiState==WiFiStateWaitToConnect)
-		{
-			if((millis() - _connectionTime) > TIME_WAIT_TO_CONNECT)
-			{
-				WiFi.begin();
-				_connectionTime=millis();
-				_wifiState = WiFiStateConnecting;
+	if(WiFiSetup.stayConnected()){
+		if(WiFiSetup.isApMode()){
+			TimeKeeper.setInternetAccessibility(false);
+			displayIP(true);
+		}else{
+			if(WiFi.status() != WL_CONNECTED){
+				uint8_t nullip[]={0,0,0,0};
+				bmWeb.setIp(nullip);
+			}else{
+				displayIP(false);
 			}
 		}
-		else if(_wifiState==WiFiStateConnecting)
-		{
-			if((millis() - _connectionTime) > TIME_RECONNECT_TIMEOUT){
-				ESP.restart();
-			}
-		}
- 	}
- 	else
- 	{
- 		_wifiState=WiFiStateConnected;
-  	}
+	}
   	
   	httpUpdateHandler.runUpdate();
+
+  	if(_systemState ==SystemStateRestartPending){
+	  	_time=millis();
+	  	_systemState =SystemStateWaitRestart;
+  	}else if(_systemState ==SystemStateWaitRestart){
+  		if((millis() - _time) > TIME_RESTART_TIMEOUT){
+  			if(_disconnectBeforeRestart){
+  				WiFi.disconnect();
+  				WiFiSetup.setAutoReconnect(false);
+  				delay(1000);
+  			}
+//  			ESP.restart();
+  		}
+  	}
+
 
 #if PROFILING == true
 	unsigned long thisloop = millis() - _profileLoopBegin;

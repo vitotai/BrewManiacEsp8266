@@ -147,11 +147,11 @@ void wiSettingChanged(int address,byte value)
 }
 
 
-void wiSetDeviceAddress(byte ip[])
+void wiSetDeviceAddress(byte ip[], bool apmode)
 {
 	// support only IPv4 for now
 	if(	ip[0] != 0 && ip[1] != 0 && ip[2] != 0 && ip[3] != 0){
-		uiSetWirelessStatus(WiStateConnected);
+		uiSetWirelessStatus(apmode? WiStateAccessPoint:WiStateConnected);
 		uiSetIp(ip);
 		if(bmproxy.stage == StageIdleScreen)
 			uiPrintIpAddress();

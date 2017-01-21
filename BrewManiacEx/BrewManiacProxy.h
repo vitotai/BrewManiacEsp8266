@@ -38,7 +38,7 @@ public:
 
 	// from Web
 	void sendButton(byte mask,bool longPressed);
-	void setIp(byte ip[]);
+	void setIp(byte ip[],bool apmode=false);
 
 	// recipe
 	AutomationRecipe automationRecipe;	
