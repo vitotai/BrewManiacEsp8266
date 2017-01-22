@@ -28,6 +28,9 @@ public:
 	void setMaxReconnect(unsigned int reconnect){_maxReconnect=reconnect;}
 	void setSwitchToApWhenDisconnected(bool toAp){  _switchToAp= toAp; }
 	void setAutoReconnect(bool reconnect){ _autoReconnect=reconnect; }
+	
+	void setBreakCallback( bool (*func)(void) );
+	
 private:
 	unsigned int _maxReconnect;
 	unsigned int _reconnect;

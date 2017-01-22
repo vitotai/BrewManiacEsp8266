@@ -36,6 +36,8 @@
 
 extern void brewmaniac_setup();
 extern void brewmaniac_loop();
+extern bool readSkipNetCfgButton(void);
+extern void startBrewManiac(void);
 
 #define ResponseAppleCNA true
 
@@ -652,7 +654,8 @@ void setup(void){
 	brewmaniac_setup();
 
 		  	
-	//3. Start WiFi  
+	//3. Start WiFi 
+	WiFiSetup.setBreakCallback(&readSkipNetCfgButton);
 	WiFiSetup.begin(_gHostname);
 
   	DebugOut("Connected! IP address: ");
@@ -752,6 +755,7 @@ void setup(void){
 	ESPUpdateServer_setup(_gUsername,_gPassword);
 
 	// 9. display IP
+	startBrewManiac();
 	displayIP(WiFiSetup.isApMode());
 	
 	DebugOut("End Setup\n");

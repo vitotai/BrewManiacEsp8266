@@ -39,7 +39,9 @@ void WiFiSetupClass::enterApMode(void)
 	delay(500);
 }
 static bool _apEntered=false;
+static bool (*_cbBreak)(void);
 
+void WiFiSetupClass::setBreakCallback( bool (*func)(void) ){ _cbBreak=func; } 
 void WiFiSetupClass::startWiFiManager(bool portal)
 {
 	WiFiManager wifiManager;
@@ -54,6 +56,12 @@ void WiFiSetupClass::startWiFiManager(bool portal)
     //and goes into a blocking loop awaiting configuration
     wifiManager.setAPCallback([](WiFiManager*){ _apEntered=true;});
 
+	if(_cbBreak!=NULL){
+		wifiManager.setBreakCallback([](WiFiManager*)->bool{
+			 return _cbBreak();
+		});
+	}
+	
     bool connected;
     if(portal){
     	connected=wifiManager.startConfigPortal(_apName,_apPassword);

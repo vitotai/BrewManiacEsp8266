@@ -72,6 +72,7 @@ StringConst(Brewing_Process,"Brewing Process");
 StringConst(Finished,"Finished");
 
 //button labels
+
 #if NoDelayStart == false
 DefineButtonLabel( x_x_Quit_Go,       "          Quit  Go",0);
 #endif
@@ -118,6 +119,8 @@ DefineButtonLabel( x_Down_x_Ok,   	  "---  Dwn  ---   Ok",30);
 DefineButtonLabel( x_x_Exit_Pmp,      "---  ---  Exit Pmp",31);
 DefineButtonLabel( Tune_PID_No_Yes,   "Tune PID?  No  Yes",32);
 DefineButtonLabel( Stop_No_Yes,       " Stop?     No  Yes",33);
+
+DefineButtonLabel( AccessPoint_Yes,   " Run AP Mode?  Yes",34);
 
 // end of menu
 

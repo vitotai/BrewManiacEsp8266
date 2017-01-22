@@ -5218,6 +5218,30 @@ void backToMain(void)
 // *************************
 //*  Main procedure
 // *************************
+void uiPrintInitialScreen(void)
+{
+	uiClearScreen();
+	uiTitle(STR(welcome));
+
+	uiShowTextAtRow_P(2,STR(Initialization),CenterAligned,1);
+	uiButtonLabel(ButtonLabel(AccessPoint_Yes));
+}
+
+bool readSkipNetCfgButton(void)
+{
+	tmTiming();
+	if(btnReadButtons()) 
+	{
+		if(btnIsEnterLongPressed)
+			return true;	
+	}
+	return false;
+}
+
+void startBrewManiac()
+{
+	switchApplication(MAIN_SCREEN);
+}
 
 void brewmaniac_setup() {
 
@@ -5238,8 +5262,7 @@ void brewmaniac_setup() {
 	heatInitialize();
 	pumpInitialize();
 		
-	switchApplication(MAIN_SCREEN);
-
+	
 	uiPrintInitialScreen();
 	
 #if WirelessSupported == true

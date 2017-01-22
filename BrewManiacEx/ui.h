@@ -476,11 +476,6 @@ void uiSetIp(byte ip[])
 	ipSet=true;
 }
 
-void uiPrintInitialScreen(void)
-{
-	uiShowTextAtRow_P(2,STR(Initialization),CenterAligned,1);
-	
-}
 
 void uiChangeTemperatureUnit(bool useF)
 {
