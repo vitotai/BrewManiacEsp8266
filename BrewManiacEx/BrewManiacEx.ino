@@ -44,24 +44,30 @@ extern void startBrewManiac(void);
 /**************************************************************************************/
 /**************************************************************************************/
 
-#define WS_PATH "/ws"
-#define SSE_PATH "/status.php"
-#define LOGS_PATH "/logs.php"
+#define WS_PATH 	"/ws"
+#define SSE_PATH 	"/status.php"
+#define LOGS_PATH 	"/logs.php"
 
-#define CHART_DATA_PATH "/chart.php"
-#define SETTING_PATH "/settings.php"
-#define AUTOMATION_PATH "/automation.php"
-#define BUTTON_PATH "/button.php"
-#define UPDATE_AUTOMATION_PATH "/saveauto.php"
-#define UPDATE_SETTING_PATH "/savesettings.php"
+#define CHART_DATA_PATH 	"/chart.php"
+#define SETTING_PATH 		"/settings.php"
+#define AUTOMATION_PATH 	"/automation.php"
+#define BUTTON_PATH 		"/button.php"
+#define UPDATE_AUTOMATION_PATH 	"/saveauto.php"
+#define UPDATE_SETTING_PATH 	"/savesettings.php"
 
-#define NETCFG_PATH "/netcfg.php"
-#define SCAN_SENSOR_PATH "/scan.php"
-#define DEFAULT_INDEX_FILE     "index.htm"
+#define NETCFG_PATH 		"/netcfg.php"
+#define SCAN_SENSOR_PATH 	"/scan.php"
+#define DEFAULT_INDEX_FILE  "index.htm"
 
 #define MAX_CONFIG_LEN 256
 #define JSON_BUFFER_SIZE 256
-#define CONFIG_FILENAME "/network.cfg"
+#define CONFIG_FILENAME 	"/network.cfg"
+
+#define LS_PATH				"/list.php"
+#define UPLOAD_PATH 		"/upfile.php"
+#define RM_PATH 			"/rm.php"
+#define RECIPE_PATH_Base 	"/R/"
+#define RECIPE_PREFERNECE 	"/userpref.cfg"
 
 #define MaxNameLength 32
 
@@ -91,10 +97,144 @@ typedef union _address{
 } IPV4Address;
 
 
+/**************************************************************************************/
+/* Recipe Fle management interface */
+/**************************************************************************************/
+#define WRITE_MASK 0x2
+#define READ_MASK 0x1
+#define EXECUTE_MASK 0x4
+
+class RecipeFileHandler:public AsyncWebHandler
+{
+	uint32_t _startTime;
+	FILE  _tempFile;
+	
+	bool accessAllow(String& path,uint8_t mask){
+		if(!path.startsWith("/")) path= String("/") + path;
+
+		if(mask & WRITE_MASK) {
+			if (path.startsWith(RECIPE_PATH_Base)) return true;
+			if (path == RECIPE_PREFERNECE) return true;
+			return false;
+		}
+		return true;
+	}
+	
+	String listDirectory(String path){
+		Dir dir = SPIFFS.openDir(path);
+		String json=String("[");
+		bool comma=false;
+		uint16_t len=path.length();
+		while (dir.next()) {
+			String file=dir.fileName();
+    		DBG_PRINTF("LS File:%s\n",file.c_str());
+    		if(comma)
+    			json = json + String(",");
+    		else
+    			comma=true;
+    		json += String("\"") + file.substring(len) + String("\"");
+		}
+		return json + String("]");
+	}
+public:
+	RecipeFileHandler(){}
+	
+	void handleRequest(AsyncWebServerRequest *request){
+		if(request->url() == RM_PATH){
+			if( request->hasParam("file",true)){
+				String file=request->getParam("file", true)->value();
+				DBG_PRINTF("RM request:%s\n",file.c_str());
+
+				if(accessAllow(file,WRITE_MASK)){
+					DBG_PRINTF("RM executed:%s\n",file.c_str()); 
+					SPIFFS.remove(file.c_str());
+					request->send(200, "", "{}");
+				}else{
+					DBG_PRINTF("RM not allowed:%s\n",file.c_str()); 
+					request->send(400);
+				}
+			}else{
+				DBG_PRINTF("miss file in req.");
+				request->send(400);
+			}
+		}else if(request->url() == UPLOAD_PATH){
+			if( request->hasParam("file",true,true)){
+				String file=request->getParam("file", true, true)->value();
+				if(accessAllow(file,WRITE_MASK)){
+					if( SPIFFS.exists(file)){
+						DBG_PRINTF("File UL success:%s\n",file.c_str());
+						request->send(200, "", "{}");
+					}else{
+						DBG_PRINTF("File UL Failed:%s\n",file.c_str());
+						request->send(500);
+					}
+				}else{
+					request->send(401);
+					DBG_PRINTF("File UL not allowed:%s\n",file.c_str());
+				}
+			}else{
+				DBG_PRINTF("miss file in req.");
+				request->send(404);
+			}
+		}else if(request->url() == LS_PATH){
+			if(request->hasParam("dir",true)){
+				String file=request->getParam("dir", true)->value();
+				DBG_PRINTF("LS request:%s\n",file.c_str());
+				if(accessAllow(file,EXECUTE_MASK | READ_MASK)){
+					request->send(200, "application/json", listDirectory(file));
+				}
+				else
+					request->send(401);
+			}else
+				request->send(400);
+
+		}else{
+			// just return the file WITHOUT CACHE!
+			request->send(SPIFFS,request->url());
+		}
+	}
+	
+    void handleUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
+		if(!index){
+			String file=filename;
+			if(accessAllow(file,WRITE_MASK)){
+	        	request->_tempFile = SPIFFS.open(file, "w");
+    	    	_startTime = millis();
+      		}
+      	}
+      	if(request->_tempFile){
+        	if(len){
+          	request->_tempFile.write(data,len);
+        	}
+        	if(final){
+          		request->_tempFile.close();
+          		uint32_t uploadTime = millis() - _startTime;
+          		DBG_PRINTF("upload: %s, %u B, %u ms\n", filename.c_str(), index+len, uploadTime);
+       		}
+      	}
+    }
+
+	bool canHandle(AsyncWebServerRequest *request){
+	 	if(request->url() == RM_PATH || request->url() ==UPLOAD_PATH || request->url() ==LS_PATH) return true;
+	 	if(request->url() == RECIPE_PREFERNECE) return true;
+	 	if(request->url().startsWith(RECIPE_PATH_Base)){
+		 	if(SPIFFS.exists(request->url())) return true;
+		}
+	 	return false;
+	}
+
+};
+
+RecipeFileHandler recipeFileHandler;
+/**************************************************************************************/
+/* Temperature logging interface */
+/**************************************************************************************/
 
 
 class TemperatureLogHandler:public AsyncWebHandler
 {
+public:
+
 	void handleRequest(AsyncWebServerRequest *request){
 		if( request->url() == LOGS_PATH){
 			if(request->hasParam("dl")){
@@ -144,7 +284,6 @@ class TemperatureLogHandler:public AsyncWebHandler
 			request->send(204);
 		}		
 	}
-public:
 	TemperatureLogHandler(){}
 	bool canHandle(AsyncWebServerRequest *request){
 	 	if(request->url() == CHART_DATA_PATH || request->url() ==LOGS_PATH) return true;
@@ -156,6 +295,9 @@ public:
 
 TemperatureLogHandler logHandler; 
 
+/**************************************************************************************/
+/* network configuration */
+/**************************************************************************************/
 
 static const char* configFormat =
 R"END(
@@ -289,6 +431,10 @@ public:
 
 NetworkConfig networkConfig;
 
+/**************************************************************************************/
+/* BrewManiac interface */
+/**************************************************************************************/
+
 class BmwHandler: public AsyncWebHandler 
 {
 public:
@@ -415,6 +561,10 @@ public:
 
 BmwHandler bmwHandler;
 
+/**************************************************************************************/
+/* server push  */
+/**************************************************************************************/
+
 #if UseWebSocket == true
 AsyncWebSocket ws(WS_PATH);
 
@@ -520,6 +670,10 @@ void broadcastMessage(const char* msg)
 #endif
 }
 
+/**************************************************************************************/
+/* callback from BM */
+/**************************************************************************************/
+
 void bmwEventHandler(BrewManiacWeb* bmw, BmwEventType event)
 {
 	if(event==BmwEventAutomationChanged){
@@ -549,6 +703,9 @@ void bmwEventHandler(BrewManiacWeb* bmw, BmwEventType event)
 		broadcastMessage(json);
 	}
 }
+/**************************************************************************************/
+/* CNA, ap mode  */
+/**************************************************************************************/
 
 #if ResponseAppleCNA == true
 
@@ -623,6 +780,10 @@ void displayIP(bool apmode){
 		bmWeb.setIp(ip.bytes);
 	}
 }
+
+/**************************************************************************************/
+/* Main procedure */
+/**************************************************************************************/
 
 void setup(void){
 	//0. initilze debug port
@@ -711,6 +872,9 @@ void setup(void){
   		server.addHandler(&sse);
 #endif 
 		server.addHandler(&networkConfig);
+		// this must take priority over bmwHandler
+		server.addHandler(&recipeFileHandler);
+
 		server.addHandler(&bmwHandler);
 
 #if ResponseAppleCNA == true
@@ -721,6 +885,7 @@ void setup(void){
 		//5.2.2 SPIFFS is part of the serving pages
 		//securedAccess need additional check
 		// server.serveStatic("/", SPIFFS, "/","public, max-age=259200"); // 3 days
+		
 	}
     
 	server.on("/system",[](AsyncWebServerRequest *request){
@@ -826,5 +991,9 @@ void loop(void){
 #endif
 
 }
+
+
+
+
 
 

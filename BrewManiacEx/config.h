@@ -65,6 +65,8 @@
 #define  PidAutoTuneStep   127.5
 #define  PidAutoTuneLookBack  30
 
+#define MinimumTemperatureReadGap 500
+
 //debug setting
 #define FakeHeating false
 #define DEVELOP_SETTING_VALUE false
@@ -110,7 +112,7 @@
 /*  Don't touch them if you don't know what they are.								  */
 /**************************************************************************************/
 
-#define BME8266_VERSION "0.1.2"
+#define BME8266_VERSION "0.2"
 
 #define FIRMWARE_UPDATE_URL "http://brew.vito.tw/bmeupdate.php?info"
 #define JS_UPDATE_URL  "http://brew.vito.tw/bmejsupdate.php?v="
@@ -121,6 +123,7 @@
 
 #define UseWebSocket false
 #define UseServerSideEvent true
+
 
 #endif
 

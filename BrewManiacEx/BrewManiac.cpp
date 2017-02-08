@@ -882,6 +882,8 @@ void setSensorForStage(byte s)
 }
 #endif
 
+uint32_t _lastTempRead;
+
 #if MaximumNumberOfSensors > 1
 
 void tpReadTemperature(void)
@@ -894,12 +896,18 @@ void tpReadTemperature(void)
 	{
   		if (_gIsSensorConverting[si] == false) 
   		{
-	  		// start conversion and return
-			ds.reset();
-			ds.select(gSensorAddresses[si]);
+  			if(gCurrentTimeInMS - _lastTempRead > MinimumTemperatureReadGap){
+		  		// start conversion and return
+				ds.reset();
+				ds.select(gSensorAddresses[si]);
 
-    		ds.write(DSCMD_CONVERT_T, 0);
-    		_gIsSensorConverting[si] = true;
+    			ds.write(DSCMD_CONVERT_T, 0);
+    			_gIsSensorConverting[si] = true;
+    			
+    			if (si == (gSensorNumber -1)){
+    				_lastTempRead = gCurrentTimeInMS;
+    			}
+    		}
   		}
   		else
   		{
@@ -946,14 +954,17 @@ void tpReadTemperature(void)
 	return;
 #endif
 
-	ds.reset();
-	ds.skip(); 	
   	if (_isConverting == false) 
   	{
-	  	// start conversion and return
-    	ds.write(DSCMD_CONVERT_T, 0);
-    	_isConverting = true;
-
+	  	if(gCurrentTimeInMS - _lastTempRead > MinimumTemperatureReadGap){
+		  	// start conversion and return
+			ds.reset();
+			ds.skip();
+    		ds.write(DSCMD_CONVERT_T, 0);
+    		_isConverting = true;
+			
+			_lastTempRead = gCurrentTimeInMS;    		
+		}
     	return;
   	}
   	// else if convert start 
@@ -961,6 +972,8 @@ void tpReadTemperature(void)
   	//
   
   	// check for conversion if it isn't complete return if it is then convert to decimal
+  	ds.reset();
+	ds.skip();
     byte busy = ds.read_bit();
     if (busy == 0) return;
 	// reset & "select" again

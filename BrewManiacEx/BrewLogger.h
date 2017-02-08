@@ -66,7 +66,7 @@ public:
 		_savedLength -= rsize;  // data length in file exclude those in buffer
 		// log a "new start" log
 		DBG_PRINTF("resume, total _savedLength:%d, _logIndex:%d\n",_savedLength,_logIndex);
-		
+		_saveLog = true;
 		_lastTempLog=0;
 		_started = true;
 		_isFileOpen=false;

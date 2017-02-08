@@ -31,7 +31,7 @@ StringConst(BT_PIN,"PIN:");
 
 StringConst(min,"min");
 
-StringConst( welcome,"BrewManiacEx 0.1""\xE0");
+StringConst( welcome,"BrewManiacEx 0.2""\xE0");
 
 StringConst( Initialization,"Setup Network..");
 

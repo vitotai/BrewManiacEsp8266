@@ -370,13 +370,21 @@ void BrewManiacWeb::getSettingTemperature(String& json)
 }
 // need to parse JSON object
 StaticJsonBuffer<1024> jsonBuffer;
-char _strJsonBuffer[1024];
+#define JSONBUFFER_SIZE 1024
+char _strJsonBuffer[JSONBUFFER_SIZE];
 
 extern void commitSetting(void);
 
 bool BrewManiacWeb::updateSettings(String& json)
 {
-	memcpy(_strJsonBuffer,json.c_str(),json.length());
+	uint16_t size=json.length();
+	if(size > JSONBUFFER_SIZE){
+		DEBUGF("exceed buffer size\n");
+		return false;
+	}
+	memcpy(_strJsonBuffer,json.c_str(),size);
+	_strJsonBuffer[size]='\0';
+	
 	JsonObject& root = jsonBuffer.parseObject(_strJsonBuffer);
 	if (!root.success()){
 		DEBUGF("wrong JSON string\n");
