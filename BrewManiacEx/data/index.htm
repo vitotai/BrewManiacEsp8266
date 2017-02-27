@@ -382,6 +382,7 @@ $(function(){
     <tr><td>Heat/PWM in Boil </td><td><span id="s_pwm">-</span> %</td></tr>
     <tr><td class="TCAL_T">Sensor Calibration </td><td><span id="s_cal" class="TCAL_V">-</span><span class="tmp_unit">°C</span></td></tr>
     <tr><td>PID Start</td><td><span id="s_pidstart">-</span> <span class="tmp_unit">°C</span></td></tr>
+    <tr><td>PID when Doughing-In</td><td><span id="s_piddoughin">-</span></td></tr>
 	<tr><td colspan="2" class="setting-category">Unit Parameters</td></tr>
     <tr><td>Temperature Unit</td><td><span id="s_unit" class="tmp_unit">°C</span></td></tr>
     <tr><td>Disable Delay Start</td><td><span id="s_nodelay">-</span></td></tr>
@@ -443,17 +444,27 @@ $(function(){
     <input type="radio" name="genunit" id="unit_us" value="u">
     <label for="unit_us">US</label>
     </td></tr>
+
+ <tr><td>Gravity/Plato</td>
+   <td colspan="3">
+    <input type="radio" name="sugarunit" id="su_gravity" value="g">
+    <label for="su_gravity">Gravity</label>
+    <input type="radio" name="sugarunit" id="su_plato" value="p">
+    <label for="su_plato">°Plato</label>
+    </td></tr>
+
  <tr><td rowspan="4">Mash In Temperature</td>
     <td>
       <input type="radio" name="mashin_temp" id="mi_1stRest" value="1">
       <label for="mi_1stRest">As First Rest</label>
     </td>
     <td colspan="2"></td></tr>
-  <tr><td rowspan="2"><input type="radio" name="mashin_temp" id="mi_cal" value="c">
+  <tr><td rowspan="3"><input type="radio" name="mashin_temp" id="mi_cal" value="c">
       <label for="mi_cal">Calculated</label></td>
     <td><label for="grain-temp">Grain Temperature</label></td><td><input type="text" id="grain-temp" size="4"></input><span class="tmp_unit">°C</span></td>
     </tr>
   <tr><td><label for="equip-adj" >Equipment Adjust</label></td><td><input type="text" id="equip-adj" size="4"></input><span class="tmp_unit">°C</span></td></tr>
+  <tr><td><label for="kettle-mass" >Kettle equiv. mass</label></td><td><input type="text" id="kettle-mass" size="4"></input><span id="kettlemass_unit">L</span></td></tr>
   <tr><td>
     <input type="radio" name="mashin_temp" id="mi_fixed" value="s">
     <label for="mi_fixed">Specified</label>

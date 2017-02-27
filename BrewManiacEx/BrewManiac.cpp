@@ -1851,6 +1851,12 @@ void displayResolution(int value)
 {
 	uiSettingDisplayNumber((float)value,0);
 }
+void displayOnOff(int value)
+{
+	if (value==0) uiSettingDisplayText(STR(Off));
+	else uiSettingDisplayText(STR(On));
+}
+
 //**************************************************************
 //* PID PWM setting screen
 //**************************************************************
@@ -1870,7 +1876,9 @@ byte _pidSettingAux;
 #define PID_SETTING_PWM 6
 #define PID_SETTING_Calibration 7
 #define PID_SETTING_PIDStart 8
-#define PID_SETTING_Resolution 9
+#define PID_SETTING_PIDDoughIn 9
+
+#define PID_SETTING_Resolution 10
 
 
 void settingPidEditSetting(void)
@@ -1911,7 +1919,9 @@ void settingPidEditSetting(void)
 		editItem(STR(Start_PID_In),value,35,10,&displayTempDivide10);
 	}
 #if EnableSensorResolution	== true
-	else if(_currentPidSetting== PID_SETTING_Resolution){
+	else if(_currentPidSetting== PID_SETTING_PIDDoughIn){
+		editItem(STR(PID_Dough_In),value,1,0,&displayOnOff);
+	}else if(_currentPidSetting== PID_SETTING_Resolution){
 		value=ResolutionDecode(gSensorResolution) + 9;
 //		Serial.printf("res:%d,%d\n",value,gSensorResolution);
 		editItem(STR(SensorResolution),value,12,9,&displayResolution);
@@ -2028,11 +2038,6 @@ void displayInsideOutside(int value)
 	else uiSettingDisplayText(STR(Outside));
 }
 
-void displayOnOff(int value)
-{
-	if (value==0) uiSettingDisplayText(STR(Off));
-	else uiSettingDisplayText(STR(On));
-}
 
 void displayYesNo(int value)
 {
@@ -3637,6 +3642,7 @@ void autoModeEnterMashing(void)
 	_askingSkipMashingStage = false;
 	_mashingStep = 0; // 0 is mash in , real mashing starts from 1, this number will be increased in 
 					  // autoModeNextMashingStep() later.
+	heatOn(true);
 
 #if	MANUAL_PUMP_MASH == true
 	gManualPump=false;
@@ -4619,7 +4625,13 @@ void autoModeEventHandler(byte event)
 		if(btnIsStartPressed)
 		{
 			buzzMute();
-
+			if(readSetting(PS_PID_DoughIn)){
+				// change temperature to first rest
+				gSettingTemperature = TempFromStorage(readSettingWord(PS_StageTemperatureAddr(1)));	
+				uiDisplaySettingTemperature(gSettingTemperature);
+			}else{
+				heatOff(); // turn off heat. during "dough-in"
+			}
 			// goto next stage, Mashing or ask MaltADD
 			if(readSetting(PS_SkipAddMalt))
 			{
@@ -5236,7 +5248,12 @@ void uiPrintInitialScreen(void)
 	uiClearScreen();
 	uiTitle(STR(welcome));
 
-	uiShowTextAtRow_P(2,STR(Initialization),CenterAligned,1);
+	uiShowTextAtRow_P(1,STR(Initialization),CenterAligned,1);
+}
+
+void brewmaniac_ApPrompt(void)
+{
+	uiShowTextAtRow_P(1,STR(SetupNetwork),CenterAligned,1);
 	uiButtonLabel(ButtonLabel(AccessPoint_Yes));
 }
 

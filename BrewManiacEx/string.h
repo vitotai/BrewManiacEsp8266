@@ -33,7 +33,8 @@ StringConst(min,"min");
 
 StringConst( welcome,"BrewManiacEx 0.2""\xE0");
 
-StringConst( Initialization,"Setup Network..");
+StringConst( Initialization,"Connecting..");
+StringConst( SetupNetwork,"Setup Network");
 
 #if NoDelayStart == false
 StringConst(To_be_started_in,"To be started in");
@@ -166,7 +167,7 @@ StringConst( Calibration, "Calibration");
 
 //StringConst( Hysteresi, "Hysteresi");
 StringConst( Start_PID_In, "Start PID In");
-
+StringConst( PID_Dough_In, "PID DoughIn");
 
 StringConst( Unit_Parameters, "Unit Parameters");
 StringConst( Set_Degree, "Set Degrees");

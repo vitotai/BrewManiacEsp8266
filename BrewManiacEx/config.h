@@ -112,7 +112,7 @@
 /*  Don't touch them if you don't know what they are.								  */
 /**************************************************************************************/
 
-#define BME8266_VERSION "0.2"
+#define BME8266_VERSION "0.2.1"
 
 #define FIRMWARE_UPDATE_URL "http://brew.vito.tw/bmeupdate.php?info"
 #define JS_UPDATE_URL  "http://brew.vito.tw/bmejsupdate.php?v="

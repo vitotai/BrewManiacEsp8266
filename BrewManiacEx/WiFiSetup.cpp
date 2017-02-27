@@ -40,8 +40,11 @@ void WiFiSetupClass::enterApMode(void)
 }
 static bool _apEntered=false;
 static bool (*_cbBreak)(void);
+static void (*_cbAPMode)(void);
 
 void WiFiSetupClass::setBreakCallback( bool (*func)(void) ){ _cbBreak=func; } 
+void WiFiSetupClass::setAPCallback( void (*func)(void) ){_cbAPMode=func; } 
+
 void WiFiSetupClass::startWiFiManager(bool portal)
 {
 	WiFiManager wifiManager;
@@ -54,7 +57,10 @@ void WiFiSetupClass::startWiFiManager(bool portal)
 	    wifiManager.setTimeout(_apTimeout);
     //set custom ip for portal
     //and goes into a blocking loop awaiting configuration
-    wifiManager.setAPCallback([](WiFiManager*){ _apEntered=true;});
+    wifiManager.setAPCallback([](WiFiManager*){
+    	_apEntered=true;
+    	if(_cbAPMode) _cbAPMode();
+    });
 
 	if(_cbBreak!=NULL){
 		wifiManager.setBreakCallback([](WiFiManager*)->bool{

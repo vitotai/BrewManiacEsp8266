@@ -96,7 +96,7 @@ static const char* SettingMap[]={
   	"s_cal",
 //#define PS_Hysteresi     8   //    Hysteresi 
 	"s_pidstart",
-	NULL, // 9 
+	"s_piddoughin", // 9 
 //#define PS_TempUnit   10     //  Scale Temp
 	"s_unit",
 //#define PS_SensorType     11      // Sensor Type

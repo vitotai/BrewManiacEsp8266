@@ -30,6 +30,7 @@ public:
 	void setAutoReconnect(bool reconnect){ _autoReconnect=reconnect; }
 	
 	void setBreakCallback( bool (*func)(void) );
+	void setAPCallback( void (*func)(void) );
 	
 private:
 	unsigned int _maxReconnect;

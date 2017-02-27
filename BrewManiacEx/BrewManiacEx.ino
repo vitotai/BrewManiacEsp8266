@@ -35,6 +35,7 @@
 #endif
 
 extern void brewmaniac_setup();
+extern void brewmaniac_ApPrompt(void);
 extern void brewmaniac_loop();
 extern bool readSkipNetCfgButton(void);
 extern void startBrewManiac(void);
@@ -817,6 +818,7 @@ void setup(void){
 		  	
 	//3. Start WiFi 
 	WiFiSetup.setBreakCallback(&readSkipNetCfgButton);
+	WiFiSetup.setAPCallback(&brewmaniac_ApPrompt);
 	WiFiSetup.begin(_gHostname);
 
   	DebugOut("Connected! IP address: ");

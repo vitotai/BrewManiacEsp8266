@@ -27,7 +27,7 @@
 #define PS_BoilHeat      6    //   Boil Heat %
 #define PS_Offset     7      // Offset
 #define PS_PID_Start   8      // star PID 
-//     9       [ SPACE ]
+#define PS_PID_DoughIn  9      // PID DoughIn
 
 //  UNIT MENU  
 #define PS_TempUnit   10     //  Scale Temp
@@ -131,7 +131,7 @@ const unsigned char  DEFAULT_EEPROM[] PROGMEM={
 0, //      9       [ SPACE ]
 0, //#define PS_TempUnit   10     //  Scale Temp
 0,  //#define NoDelay Start     11      //
-100, //#define PS_BoilTemp     12       //Temp Boil °C
+99, //#define PS_BoilTemp     12       //Temp Boil °C
 0, //     13       Temp Boil °F
 15, //#define PS_PumpCycle     14  //     Time Pump Cycle
 0, //#define PS_PumpRest     15   //    Time Pump Rest
