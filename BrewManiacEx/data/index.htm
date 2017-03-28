@@ -118,6 +118,7 @@ PumpRest:"--Pump Rest--",
 Idle:"BrewManiacEx 0.2",
 ManualMode:"Manual Mode",
 Setup:"Setup",
+PaddleLed:"STIR",
 Unknown:"Error!!",
 Pause:"PAUSED",
 min:"min",
@@ -141,6 +142,9 @@ event:["","Temperature Reached",
 				"Boil Finished",
 				"Brew Finished!"],
 
+};
+var STR_paddle={
+PumpRest:"--Stir Rest--",
 };
 var Beep= new Audio(
   "data:audio/mp3;base64,//NAxAAUApbIAU8oAH79+/fv38e8R48ePHjx48V7POwFsFsE0FwQgXUTD4fOc7/////xMBwDAMDhwOBwhP/////6CAcAMAw+f//////U4mHA4HAwsPu//8QA+D4fHht4jDvjUFvjqAj/80LECxZ71ugBh5gAwBEk1DLYUYUQT6J9Mi8l+tv/6kv/RLoYkIeijw5cmPhyhD//q///SLAsSSX/GoRBv+ofQqm//RNyRX/+41zX/+43Tf9f6yM///yP///yGP//UkZG5DQFgCBggAj/80DEDRcbXrwB1aAAGthABhEBDTIqXjMnUf/+r//9FkhXgy0BuyIWijNDHF42//+t///5kbjGgZcaG2lWl//+cb//51FExHNAwwYWUVn///nTb///OF4AkGMyatW7Hxsga9QQhdYtoP/zQsQLFltalAAFqr2lqKX//LH//9nPD0BkoBAGljrBAA0yX//8f3///WcI8UoBrIPBpRVSb//8XRr//6hfGKRsQUDOofDSSsz///i7J63//skakGAyYGg0oqrKs54bYGvQEIaeVE01LP/zQMQNFlNalAAFqr2n//yx///djccAGSkEAaAOQCQDDqv//j+3//1qMx0C/A1iIgusVmf//8XRv//6xfnFsQcDOgfDSy07f//i7JBTf//Y3IIBk0NBpBXA6rsfHYBrzDcGmFc0QWom//NCxA4XO1qUAAWqvT//lh///2TLgucDJAG8LljlgLgLQX//8fy1//9SZgOsMvAagNob2edv//xuD3//6hnE2TFcAy+ZA4wroP//+NUVBTf//WYCvgYyLIg8uBmzmg4wNdgrw0sqG6al//NAxA0XM1qUAAWqvZF//+WH///TQL4hIBkPFUGFByAAAEJq//+SpLf//WgZjkBaKBn9QCDDdv//5HDD//9ZDzRzgkYGMkaJ3Liav//yiIspv//Wo6KYASchyDOluxuMwBrlHQGkFc3/80LECxcDXpQABaq8EFqIJ//ywf///QTLgjsDHkN8N/IGBgFAKaP//8lSE///TMCBg2eAycxRZZgv//+ZCr//+Wj6JRESCKaH46pf//5QECq//+kiZChQMOmkTqZLs5oM2Bp+HyHbKib/80DECxaDXpgABaq8mpZB//+WD///60DMTYBizHEIAEAAGAYbt//86Qn//6CZMA2JAwKth8GKv//6Yxf//k0apGQoUDFJ5Fwl5H//+PgYKn//+kiOUBjgYB9jV9kxzAPvtoUQ3QUtRP/zQsQMFHteoAAFarxD//nD///6lmAtYGZF+LjL4DQDPP//9ZLf//2NwxkBg9CkBSR///lkhf//WRqSKI5QGNh0J+NX///j8Vb///Zy0ChaE0Ps3QIGB9R8ijmia6yJ//84f///WozFCP/zQMQWFCteoAAFaLwGQWYOYXALAQ+3//1Et///dEN9A3HYXEapf//yVJL//1D8tJInQOKLExPs///4/G9///0CHgaJGKOaPdkxyAPkxYUQ3QVURD//qP///qWcFPAwk1SBm4LAs8////NCxCAUM1agAAVovf84S3//9ZkI2A6t0T6bIv//+Spt//6x/UtifA4gsTM87f//koPa3//+o6PgDDviCFnTMBZ4H/LCI3NE01LHf//1H///1qOiVAYCexKGgOCJ9v//lglv//6iyKoD//NAxCsUU1acAAVovfUAPsapN//+P6H//qHwnTHIA4cYRobof//ykMVf//6zgvQCaJAaVdBMYwD1tKE+G6Cqh2f/9R///+s4KaBjNokVcEQKPP//8sFr//9SygQcAfGJibN///JUqf//80LENBODVqAABWi9/ybZ1DXAzFccaC///6YxV///qRHUBmlwsQvTMBjwPOWMWM0TXWO///qP///1HRagMsMQgyIDQFNm//+WD3//60CmPoD2GRNTz///yyQn//zzomIugjgJRav//5H/80DEQhPDXqAABWi849Lb//7JE6BqwYmJ9tAzFcA+PshPhugg6hbP//Lf//9ZkLSBo9mjInADgUav//8lG///UmQwQqB8awkh9v//50b3//yaNUjIWkDQ5xcKSP//8bpJW//+6BFwNv/zQsROFKNanAAFaL1FRDzRZdMwE9gew5Yn80TTZYt///lv//+kYjHAasWAox0AYAmzf//JT//+mgTYZaA6n0WND///QG9//6x8pImI5QHCjCNjVL//+N00t//9RmM4BnYAsBugrQMxCP/zQMRXFLtenAAFaLwAzqomE4F9BBNAUT//rLf//9FIWaBjjFKIFKAAIAjVL//5KH///0EyYBsdAxurBmFq///lAb3//qGsikbEFAzGFw3krM///41RsKb//1LOC7AoYyPOLqkygHFg//NCxF8Wc16YAAWqvGfhSIgGXE00ExD//+st///s5qLmAyNCEDKkPAIAWZI///H4l///00CLgKAYBDXHyZIq///H4bP//rF+cWxBwM6B8NLLTt//+Romim//9FIxFDAYiMgj4upV/6b///NAxGEXW16UAAWqvFucKiwvWBg8JgaNYgGEgoAwCB2FAZQiBUQ//7///QWZikxBMCYsMEDoF0TBp//9T///zBEdgEFA3BwGjJ///OI//+gYIGhTHPAxowSgVGX///LX//9ZfJsA4GP/80LEXhfjWrgBVaAAQTUuaegq38lhlQIP4miMbCVfg20AIogS0COhxiyeKMKUWYoE1ycOp1Jf6B0n9TmPyyIDgodDCpTK61k6M8TRWMf90HV0D62/X/yYH0FwpWLh9BmU+gXjJbLq////80DEWh0zNswBj6AA6CyfDFokk0Wndb+5iYsZKf////JsT6RP/lRVTEFNRTMuOTkuNVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRAAAADSAHAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ=="
@@ -179,7 +183,23 @@ var ButtonLabels={
 30:{u:"",d:"Down",s:"",e:"OK",i:""},
 31:{u:"",d:"",s:"Exit",e:"Pump",i:""},
 32:{u:"",d:"",s:"No",e:"Yes",i:"Auto Tune PID?"},
-33:{u:"",d:"",s:"No",e:"Yes",i:"Stop AutoTune?"}};
+33:{u:"",d:"",s:"No",e:"Yes",i:"Stop AutoTune?"},
+34:{u:"",d:"",s:"",e:"Yes", i:"Run AP Mode?"},
+35:{u:"Extend",d:"",s:"Skip",e:"Back", i:""},
+};
+
+var ButtonLabels_paddle={
+7:{u:"",d:"",s:"",e:"",i:"Stir Rest"},
+10:{u:"",d:"",s:"",e:"Stir",i:""},
+11:{u:"",d:"",s:"Time",e:"Stir",i:""},
+12:{u:"UP",d:"Down",s:"",e:"Stir",i:""},
+16:{u:"UP",d:"Down",s:"End",e:"Sitr",i:""},
+17:{u:"UP",d:"Down",s:"Heat",e:"Stir",i:""},
+19:{u:"UP",d:"Down",s:"Stir Pause",e:"STP",i:""},
+26:{u:"UP",d:"Down",s:"Pause",e:"Stir",i:""},
+27:{u:"UP",d:"Down",s:"RUN",e:"Stir",i:""},
+31:{u:"",d:"",s:"Exit",e:"Stir",i:""}
+};
 
 $(function(){
 	$(".fn").hide();
@@ -323,7 +343,7 @@ $(function(){
 
 	<td>
 		<div  id="pumpled" class="round-led-circle ledgreendim"><span class="round-led"></span></div>
-		<div class="label">PUMP</div>
+		<div class="label"><span id="pump-led-label">PUMP</span></div>
 	</td>
 </tr>
 <tr>
@@ -675,7 +695,10 @@ Sensor Assignment:
 
 <!-- About  -->
 <div class="fn" id="about-p">
-	<p>By Vito Tai. <a href="http://vito.tw/category/brewmaniac/" target="_blank">More Info.</a></p>
+	<p> BrewManiacEx
+	<br> firmware version: <span id="firmware-version"></span>
+	<br> HTML/JS version: <span id="js-version"></span>
+	<p>By Vito Tai. <a href="http://vito.tw/?cat=11" target="_blank">More Info.</a></p>
 	<p style="{text-align:left;}">Powered by</p>
 	<ul> 
 	<li><a href="http://jquery.com" target="_blank">jQuery</a></li>

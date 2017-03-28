@@ -235,6 +235,7 @@ void EepromInit(void)
 
 }
 
+
 #else //#if USE_SPIFFS_EEPROM
 bool isEepromInitialized(void)
 {

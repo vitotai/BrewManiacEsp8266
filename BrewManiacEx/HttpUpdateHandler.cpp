@@ -10,19 +10,6 @@
 #define SPIFFS_FORMAT_PATH     "/format-spiffs"
 #define SPIFFS_FORMATTING_PATH "/exeformat-spiffs"
 
-#if MaximumNumberOfSensors >  1
-	#if LCD_USE_SSD1306 == true
-		#define BUILD_OPTIONS "mo"
-	#else
-		#define BUILD_OPTIONS "m"
-	#endif
-#else
-	#if LCD_USE_SSD1306 == true
-		#define BUILD_OPTIONS "so"
-	#else
-		#define BUILD_OPTIONS "s"
-	#endif
-#endif
 
 #if SerialDebug == true
 #define DEBUGF(...) DebugPort.printf(__VA_ARGS__)
@@ -278,7 +265,7 @@ void HttpUpdateHandler::runUpdate(void)
 {
 	if(_state ==US_FirmwareUpdatePending){
 		_state = US_FirmwareUpdating;
-		DEBUGF("Start http update\n");
+		DEBUGF("Start http update:%s\n",_firmwareUpdateUrl.c_str());
 		ESPhttpUpdate.rebootOnUpdate(false);
 		_updateReturn = ESPhttpUpdate.update(_firmwareUpdateUrl, _fwVersion);
 		DEBUGF("End of http update\n");

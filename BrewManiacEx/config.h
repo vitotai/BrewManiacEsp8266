@@ -35,6 +35,7 @@
 #error "MaximumNumberOfSensors should not exceed 5"
 #endif
 
+#define UsePaddleInsteadOfPump false
 
 /**************************************************************************************/
 /*  BrewManiac Related settings                                                       */
@@ -112,7 +113,6 @@
 /*  Don't touch them if you don't know what they are.								  */
 /**************************************************************************************/
 
-#define BME8266_VERSION "0.2.1"
 
 #define FIRMWARE_UPDATE_URL "http://brew.vito.tw/bmeupdate.php?info"
 #define JS_UPDATE_URL  "http://brew.vito.tw/bmejsupdate.php?v="
@@ -124,10 +124,28 @@
 #define UseWebSocket false
 #define UseServerSideEvent true
 
+#define EnableExtendedMashStep true
 
+/**************************************************************************************/
+/*  version information     														  */
+/**************************************************************************************/
+
+#define BME8266_VERSION "0.2.2"
+
+#if MaximumNumberOfSensors >  1
+	#if LCD_USE_SSD1306 == true
+		#define BUILD_OPTIONS "mo"
+	#else
+		#define BUILD_OPTIONS "m"
+	#endif
+#else
+	#if LCD_USE_SSD1306 == true
+		#define BUILD_OPTIONS "so"
+	#else
+		#define BUILD_OPTIONS "s"
+	#endif
 #endif
 
 
 
-
-
+#endif

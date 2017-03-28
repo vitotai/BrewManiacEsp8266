@@ -212,10 +212,14 @@ void wiStartSensorScan(void)
 }
 #endif //#if	MaximumNumberOfSensors	> 1
 
+extern void temperatureUnitChange(bool useF);
 
 void wiUpdateSetting(int address,byte value)
 {
 	updateSetting(address,value);
+	if(PS_TempUnit ==address){
+		temperatureUnitChange((boolean)value);
+	}
 
 #if	MaximumNumberOfSensors	== 1
 	if(address == PS_Offset){

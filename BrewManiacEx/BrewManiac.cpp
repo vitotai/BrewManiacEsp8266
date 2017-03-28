@@ -641,7 +641,42 @@ boolean btnReadButtons(void)
 // ****************************
 // temperature event
 
+void temperatureUnitChange(bool useF)
+{
+	if(gIsUseFahrenheit == useF) return;
+	gIsUseFahrenheit = useF;
+	uiChangeTemperatureUnit(useF);
+	// update EEPROM content
+	// PS_BoilTemp, PS_TempPumpRest
 
+	//	gBoilStageTemperature loaded in heatLoadParameter
+	//	_pumpStopTemp loaded in pumpLoadParameter
+
+	if(useF){
+	 	float value=readSetting(PS_BoilTemp);
+	 	updateSetting(PS_BoilTemp,(byte)C2F(value));
+
+	 	value=readSetting(PS_TempPumpRest);
+	 	updateSetting(PS_TempPumpRest,(byte)C2F(value));
+	 
+		gSettingTemperature=C2F(gSettingTemperature);
+		
+	 	value=readSetting(PS_SpargeWaterTemperatureControlAddress);
+	 	updateSetting(PS_SpargeWaterTemperatureControlAddress,(byte)C2F(value));		
+		
+	}else{
+	 	float value=readSetting(PS_BoilTemp);
+	 	updateSetting(PS_BoilTemp,(byte)F2C(value));
+
+	 	value=readSetting(PS_TempPumpRest);
+	 	updateSetting(PS_TempPumpRest,(byte)F2C(value));
+
+	 	value=readSetting(PS_SpargeWaterTemperatureControlAddress);
+	 	updateSetting(PS_SpargeWaterTemperatureControlAddress,(byte)F2C(value));		
+	
+		gSettingTemperature=F2C(gSettingTemperature);
+	}
+}
 
 OneWire ds(SensorPin);
 
@@ -797,7 +832,7 @@ void tpInitialize(void)
 #endif
 
 #if FakeHeating
-	gCurrentTemperature = 19.9;
+	gCurrentTemperature =gIsUseFahrenheit? 67.8:19.9;
 
 #if	MaximumNumberOfSensors	> 1
 	
@@ -805,7 +840,7 @@ void tpInitialize(void)
 
 	for(byte i=0;i< MaximumNumberOfSensors;i++){
 		_gIsSensorConverting[i]=false;
-		gTemperatureReading[i]= 19.0;
+		gTemperatureReading[i]= gIsUseFahrenheit? 67.8:19.9;
 	}
 #endif
 
@@ -849,7 +884,7 @@ float  _readTemperature(byte *addr)
 	// 0x60  0.0625C 12bits, 750ms
 	
     float temperature = (float)raw * 0.0625;
-    
+    if(gIsUseFahrenheit) temperature = C2F(temperature);
     return temperature;
 }
 #define SensorForIdle 0
@@ -1006,7 +1041,7 @@ void tpReadTemperature(void)
 	// 0x60  0.0625C 12bits, 750ms
 
     gCurrentTemperature = (float)raw  * 0.0625;
-
+	if(gIsUseFahrenheit) gCurrentTemperature = C2F(gCurrentTemperature);
     //apply calibration 
     gCurrentTemperature +=  gSensorCalibration; //((float)(readSetting(PS_Offset) - 50) / 10.0);
     _isConverting = false;
@@ -1568,10 +1603,16 @@ void pumpInitialize(void)
 
 void pumpLoadParameters(void)
 {
+	_pumpRestEnabled=false;
 	_pumpStopTemp = (float) readSetting(PS_TempPumpRest);
 //	_sensorType = readSetting(PS_SensorType);
+#if UsePaddleInsteadOfPump
+	_pumpRestTime =(unsigned long) readSetting(PS_PumpRest) *1000;
+	_pumpCycleTime=(unsigned long) readSetting(PS_PumpCycle) *1000;
+#else
 	_pumpRestTime =(unsigned long) readSetting(PS_PumpRest) *60 *1000;
 	_pumpCycleTime=(unsigned long) readSetting(PS_PumpCycle) *60 *1000;
+#endif
 	_isPumpRestChanged = false;
 #if 0	
 	Serial.print("pumpLoadParameters,cycletime=");
@@ -1605,6 +1646,11 @@ void togglePump(void)
 		pumpOn();
 }
 #endif
+
+bool pumpRestIsEnabled(void)
+{
+	return _pumpRestEnabled;
+}
 
 void pumpRestSetEnabled(boolean enable)
 {
@@ -1824,20 +1870,14 @@ void displayTempShift50Divide10(int data)
 {
 	float fvalue=((float)data -50.0) /10.0;
 	
-	if(gIsUseFahrenheit)
-		uiSettingShowTemperature(fvalue - 32.0/1.8,1);
-	else
-		uiSettingShowTemperature(fvalue,1);
+	uiSettingShowTemperature(fvalue,1);
 }
 
 void displayTempDivide10(int data)
 {
 	float fvalue=((float)data) /10.0;
 	
-	if(gIsUseFahrenheit)
-		uiSettingShowTemperature(fvalue - 32.0/1.8,1);
-	else
-		uiSettingShowTemperature(fvalue,1);
+	uiSettingShowTemperature(fvalue,1);
 }
 
 
@@ -2055,6 +2095,12 @@ void displayActivePassive(int value)
 	if (value==0) uiSettingDisplayText(STR(Passive));
 	else uiSettingDisplayText(STR(Active));
 }
+#if UsePaddleInsteadOfPump
+void displayTimeSec(int value)
+{
+	uiSettingTimeInSeconds((byte)value);
+}
+#endif
 
 void displayTime(int value)
 {
@@ -2100,20 +2146,31 @@ void settingUnitDisplayItem(void)
 		editItem(STR(Set_Degree),value,1,0,&displayDegreeSymbol);
 	else if(_currentUnitSetting==1)
 		editItem(STR(No_Delay_Start),value,1,0,&displayYesNo);
-	else if(_currentUnitSetting==2)
+	else if(_currentUnitSetting==2){
+		int max= gIsUseFahrenheit? 221:105;
 	#if DEVELOP_SETTING_VALUE == true	
-		editItem(STR(Temp_Boil),value,105,10,&displaySimpleTemperature);
+		int min= gIsUseFahrenheit? 194:90;
 	#else
-		editItem(STR(Temp_Boil),value,105,90,&displaySimpleTemperature);
+		int min= gIsUseFahrenheit? 50:10;
 	#endif
+	
+		editItem(STR(Temp_Boil),value,max,min,&displaySimpleTemperature);
 	/*else if(_currentUnitSetting==3) 
 	// ********* skip, for internal usage always use C
  		editItem(STR(Temp_Boil),value,105,90,&displaySimpleInteger);*/
-	else if(_currentUnitSetting==4)
+	}else if(_currentUnitSetting==4){
+		#if UsePaddleInsteadOfPump
+		editItem(STR(Pump_Cycle),value,30,5,&displayTimeSec);
+		#else
 		editItem(STR(Pump_Cycle),value,15,5,&displayTime);
-	else if(_currentUnitSetting==5)
+		#endif
+	}else if(_currentUnitSetting==5){
+		#if UsePaddleInsteadOfPump
+		editItem(STR(Pump_Rest),value,60,0,&displayTimeSec);
+		#else
 		editItem(STR(Pump_Rest),value,5,0,&displayTime);
-	else if(_currentUnitSetting==6)
+		#endif
+	}else if(_currentUnitSetting==6)
 		editItem(STR(Pump_PreMash),value,1,0,&displayOnOff);
 	else if(_currentUnitSetting==7)
 		editItem(STR(Pump_On_Mash),value,1,0,&displayOnOff);
@@ -2121,12 +2178,14 @@ void settingUnitDisplayItem(void)
 		editItem(STR(Pump_Mashout),value,1,0,&displayOnOff);
 	else if(_currentUnitSetting==9)
 		editItem(STR(Pump_On_Boil),value,1,0,&displayOnOff);
-	else if(_currentUnitSetting==10)
-		editItem(STR(Pump_Stop),value,105,80,&displaySimpleTemperature);
+	else if(_currentUnitSetting==10){
+		int max= gIsUseFahrenheit? 221:105;
+		int min= gIsUseFahrenheit? 176:80;
+		editItem(STR(Pump_Stop),value,max,min,&displaySimpleTemperature);
 	/*else if(_currentUnitSetting==11) // ignore
 	// ********* skip, for internal usage always use C
 		editItem(STR(Pump_Stop),value,105,80,&displaySimpleTemperature);*/
-	else if(_currentUnitSetting==12)
+	}else if(_currentUnitSetting==12)
 		editItem(STR(PID_Pipe),value,1,0,&displayActivePassive);
 	else if(_currentUnitSetting==13)
 		editItem(STR(Skip_Add),value,1,0,&displayYesNo);
@@ -2159,10 +2218,7 @@ void settingUnitEventHandler(byte)
 		
 		if(_currentUnitSetting == 0 ) // degree setting
 		{
-			if(gIsUseFahrenheit != (boolean)value)
-				uiChangeTemperatureUnit((boolean)value);
-
-			gIsUseFahrenheit = (boolean)value;
+			temperatureUnitChange((bool) value);
 		}
 		
 		//goto next item
@@ -2256,16 +2312,25 @@ void settingAutomationDisplayItem(void)
 		uiButtonLabel(ButtonLabel(Up_Down_x_Ok));
 	if(_editingStage ==0)
 	{
+		int max=(gIsUseFahrenheit)? ToTempInStorage(167):ToTempInStorage(75);
+		int min=(gIsUseFahrenheit)? ToTempInStorage(68):ToTempInStorage(20);
 		// Mash In:temp only
-		editItem(STR(Mash_In),value,ToTempInStorage(75),ToTempInStorage(20),&displayStageTemperature);
+		editItem(STR(Mash_In),value,max,min,&displayStageTemperature);
 	}
 
 	else if(_editingStage >0 && _editingStage < 7)
 	{
-		int minTemp=(_editingStage==1)? (ToTempInStorage(20)):readSettingWord(PS_StageTemperatureAddr(_editingStage-1));
+		int max=(gIsUseFahrenheit)? ToTempInStorage(169):ToTempInStorage(76);
+		int minTemp;
+		
+		if(_editingStage==1){
+			minTemp=(gIsUseFahrenheit)? ToTempInStorage(77):ToTempInStorage(25);
+		}else{
+			minTemp=readSettingWord(PS_StageTemperatureAddr(_editingStage-1));
+		}
 		
 		if (_editingStageAux == 0){
-			editItem(STR(Mash_x),value,ToTempInStorage(76),minTemp,&displayStageTemperature);
+			editItem(STR(Mash_x),value,max,minTemp,&displayStageTemperature);
 		}else{
 			editItem(STR(Mash_x),value,MAX_STAGE_TIME,MIN_STAGE_TIME,&displayTime);
 		}		
@@ -2275,8 +2340,12 @@ void settingAutomationDisplayItem(void)
 	else if(_editingStage ==7)
 	{
 		// MashOut
-		if (_editingStageAux == 0)
-			editItem(STR(Mash_out),value,ToTempInStorage(80),ToTempInStorage(75),&displayStageTemperature);
+		if (_editingStageAux == 0){
+			int max=(gIsUseFahrenheit)? ToTempInStorage(176):ToTempInStorage(80);
+			int min=(gIsUseFahrenheit)? ToTempInStorage(167):ToTempInStorage(75);
+		
+			editItem(STR(Mash_out),value,max,min,&displayStageTemperature);
+		}
 		else
 			editItem(STR(Mash_out),value,MAX_STAGE_TIME,MIN_STAGE_TIME,&displayTime);	
 	}
@@ -2704,11 +2773,16 @@ void spargeMenuItem(void)
 	}else  if(_spargeSettingIndex == SpargeTemperatureIndex){
 
 		value =readSetting(PS_SpargeWaterTemperatureAddress);
-		editItem(STR(Sparge_Temp),value,80,75,&displaySimpleTemperature);
+		
+		int max=(gIsUseFahrenheit)? ToTempInStorage(176):ToTempInStorage(80);
+		int min=(gIsUseFahrenheit)? ToTempInStorage(167):ToTempInStorage(75);
+
+		editItem(STR(Sparge_Temp),value,max,min,&displaySimpleTemperature);
 
 	}else  if(_spargeSettingIndex == SpargeTempDiffIndex){
 
 		value =readSetting(PS_SpargeWaterTemperatureDifferenceAddress);
+		
 		editItem(STR(Temp_Diff),value,20,5,&displayTempDivide10);
 
 	}
@@ -2952,40 +3026,28 @@ boolean processAdjustButtons(void)
 		if(gIsEnterPwm)
 			adjustPwm(+1);
 		else
-		{
-			if(gIsUseFahrenheit) adjustSp(+0.25/1.8);
-			else adjustSp(+0.25);
-		}
+			adjustSp(+0.25);
 	}
 	else if(btnIsDownPressed)
 	{
 		if(gIsEnterPwm)
 			adjustPwm(-1);
 		else
-		{
-			if(gIsUseFahrenheit) adjustSp(-0.25/1.8);
-			else adjustSp(-0.25);
-		}
+			adjustSp(-0.25);
 	}
 	else if(btnIsUpContinuousPressed)
 	{
 		if(gIsEnterPwm)
 			adjustPwm(+2);
 		else
-		{
-			if(gIsUseFahrenheit) adjustSp(+0.75/1.8);
-			else adjustSp(+0.75);
-		}
+			adjustSp(+0.75);
 	}
 	else if(btnIsDownContinuousPressed)
 	{
 		if(gIsEnterPwm)
 			adjustPwm(-2);
 		else
-		{
-			if(gIsUseFahrenheit) adjustSp(-0.75/1.8);
-			else adjustSp(-0.75);
-		}
+			adjustSp(-0.75);
 	}
 	else
 	{
@@ -2999,7 +3061,7 @@ boolean processAdjustButtons(void)
 //*
 // ***************************************************************************
 
-#define DEFAULT_MANUL_MODE_TEMPERATURE 35.0
+#define DEFAULT_MANUL_MODE_TEMPERATURE (gIsUseFahrenheit)? 95:35
 //states variables
 
 #define MSAskWater 0
@@ -3067,8 +3129,10 @@ void manualModeEnterManualMode(void)
 	#if SupportManualModeCountDown == true
 	setEventMask(TemperatureEventMask | ButtonPressedEventMask | TimeoutEventMask);
 	#endif
-	
-	setAdjustTemperature(110.0,20.0);
+	if(gIsUseFahrenheit)
+		setAdjustTemperature(230.0,68.0);
+	else
+		setAdjustTemperature(110.0,20.0);
 	
 	#if WirelessSupported == true
 	wiReportCurrentStage(StageManualMode);
@@ -3081,7 +3145,7 @@ void finishAutoTuneBackToManual(void)
 {
 	_state = MSManualMode;
 	
-	gSettingTemperature = 35;
+	gSettingTemperature =gIsUseFahrenheit? 95:35;
 	uiDisplaySettingTemperature(gSettingTemperature);
 	
 	uiRunningTimeShowInitial(0);
@@ -3246,9 +3310,16 @@ void manualModeEventHandler(byte event)
 			}
 			else if(btnIsEnterPressed)
 			{
-				// turn pump on/off
-				if(gIsPumpOn) pumpOff();
-				else pumpOn();
+				if(btnIsEnterLongPressed)
+				{
+					pumpRestSetEnabled(!pumpRestIsEnabled());
+				}
+				else
+				{
+					// turn pump on/off
+					if(gIsPumpOn) pumpOff();
+					else pumpOn();
+				}
 			}
 			#if SpargeHeaterSupport
 			else if(isExactButtonsPressed(ButtonDownMask | ButtonStartMask))
@@ -3496,8 +3567,10 @@ void autoModeEnterDoughIn(void)
 	
 	// start heat
 	heatOn(true);	
-
-	setAdjustTemperature(75.0,25.0);
+	if(gIsUseFahrenheit)
+		setAdjustTemperature(167,77);
+	else
+		setAdjustTemperature(75.0,25.0);
 	gIsEnterPwm=false;
 	
 #if SpargeHeaterSupport == true
@@ -3533,6 +3606,32 @@ void autoModeEnterDoughIn(void)
 //************************************
 // Mashing state
 //
+#if EnableExtendedMashStep
+
+bool _mashingStageExtendEnable;
+bool _mashingStageExtending;
+
+void autoModeToggleMashExtension(void)
+{
+	_mashingStageExtendEnable = ! _mashingStageExtendEnable;
+	uiSetMashExtensionStatus(_mashingStageExtendEnable? MashExtensionEnabled:MashExtensionNone);
+}
+
+void autoModeResetMashExtension(void)
+{
+	_mashingStageExtendEnable = false;
+	_mashingStageExtending = false;
+	uiSetMashExtensionStatus(MashExtensionNone);
+}
+
+void autoModeEnterMashingExtension(void)
+{
+	uiSetMashExtensionStatus(MashExtensionRunning);
+	_mashingStageExtending = true;
+	uiRunningTimeStart();
+}
+#endif // #if EnableExtendedMashStep
+
 
 byte _mashingStep;
 byte _numberMashingStep;
@@ -3620,7 +3719,11 @@ void autoModeNextMashingStep(bool resume)
 	}
 	#if WirelessSupported == true
 	wiReportCurrentStage(_mashingStep);
-	#endif	
+	#endif
+	
+#if EnableExtendedMashStep
+	autoModeResetMashExtension();
+#endif	
 }
 
 void autoModeGetMashStepNumber(void)
@@ -3896,12 +3999,12 @@ void autoModeEnterBoiling(void)
 #if MaximumNumberOfSensors > 1
 	setSensorForStage(SensorForBoil);
 #endif
-	
-	#if DEVELOP_SETTING_VALUE == true
-	setAdjustTemperature(110.0,10.0);
-	#else
-	setAdjustTemperature(110.0,80.0);
-	#endif
+
+	if(gIsUseFahrenheit)
+		setAdjustTemperature(230.0,176.0);
+	else
+		setAdjustTemperature(110.0,80.0);
+			
 	gIsEnterPwm =false;
 	heatOn(false); // NO need of PID, just full power until boiling
 	#if WirelessSupported == true
@@ -4093,7 +4196,7 @@ void autoModeEnterCooling(void)
 	
 	uiAutoModeTitle();
 	uiAutoModeStage(CoolingStage);
-	gSettingTemperature = 20.0;
+	gSettingTemperature =gIsUseFahrenheit? 68.0:20.0;
 	_coolingTempReached=false;
 	// temperature at automode
 	uiTempDisplaySetPosition(TemperatureAutoModePosition);
@@ -4104,7 +4207,11 @@ void autoModeEnterCooling(void)
 	
 	uiButtonLabel(ButtonLabel(Up_Down_END_Pmp));
 	
-	setAdjustTemperature(30,10);
+	if(gIsUseFahrenheit)
+		setAdjustTemperature(86.0,50.0);
+	else
+		setAdjustTemperature(30,10);
+	
 	gIsEnterPwm=false;
 
 #if MaximumNumberOfSensors > 1
@@ -4167,8 +4274,8 @@ void autoModeWhirlpool(void)
 
 	uiAutoModeTitle();
 	uiAutoModeStage(WhirlpoolStage);
-	if(readSetting(PS_Whirlpool)== WhirlpoolCold) gSettingTemperature = 30.0;
-	else gSettingTemperature = 85.0;
+	if(readSetting(PS_Whirlpool)== WhirlpoolCold) gSettingTemperature =(gIsUseFahrenheit)? 86:30;
+	else gSettingTemperature = gIsUseFahrenheit? 185:85;
 	
 	// temperature at automode
 	uiTempDisplaySetPosition(TemperatureAutoModePosition);
@@ -4220,7 +4327,25 @@ void autoModeCoolingFinish(void)
 		autoModeBrewEnd();
 	}
 }
+#if UsePaddleInsteadOfPump
 
+void autoModeStartWithoutPumpPrimming(void)
+{
+#if NoDelayStart == false
+	if(_delayRequested)
+	{
+		autoModeEnterDelayTimeInput();
+	}
+	else
+	{
+		autoModeEnterDoughIn();
+	}
+#else
+	autoModeEnterDoughIn();
+#endif
+}
+
+#else
 void autoModeEnterPumpPriming(void)
 {
 	_state = AS_PumpPrime;
@@ -4235,7 +4360,7 @@ void autoModeEnterPumpPriming(void)
 	_primePumpCount=0;
 	tmSetTimeoutAfter(1000); // 1sec
 }
-
+#endif
 //************************************
 // for recovery
 //
@@ -4408,10 +4533,18 @@ void autoModeEventHandler(byte event)
 				uiButtonLabel(ButtonLabel(No_Yes));
 			}else{
 				gEnableSpargeWaterHeatingControl = false;
+				#if UsePaddleInsteadOfPump
+				autoModeStartWithoutPumpPrimming();
+				#else
 				autoModeEnterPumpPriming();
+				#endif
 			}
 			#else
-			autoModeEnterPumpPriming();
+				#if UsePaddleInsteadOfPump
+				autoModeStartWithoutPumpPrimming();
+				#else
+				autoModeEnterPumpPriming();
+				#endif
 			#endif
 		}
 		else if(btnIsEnterPressed)
@@ -4428,13 +4561,21 @@ void autoModeEventHandler(byte event)
 		if(btnIsStartPressed)
 		{
 			gEnableSpargeWaterHeatingControl = false;
+			#if UsePaddleInsteadOfPump
+			autoModeStartWithoutPumpPrimming();
+			#else
 			autoModeEnterPumpPriming();
+			#endif
 		}
 		else if(btnIsEnterPressed)
 		{
 			// no sparge
 			gEnableSpargeWaterHeatingControl = true;
+			#if UsePaddleInsteadOfPump
+			autoModeStartWithoutPumpPrimming();
+			#else
 			autoModeEnterPumpPriming();
+			#endif
 		}
 	}  //end of state AS_AskWaterAdded
 
@@ -4678,6 +4819,12 @@ void autoModeEventHandler(byte event)
 		{	
 			if(_askingSkipMashingStage)
 			{
+#if EnableExtendedMashStep
+				if(btnIsUpPressed)
+				{
+					autoModeToggleMashExtension();
+				} else
+#endif //#if EnableExtendedMashStep		
 				if(btnIsStartPressed)
 				{
 					// YES.
@@ -4738,6 +4885,16 @@ void autoModeEventHandler(byte event)
 			}
 			else if(btnIsEnterPressed)
 			{
+				#if EnableExtendedMashStep
+				
+				if(_mashingStageExtending)
+				{
+					// go to next step.
+					autoModeMashingStageFinished();
+				}
+				else
+				#endif // #if EnableExtendedMashStep
+				
 				// Skip, go to next stage
 				if(btnIsEnterLongPressed)  // long pressed is "cover" in normal pressed
 				{
@@ -4746,8 +4903,13 @@ void autoModeEventHandler(byte event)
 					uiRunningTimeHide(true);
 					_askingSkipMashingStage = true;
 					//uiClearPrompt();
+					#if EnableExtendedMashStep
+					uiPrompt(STR(Skip_Or_Extend));
+					uiButtonLabel(ButtonLabel(Extend_Skip_Back));
+					#else //#if EnableExtendedMashStep
 					uiPrompt(STR(Go_to_next_step));
 					uiButtonLabel(ButtonLabel(Continue_Yes_No));
+					#endif //#if EnableExtendedMashStep
 				}
 			}
 			else
@@ -4765,23 +4927,32 @@ void autoModeEventHandler(byte event)
 			if(isPumpRest())
 			{
 				// into rest
-				uiButtonLabel(ButtonLabel(_Pump_Rest_));
+				//no special manual uiButtonLabel(ButtonLabel(_Pump_Rest_));
 				// stop heat
-				heatProgramOff();
-				wiReportEvent(RemoteEventPumpRest);
+				#if !UsePaddleInsteadOfPump
+				heatProgramOff();		
 				buzzPlaySound(PumpRestSoundId);
+				#endif
+
+				wiReportEvent(RemoteEventPumpRest);
 			}
 			else
 			{
+				#if 0
 				// back from rest
 				#if MANUAL_PUMP_MASH == true
 				uiButtonLabel(ButtonLabel(Up_Down_PmPus_STP));
 				#else
 				uiButtonLabel(ButtonLabel(Up_Down_Pause_STP));
 				#endif
-				heatOn(true);
-				wiReportEvent(RemoteEventPumpRestEnd);
+				#endif
+				
+				#if !UsePaddleInsteadOfPump
+				heatOn(true);				
 				buzzPlaySound(PumpRestEndSoundId);
+				#endif
+				
+				wiReportEvent(RemoteEventPumpRestEnd);
 			}
 		}
 		else // else of PumpRestEvent & Button,
@@ -4801,8 +4972,25 @@ void autoModeEventHandler(byte event)
 					}
 					else
 					{
+					
 						// next stage
-						autoModeMashingStageFinished();						
+						if(_askingSkipMashingStage)
+						{
+							uiClearPrompt();
+							uiRunningTimeHide(false);
+							_askingSkipMashingStage = false;
+						}
+						
+						#if EnableExtendedMashStep
+						if(_mashingStageExtendEnable)
+						{
+							autoModeEnterMashingExtension();
+						}
+						else
+						#endif //#if EnableExtendedMashStep
+						{
+							autoModeMashingStageFinished();
+						}
 					}
 				}
 			}

@@ -500,6 +500,21 @@ void uiChangeTemperatureUnit(bool useF)
 #define uiClearPrompt() uiClearRow(2)
 #endif
 
+#if EnableExtendedMashStep
+#define MashExtensionNone 0
+#define MashExtensionEnabled 1
+#define MashExtensionRunning 2
+
+void uiSetMashExtensionStatus(uint8_t status)
+{
+	char buf[2];
+	if(status == MashExtensionNone) buf[0]=' ';
+	else if(status == MashExtensionEnabled) buf[0]='+';
+	else if(status == MashExtensionRunning) buf[0]='*';
+	buf[1]='\0';
+	uiLcdPrint(18,0,buf);
+}
+#endif
 //******************************************************
 // General interface
 //******************************************************
@@ -633,7 +648,12 @@ void uiSettingDisplayField(float number,byte precision,char unit)
 	uiLcdPrint(LCD_COLUMN_NUM -1 -1 - digitNum ,2,buffer);
 }
 
-
+#if UsePaddleInsteadOfPump
+void uiSettingTimeInSeconds(byte sec)
+{
+	uiSettingDisplayField((float)sec,0,'s');
+}
+#endif
 void uiSettingTimeInMinutes(byte minutes)
 {
 	uiSettingDisplayField((float)minutes,0,'m');
@@ -645,9 +665,7 @@ void uiSettingShowTemperature(float temp,byte precision)
 	
 	if(IS_TEMP_INVALID(displayTemp)){
 		displayTemp = 0;
-	}else{
-		if(gIsUseFahrenheit){ displayTemp=ConvertC2F(temp); }
-   	}
+	}
    	
    	uiSettingDisplayField((float)displayTemp,2,0);
     uiLcdDrawSymbol(LCD_COLUMN_NUM -2,2,LcdCharDegree);
@@ -714,8 +732,7 @@ void uiDisplaySettingTemperature(float settemp)
 {
 	char buffer[20];
 	float displayTemp;
-	if(gIsUseFahrenheit){ displayTemp=ConvertC2F(settemp); }
-	else displayTemp = settemp;
+	displayTemp = settemp;
 
     int digitNum=sprintFloat((char*)buffer,displayTemp,2);
     buffer[digitNum]='\0';

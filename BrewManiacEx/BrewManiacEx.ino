@@ -477,8 +477,8 @@ public:
 	 		}
 	 	}else if(request->method() == HTTP_POST && request->url() == UPDATE_AUTOMATION_PATH){
 	 		String data=request->getParam("data", true, false)->value();
-	 		DebugOut("saveauto.php:\n");
-	 		DebugOut(data.c_str());
+//	 		DebugOut("saveauto.php:\n");
+//	 		DebugOut(data.c_str());
 	 		if(bmWeb.updateAutomation(data)){
 	 			request->send(200, "text/json", "{\"code\":0,\"result\":\"OK\"}");
 	 		}else{
@@ -565,6 +565,18 @@ BmwHandler bmwHandler;
 /**************************************************************************************/
 /* server push  */
 /**************************************************************************************/
+// version
+void getVersionInfo(String& json)
+{
+	json += String("{\"firmware\":{\"v\":\"") + String(BME8266_VERSION);
+	json += String("\",\"sensors\":") + String(MaximumNumberOfSensors);
+	#if UsePaddleInsteadOfPump
+	json += String(",\"paddle\":1}}");
+	#else
+	json += String(",\"paddle\":0}}");
+	#endif
+}
+
 
 #if UseWebSocket == true
 AsyncWebSocket ws(WS_PATH);
@@ -590,6 +602,9 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 {
 	if(type == WS_EVT_CONNECT){
     	DBG_PRINTF("ws[%s][%u] connect\n", server->url(), client->id());
+    	String version;
+		getVersionInfo(version);
+		client->text((version);
 		String json;
 		bmWeb.getCurrentStatus(json);
 		client->text(json);
@@ -641,7 +656,11 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 #if UseServerSideEvent == true
 AsyncEventSource sse(SSE_PATH);
 
-void sseConnect(AsyncEventSourceClient *client){
+void sseConnect(AsyncEventSourceClient *client)
+{
+	String version;
+	getVersionInfo(version);
+	client->send(version.c_str());
 	String json;
 	bmWeb.getCurrentStatus(json,true);
 	client->send(json.c_str());
@@ -660,6 +679,7 @@ void broadcastMessage(String msg)
 	sse.send(msg.c_str());
 #endif
 }
+
 void broadcastMessage(const char* msg)
 {
 #if UseWebSocket == true

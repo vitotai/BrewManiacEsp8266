@@ -211,12 +211,7 @@ void uiPrintTemperature(byte col, byte row, float displayTemp)
         buffer[4]='\0';
     }
     else
-    {
-    	if(gIsUseFahrenheit) 
-    	{
-    		displayTemp = ConvertC2F(gCurrentTemperature);
-    	}
-        
+    {        
        	byte digitNum=sprintFloat(buffer,displayTemp,2);
 		buffer[digitNum]='\0';
         indent = 6 - digitNum;

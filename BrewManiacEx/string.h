@@ -57,12 +57,24 @@ StringConst( Auto_Label, "AUTO -->");
 StringConst( TemperatureReached,"Temp Reach");
 StringConst(Add_Malt, "Add Malt");
 StringConst(Remove_Malt, "Remove Malt");
+
+#if EnableExtendedMashStep
+StringConst(Skip_Or_Extend,"Ext./Skip?");
+#else
 StringConst(Go_to_next_step,"Next step?");
+#endif
+
 #else
 StringConst( TemperatureReached,"Temp. Reached!");
 StringConst(Add_Malt, "Add Malt");
 StringConst(Remove_Malt, "Remove Malt");
+
+#if EnableExtendedMashStep
+StringConst(Skip_Or_Extend,"Extend, or Skip?");
+#else
 StringConst(Go_to_next_step,"Go to Next step?");
+#endif
+
 #endif
 
 StringConst(START_COOLING,"START  COOLING");
@@ -84,20 +96,38 @@ DefineButtonLabel( Up_Down_Done_x,    "UP   DWN  Done ---",4);
 
 DefineButtonLabel( No_Yes,            "            No Yes",5);
 DefineButtonLabel( Manual_Auto_Setup, "--- MAN AUTO SETUP",6);
+
+#if UsePaddleInsteadOfPump
+DefineButtonLabel( _Pump_Rest_,       " -  Stir  Rest  - ",7);
+#else
 DefineButtonLabel( _Pump_Rest_,       " -  Pump  Rest  - ",7);
+#endif
+
 DefineButtonLabel( Continue_Yes_x,    "Continue: Yes ---",8);
 DefineButtonLabel( Continue_Yes_No,   "Continue: Yes  No",9);
 
+#if UsePaddleInsteadOfPump
+DefineButtonLabel( x_x_x_Pmp,         "--* *--  ---  Stir",10);
+DefineButtonLabel( x_x_Time_Pmp,      "--* *--  Tme  Stir",11);
+DefineButtonLabel( Up_Down_x_Pmp,     "UP* *DWN  --- Stir",12);
+#else
 DefineButtonLabel( x_x_x_Pmp,         "--* *--  ---  Pmp",10);
 DefineButtonLabel( x_x_Time_Pmp,      "--* *--  Tme  Pmp",11);
 DefineButtonLabel( Up_Down_x_Pmp,     "UP* *DWN  ---  Pmp",12);
+#endif
+
 DefineButtonLabel( Up_Down_x_x,       "UP* *DWN  ---  ---",13);
 DefineButtonLabel( x_x_Exit_x,        "---  ---  Exit ---",14);
 DefineButtonLabel( x_x_Ok_x,          "---  ---   Ok  ---",15);
 
+#if UsePaddleInsteadOfPump
+DefineButtonLabel( Up_Down_END_Pmp,   "UP* *DWN  END Stir",16);
+DefineButtonLabel( Up_Down_Heat_Pmp,  "UP* *DWN Heat Stir",17);
+#else
 DefineButtonLabel( Up_Down_END_Pmp,   "UP* *DWN  END  Pmp",16);
-
 DefineButtonLabel( Up_Down_Heat_Pmp,  "UP* *DWN Heat Pmp",17);
+#endif
+
 DefineButtonLabel( Up_Down_Pause_STP, "UP* *DWN Pause STP",18);
 
 DefineButtonLabel( Up_Down_PmPus_STP, "UP* *DWN PmPus STP",19);
@@ -110,19 +140,31 @@ DefineButtonLabel( Up_Down_Quit_Ok,   "Up   Dwn  Quit  Ok",23);
 DefineButtonLabel( x_Down_Quit_Ok,    "---  Dwn  Quit  Ok",24);
 DefineButtonLabel( Up_x_Quit_Ok,      "Up   ---  Quit  Ok",25);
 
+#if UsePaddleInsteadOfPump
+DefineButtonLabel( Up_Down_Pause_Pmp, "UP* *DWN Pause Stir",26);
+DefineButtonLabel( Up_Down_RUN_Pmp,   "UP* *DWN  RUN  Stir",27);
+#else
 DefineButtonLabel( Up_Down_Pause_Pmp, "UP* *DWN Pause Pmp",26);
 DefineButtonLabel( Up_Down_RUN_Pmp,   "UP* *DWN  RUN  Pmp",27);
+#endif
+
 DefineButtonLabel( Up_Down_End_More,  "UP* *DWN Done More",28);
 
 DefineButtonLabel( Up_x_x_Ok,  		  "Up   ---  ---   Ok",29);
 DefineButtonLabel( x_Down_x_Ok,   	  "---  Dwn  ---   Ok",30);
 
+#if UsePaddleInsteadOfPump
+DefineButtonLabel( x_x_Exit_Pmp,      "---  --- Exit Stir",31);
+#else
 DefineButtonLabel( x_x_Exit_Pmp,      "---  ---  Exit Pmp",31);
+#endif
+
 DefineButtonLabel( Tune_PID_No_Yes,   "Tune PID?  No  Yes",32);
 DefineButtonLabel( Stop_No_Yes,       " Stop?     No  Yes",33);
 
 DefineButtonLabel( AccessPoint_Yes,   " Run AP Mode?  Yes",34);
 
+DefineButtonLabel( Extend_Skip_Back,   "Extend - Skip Back",35);
 // end of menu
 
 StringConst( SensorResolution ,"Sensor Res.");
@@ -175,15 +217,29 @@ StringConst( Sensor, "Sensor");
 StringConst( Inside, "Inside");
 StringConst( Outside, "Outside");
 StringConst( Temp_Boil, "Temp Boil");
+
+#if UsePaddleInsteadOfPump
+StringConst( Pump_Cycle, "Stir Cycle");
+StringConst( Pump_Rest, "Stir Rest");
+StringConst( Pump_PreMash, "Stir PreMash");
+#else
 StringConst( Pump_Cycle, "Pump Cycle");
 StringConst( Pump_Rest, "Pump Rest");
 StringConst( Pump_PreMash, "Pump PreMash");
+#endif
 StringConst( On, "On");
 StringConst( Off, "Off");
+#if UsePaddleInsteadOfPump
+StringConst( Pump_On_Mash, "Stir on Mash");
+StringConst( Pump_Mashout, "Stir Mashout");
+StringConst( Pump_On_Boil, "Stir on Boil");
+StringConst( Pump_Stop, "Stir Stop");
+#else
 StringConst( Pump_On_Mash, "Pmp on Mash");
 StringConst( Pump_Mashout, "Pmp Mashout");
 StringConst( Pump_On_Boil, "Pmp on Boil");
 StringConst( Pump_Stop, "Pump Stop");
+#endif
 StringConst( PID_Pipe, "PID Pipe");
 StringConst( Active, "Active");
 StringConst( Passive, "Passive");

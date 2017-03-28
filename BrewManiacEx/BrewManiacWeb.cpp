@@ -332,7 +332,7 @@ void BrewManiacWeb::getCurrentStatus(String& json,bool initial)
 	json +=",\"counting\":";
 	json += String((bmproxy.isCountingUp())? 1:0);	
 	json += ",\"timer\":";
-	json += String(bmproxy.runningTimer());
+	json += String(bmproxy.runningTimer());	
 	json += "}";
 }
 
@@ -369,25 +369,32 @@ void BrewManiacWeb::getSettingTemperature(String& json)
 		+ "}";
 }
 // need to parse JSON object
+
+/*
 StaticJsonBuffer<1024> jsonBuffer;
 #define JSONBUFFER_SIZE 1024
 char _strJsonBuffer[JSONBUFFER_SIZE];
+*/
 
 extern void commitSetting(void);
 
 bool BrewManiacWeb::updateSettings(String& json)
 {
 	uint16_t size=json.length();
-	if(size > JSONBUFFER_SIZE){
-		DEBUGF("exceed buffer size\n");
+	char *strJsonBuffer=(char*) malloc(size +1);
+	if(!strJsonBuffer){
+		DEBUGF("error alloc mem.\n");
 		return false;
 	}
-	memcpy(_strJsonBuffer,json.c_str(),size);
-	_strJsonBuffer[size]='\0';
-	
-	JsonObject& root = jsonBuffer.parseObject(_strJsonBuffer);
+	strcpy(strJsonBuffer,json.c_str());
+
+	const int BUFFER_SIZE = JSON_OBJECT_SIZE(40) + JSON_ARRAY_SIZE(3);
+	StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
+
+	JsonObject& root = jsonBuffer.parseObject(strJsonBuffer);
 	if (!root.success()){
 		DEBUGF("wrong JSON string\n");
+		free(strJsonBuffer);
 		return false;
 	}
 	
@@ -410,15 +417,30 @@ bool BrewManiacWeb::updateSettings(String& json)
 #endif
 	commitSetting();
 	_bmProxyEventHandler(BMNotifySettingChanged);
+	free(strJsonBuffer);
 	return true;
 }
 
 bool BrewManiacWeb::updateAutomation(String& json)
 {
-	memcpy(_strJsonBuffer,json.c_str(),json.length());
-	JsonObject& root = jsonBuffer.parseObject(_strJsonBuffer);
+	uint16_t size=json.length();
+	char *strJsonBuffer=(char*) malloc(size +1);
+	if(!strJsonBuffer){
+		DEBUGF("error alloc mem.\n");
+		return false;
+	}
+	strcpy(strJsonBuffer,json.c_str());
+
+	DEBUGF("updateAutomation:\"%s\"\n",strJsonBuffer);
+
+	const int BUFFER_SIZE = JSON_OBJECT_SIZE(6) + JSON_ARRAY_SIZE(4);
+	StaticJsonBuffer<1024> jsonBuffer;
+
+	JsonObject& root = jsonBuffer.parseObject(strJsonBuffer);
+	
 	if (!root.success()){
 		DEBUGF("wrong JSON string\n");
+		free(strJsonBuffer);
 		return false;
 	}
 	
@@ -442,6 +464,7 @@ bool BrewManiacWeb::updateAutomation(String& json)
 	}
 	recipe.numberHops = idx;
 	bmproxy.setAutomationRecipe(&recipe);
+	free(strJsonBuffer);
 	return true;
 }
 
