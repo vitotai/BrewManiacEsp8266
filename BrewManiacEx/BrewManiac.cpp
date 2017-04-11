@@ -640,6 +640,8 @@ boolean btnReadButtons(void)
 //*  tempture related function
 // ****************************
 // temperature event
+#define C2F(d)  ((d) * 1.8 + 32)
+#define F2C(d)  (((d)-32)/1.8)
 
 void temperatureUnitChange(bool useF)
 {
@@ -4768,8 +4770,10 @@ void autoModeEventHandler(byte event)
 			buzzMute();
 			if(readSetting(PS_PID_DoughIn)){
 				// change temperature to first rest
+				/*
 				gSettingTemperature = TempFromStorage(readSettingWord(PS_StageTemperatureAddr(1)));	
 				uiDisplaySettingTemperature(gSettingTemperature);
+			    */
 			}else{
 				heatOff(); // turn off heat. during "dough-in"
 			}
