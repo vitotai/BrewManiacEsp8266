@@ -4190,7 +4190,7 @@ void autoModeCoolingAsk(const char* msg)
 	uiButtonLabel(ButtonLabel(Continue_Yes_No));
 }
 
-void autoModeEnterCooling(void)
+void autoModeEnterCooling(unsigned long elapsed)
 {
 	
 	uiClearPrompt();
@@ -4204,8 +4204,8 @@ void autoModeEnterCooling(void)
 	uiTempDisplaySetPosition(TemperatureAutoModePosition);
 	uiDisplaySettingTemperature(gSettingTemperature);
 	
-	uiRunningTimeShowInitial(0);
-	uiRunningTimeStart();
+	uiRunningTimeShowInitial(elapsed);
+	uiRunningTimeStartFrom(elapsed);
 	
 	uiButtonLabel(ButtonLabel(Up_Down_END_Pmp));
 	
@@ -4269,7 +4269,7 @@ void autoModeWhirlpoolInputTime(void)
 	uiButtonLabel(ButtonLabel(Up_Down_Quit_Ok));	
 }
 
-void autoModeWhirlpool(void)
+void autoModeWhirlpool(byte elapsed)
 {
 	uiClearSubTitleRow();
 	uiClearPrompt();
@@ -4282,14 +4282,14 @@ void autoModeWhirlpool(void)
 	// temperature at automode
 	uiTempDisplaySetPosition(TemperatureAutoModePosition);
 	uiDisplaySettingTemperature(gSettingTemperature);
-	
-	uiRunningTimeShowInitial(_whirlpoolTime * 60);
+	unsigned long time= (unsigned long)(_whirlpoolTime - elapsed) * 60;
+	uiRunningTimeShowInitial( time);
 	uiButtonLabel(ButtonLabel(x_x_x_Pmp));
 	
 	_pumpRunning = true;
 	pumpOn();
-	tmSetTimeoutAfter((unsigned long)_whirlpoolTime * 60 *1000);
-	uiRunningTimeStartCountDown(_whirlpoolTime * 60);
+	tmSetTimeoutAfter((unsigned long)time *1000);
+	uiRunningTimeStartCountDown(time);
 
 	#if WirelessSupported == true
 	wiReportCurrentStage(StageWhirlpool);	
@@ -4374,6 +4374,7 @@ void autoModeResumeProcess(void)
 	byte stage;
 	byte elapsed;
 	brewLogger.resumeSession(&stage,&elapsed);
+	DBG_PRINTF("resume elapsed:%d\n",elapsed);
 
 	setEventMask(TemperatureEventMask | ButtonPressedEventMask | TimeoutEventMask | PumpRestEventMask);
 
@@ -4432,6 +4433,26 @@ void autoModeResumeProcess(void)
 				}				
 
 		}
+	}
+	else if (stage == 9) // cooling
+	{
+	    heatOff();
+	    if(elapsed != INVALID_RECOVERY_TIME)
+        	autoModeEnterCooling(elapsed*60);
+        else
+            autoModeEnterCooling(0);
+            
+    	_state = AS_Cooling;
+    	_stageConfirm= (elapsed !=0);
+	}
+	else if (stage == 10) // Whirlpool
+	{
+    	heatOff();
+    	if(elapsed != INVALID_RECOVERY_TIME)
+    	    autoModeWhirlpool(elapsed);
+    	else
+    	    autoModeWhirlpool(0);
+	    _state = AS_Whirlpool;
 	}
 	else if (stage == 0) // Daugh-in
 	{
@@ -4723,7 +4744,14 @@ void autoModeEventHandler(byte event)
 				_mashingTemperatureReached = true;
 				
 				uiPrompt(STR(TemperatureReached));
+				//{ADD_MALT_MOD
+				#if 1
+				uiButtonLabel(ButtonLabel(Continue_Yes_No));
+				#else
 				uiButtonLabel(ButtonLabel(Continue_Yes_x));
+				#endif
+				//}ADD_MALT_MOD
+
 				setEventMask(ButtonPressedEventMask);
 				
 				buzzPlaySoundRepeat(SoundIdWaitUserInteraction);
@@ -4790,7 +4818,11 @@ void autoModeEventHandler(byte event)
 				// ask Add Malt
 				//uiClearPrompt();
 				uiPrompt(STR(Add_Malt));
-				uiButtonLabel(ButtonLabel(Continue_Yes_No));
+				//{ADD_MALT_MOD
+				//uiButtonLabel(ButtonLabel(Continue_Yes_No));
+				uiButtonLabel(ButtonLabel(Continue_Yes_Pmp));
+				//}ADD_MALT_MOD
+				
 				_state = AS_AskAddMalt;
 				
 				#if WirelessSupported == true
@@ -4799,6 +4831,14 @@ void autoModeEventHandler(byte event)
 
 			}
 		}
+		//{ADD_MALT_MOD
+		else if(btnIsEnterPressed)
+		{
+			// NO
+			// heater & pump might started, so use back to main
+			backToMain();
+		}
+		//}ADD_MALT_MOD
 	} /// AS_MashInAskContinue
 	else if(AutoStateIs(AS_AskAddMalt))
 	{
@@ -4810,9 +4850,11 @@ void autoModeEventHandler(byte event)
 		}
 		else if(btnIsEnterPressed)
 		{
-			// NO
+    		//{ADD_MALT_MOD
 			// heater & pump might started, so use back to main
-			backToMain();
+			//backToMain();
+			togglePump();
+			//}ADD_MALT_MOD
 		}
 	} // AS_AskAddMalt
 	else if(AutoStateIs(AS_Mashing))
@@ -5215,7 +5257,7 @@ void autoModeEventHandler(byte event)
 				brewLogger.stage(StageCooling);
 				// yes
 				_stageConfirm=true;
-				autoModeEnterCooling(); 
+				autoModeEnterCooling(0); 
 				brewLogger.setPoint(gSettingTemperature);
 			}
 			else if (btnIsEnterPressed)
@@ -5262,7 +5304,7 @@ void autoModeEventHandler(byte event)
 				{
 					//OK
 					_whirlpoolInput=false;
-					autoModeWhirlpool();
+					autoModeWhirlpool(0);
 				}
 			}
 			else // of _whirlpoolInput

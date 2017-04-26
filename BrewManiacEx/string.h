@@ -18,7 +18,9 @@
 #define DefineButtonLabel(N,S,v) const byte BtnLabelId_##N=v; const char BtnLabel_##N[] PROGMEM = S
 #define ButtonLabel(N) BtnLabelId_##N,BtnLabel_##N
 
-//typedef const char* str_t;
+#define VERSION_INFORMATION "BrewManiacEx "BME8266_VERSION
+
+typedef const char* str_t;
 #define str_t const char*
 
 StringConst(IpAddress,"IP:");
@@ -29,9 +31,10 @@ StringConst(BT_UsePin,"Use PIN");
 StringConst(BT_PIN,"PIN:");
 
 
+
 StringConst(min,"min");
 
-StringConst( welcome,"BrewManiacEx 0.2""\xE0");
+StringConst( welcome,VERSION_INFORMATION);
 
 StringConst( Initialization,"Connecting..");
 StringConst( SetupNetwork,"Setup Network");
@@ -103,7 +106,13 @@ DefineButtonLabel( _Pump_Rest_,       " -  Stir  Rest  - ",7);
 DefineButtonLabel( _Pump_Rest_,       " -  Pump  Rest  - ",7);
 #endif
 
-DefineButtonLabel( Continue_Yes_x,    "Continue: Yes ---",8);
+
+#if UsePaddleInsteadOfPump
+DefineButtonLabel( Continue_Yes_Pmp,    "Continue: Yes Stir",8);
+#else
+DefineButtonLabel( Continue_Yes_Pmp,    "Continue: Yes  Pmp",8);
+#endif
+
 DefineButtonLabel( Continue_Yes_No,   "Continue: Yes  No",9);
 
 #if UsePaddleInsteadOfPump

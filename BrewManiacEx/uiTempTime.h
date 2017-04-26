@@ -175,6 +175,14 @@ void uiRunningTimeStart(void)
 	_countingTimeDirection = COUNTING_UP;
 }
 
+void uiRunningTimeStartFrom(unsigned long start)
+{
+	// use reference to note time.
+	_countingTimeRef=gCurrentTimeInSec - start;
+	_countingTimeDirection = COUNTING_UP;
+}
+
+
 void uiRunningTimeStartCountDown(unsigned long seconds)
 {
 	_countingTimeRef=gCurrentTimeInSec + seconds;

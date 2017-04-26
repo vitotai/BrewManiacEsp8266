@@ -22,6 +22,8 @@
 #define PUMP_USE_EXT false
 #define BUZZER_USE_EXT false
 
+#define PUMP_INVERTED_LOGIC false
+
 #define PCF8574_ADDRESS 0x20
 
 //Using ESP8266 PINs as input seems to be a good idea
@@ -109,7 +111,13 @@ inline void setHeaterOut(byte v)
 inline void setPumpOut(byte v)
 {
 #if PUMP_USE_EXT != true
+
+#if PUMP_INVERTED_LOGIC
+	digitalWrite (PumpControlPin, (v==LOW)? HIGH:LOW);
+#else
 	digitalWrite (PumpControlPin, v);
+#endif
+
 #else
 	pcf8574.write(ExPumpControlPin,v);
 #endif

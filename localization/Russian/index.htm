@@ -129,18 +129,18 @@ StartBrew:"Brewing started.",
 BoilEnd:"Boil Finished",
 ResumeBrew:"Brew Resumed",
 spargeSensor:"SPG:",
-stageName:["Mash In","Mash Step(1)","Mash Step(2)","Mash Step(3)","Mash Step(4)","Mash Step(5)","Mash Step(6)","Mash Out","Boiling","Cooling","Whirlpool"],
-event:["","Temperature Reached",
-				"Add Malt",	
-				"Remove Malt",	
-				"Iodine Test",	
-				"Pause",
-				"Resume",
-				"Add Hop",
+stageName:["Загрузка солода","Пауза №1","Пауза №2","Пауза №3","Пауза №4","Пауза №5","Пауза №6","Mash Out","Кипячение","Охлаждение","Водоворот"],
+event:["","Температура достигнута",
+				"Добавьте Солод",	
+				"Уберите Солод",	
+				"Йодная Проба",	
+				"Пауза",
+				"Возобновить",
+				"Добавить Хмель",
 				"Pwm On",
 				"Pwm Off",
-				"Boil Finished",
-				"Brew Finished!"],
+				"Кипячение Завершено",
+				"Варка Завершена!"],
 
 };
 var STR_paddle={
@@ -293,15 +293,15 @@ $(function(){
 
 <div class="sb-slidebar sb-left sb-width-custom" data-sb-width="160px">
 <ol id="menu">
-  <li class="ui-widget-content" id="status">Panel</li>
-  <li class="ui-widget-content" id="settings">Settings</li>
-  <li class="ui-widget-content" id="automation">Automation</li>
-  <li class="ui-widget-content" id="recipes">Recipes</li>
-  <li class="ui-widget-content" id="sensors">Sensors</li>
-  <li class="ui-widget-content" id="brewlog">Brew Logs</li>
-  <li class="ui-widget-content" id="network">Network</li>
-  <li class="ui-widget-content" id="utility">Calculators</li>
-  <li class="ui-widget-content" id="about">About</li>
+  <li class="ui-widget-content" id="status">Панель</li>
+  <li class="ui-widget-content" id="settings">Настройки</li>
+  <li class="ui-widget-content" id="automation">Автоматика</li>
+  <li class="ui-widget-content" id="recipes">Рецепты</li>
+  <li class="ui-widget-content" id="sensors">Датчики</li>
+  <li class="ui-widget-content" id="brewlog">Журнал варки</li>
+  <li class="ui-widget-content" id="network">Сеть</li>
+  <li class="ui-widget-content" id="utility">Калькуляторы</li>
+  <li class="ui-widget-content" id="about">Про этот проект</li>
 </ol>
 </div>
 
@@ -335,7 +335,7 @@ $(function(){
 	</td>
 	<td>
 		<div  id="heatled" class="round-led-circle ledreddim"><span class="round-led"></span></div>
-		<div class="label">HEAT</div>
+		<div class="label">ТЭН</div>
 	</td>
 	<td id="auxledcon">
 		<div  id="auxled" class="round-led-circle ledreddim"><span class="round-led"></span></div>
@@ -344,7 +344,7 @@ $(function(){
 
 	<td>
 		<div  id="pumpled" class="round-led-circle ledgreendim"><span class="round-led"></span></div>
-		<div class="label"><span id="pump-led-label">PUMP</span></div>
+		<div class="label"><span id="pump-led-label">НАСОС</span></div>
 	</td>
 </tr>
 <tr>
@@ -360,7 +360,7 @@ $(function(){
 	<td colspan="3">
 		<div id="timerPanel" class="panel">
 		<div id="timer" class="NUM">01:59:38</div>
-		<div class="label">Time</div>
+		<div class="label">Время</div>
 		</div>
 	</td>
 </tr>
@@ -390,37 +390,37 @@ $(function(){
 <!-- Setting  -->
 
 <div  class="fn"  id="settings-p">
-<span class="section">Settings</span>
-<button id="esetting" class="editbtn">Set</button>
-<button id="savesetting" class="editbtn">Save</button>
+<span class="section">Настройки</span>
+<button id="esetting" class="editbtn">Выбрать</button>
+<button id="savesetting" class="editbtn">Сохранить</button>
 	<table>
 	<tr><td colspan="2" class="setting-category">PID — PWM</td></tr>
-  	<tr><td>Constant kP </td><td><span id="s_kp">-</span> </td></tr>
-  	<tr><td>Constant kI </td><td><span id="s_ki">-</span> </td></tr>
-  	<tr><td>Constant kD </td><td><span id="s_kd">-</span> </td></tr>
+  	<tr><td>Постоянная kP </td><td><span id="s_kp">-</span> </td></tr>
+  	<tr><td>Постоянная kI </td><td><span id="s_ki">-</span> </td></tr>
+  	<tr><td>Постоянная kD </td><td><span id="s_kd">-</span> </td></tr>
   	<tr><td>Sample Time  </td><td><span id="s_sample_time">-</span> </td></tr>
-  	<tr><td>WindowSet </td><td><span id="s_window">-</span> ms</td></tr>
-    <tr><td>Heat/PWM in Boil </td><td><span id="s_pwm">-</span> %</td></tr>
-    <tr><td class="TCAL_T">Sensor Calibration </td><td><span id="s_cal" class="TCAL_V">-</span><span class="tmp_unit">°C</span></td></tr>
+  	<tr><td>ВременнОе управляющее окно PID </td><td><span id="s_window">-</span> ms</td></tr>
+    <tr><td>Процент, в течение которого во время кипячения на ТЭН подаётся напряжение </td><td><span id="s_pwm">-</span> %</td></tr>
+    <tr><td class="TCAL_T">Калибровка датчика температуры </td><td><span id="s_cal" class="TCAL_V">-</span><span class="tmp_unit">°C</span></td></tr>
     <tr><td>PID Start</td><td><span id="s_pidstart">-</span> <span class="tmp_unit">°C</span></td></tr>
-    <tr><td>PID when Doughing-In</td><td><span id="s_piddoughin">-</span></td></tr>
-	<tr><td colspan="2" class="setting-category">Unit Parameters</td></tr>
-    <tr><td>Temperature Unit</td><td><span id="s_unit" class="tmp_unit">°C</span></td></tr>
-    <tr><td>Disable Delay Start</td><td><span id="s_nodelay">-</span></td></tr>
-    <tr><td>Boil Temperature</td><td><span id="s_boil">-</span> <span class="tmp_unit">°C</span></td></tr>
-    <tr><td>Pump Cycle </td><td><span id="s_pumpcycle">-</span> minutes</td></tr>
-    <tr><td>Pump Rest </td><td><span id="s_pumprest">-</span> minutes</td></tr>
-    <tr><td>Pump PreMash </td><td><span class="onoff" id="s_pumppremash">-</span></td></tr>
-    <tr><td>Pump on Mash </td><td><span class="onoff" id="s_pumpmash">-</span></td></tr>
-    <tr><td>Pump MashOut </td><td><span class="onoff" id="s_pumpmashout">-</span> </td></tr>
-    <tr><td>Pump on Boil </td><td><span class="onoff" id="s_pumpboil">-</span></td></tr>
-    <tr><td>Pump Stop Temperature</td><td><span id="s_pumpstop">-</span><span class="tmp_unit">°C</span></td></tr>
+    <tr><td>PID перед началом затирания</td><td><span id="s_piddoughin">-</span></td></tr>
+	<tr><td colspan="2" class="setting-category">Общие Настройка Блока</td></tr>
+    <tr><td>Единицы измерения температуры</td><td><span id="s_unit" class="tmp_unit">°C</span></td></tr>
+    <tr><td>Отключение задержки старта</td><td><span id="s_nodelay">-</span></td></tr>
+    <tr><td>Температура кипения</td><td><span id="s_boil">-</span> <span class="tmp_unit">°C</span></td></tr>
+    <tr><td>Цикл работы помпы </td><td><span id="s_pumpcycle">-</span> минут</td></tr>
+    <tr><td>Отдых помпы </td><td><span id="s_pumprest">-</span> минут</td></tr>
+    <tr><td>Работа помпы перед затиранием солода </td><td><span class="onoff" id="s_pumppremash">-</span></td></tr>
+    <tr><td>Работа помпы во время затирания солода </td><td><span class="onoff" id="s_pumpmash">-</span></td></tr>
+    <tr><td>Работа помпы во время MashOut </td><td><span class="onoff" id="s_pumpmashout">-</span> </td></tr>
+    <tr><td>Работа помпы во время кипячения </td><td><span class="onoff" id="s_pumpboil">-</span></td></tr>
+    <tr><td>Температура остановки помпы </td><td><span id="s_pumpstop">-</span><span class="tmp_unit">°C</span></td></tr>
     <tr><td>PID Pipe </td><td><span id="s_pipe">-</span></td></tr>
-    <tr><td>Skip Add </td><td><span class="yesno" id="s_skipadd">-</span></td></tr>
-    <tr><td>Skip Remove </td><td><span  class="yesno" id="s_skipremove">-</span></td></tr>
-    <tr><td>Skip Iodine </td><td><span  class="yesno" id="s_skipiodine">-</span></td></tr>
-    <tr><td>Iodine Time </td><td><span id="s_iodine">-</span></td></tr>
-    <tr><td>Whirlpool</td><td><span id="s_whirlpool">-</span></td></tr>
+    <tr><td>Пропустить "Добавить" </td><td><span class="yesno" id="s_skipadd">-</span></td></tr>
+    <tr><td>Пропустить "Убрать" </td><td><span  class="yesno" id="s_skipremove">-</span></td></tr>
+    <tr><td>Пропустить Йодную пробу </td><td><span  class="yesno" id="s_skipiodine">-</span></td></tr>
+    <tr><td>Йодная проба </td><td><span id="s_iodine">-</span></td></tr>
+    <tr><td>Водоворот</td><td><span id="s_whirlpool">-</span></td></tr>
     <tr><td colspan="2" class="setting-category">Sparge Water Heating Control</td></tr>
     <tr><td>Control Sparge Heating</td><td><span id="s_spenable">-</span></td></tr>
     <tr><td>Temperature Control</td><td><span id="s_sptempctrl">-</span></td></tr>
@@ -432,17 +432,17 @@ $(function(){
 
 <!-- Automation  -->
 <div class="fn" id="automation-p">
-<em>Automation</em>
-<button id="editauto" class="editbtn">Edit</button>
-<button id="saveauto" class="editbtn">Save</button>
+<em>Автоматический процесс варки</em>
+<button id="editauto" class="editbtn">Редактирование</button>
+<button id="saveauto" class="editbtn">Сохранить</button>
 <table id="auto_table">
-<tr><td colspan="3"  class="setting-category">Mash Schedule <button id="addrest" class="editbtn">Add Mash Rest</button></td></tr>
-<tr><th> Rest</th><th>Temperature</th><th>Time</th></tr>
+<tr><td colspan="3"  class="setting-category">Список температурных пауз <button id="addrest" class="editbtn">Добавить Паузу</button></td></tr>
+<tr><th> Пауза</th><th>Температура</th><th>Время</th></tr>
 <tr><td> Mash In </td><td><span id="s0_tp">-</span><span class="tmp_unit">°C</span></td><td>-</td></tr>
 <tr><td> Mash Out </td><td><span id="s7_tp">-</span><span class="tmp_unit">°C</span></td><td><span id="s7_tm">-</span> min</td></tr>
 <tr>
-<tr><td colspan="3"  class="setting-category">Boil & Hop <button id="addhop" class="editbtn">Add Hop</button></td></tr>
-<tr><td> Boil Time</td><td colspan="2"><span id="boiltime">-</span> min</td></tr>
+<tr><td colspan="3"  class="setting-category">Кипячение и Хмель <button id="addhop" class="editbtn">Добавить Хмель</button></td></tr>
+<tr><td> Время Кипячения</td><td colspan="2"><span id="boiltime">-</span> мин</td></tr>
 </table>
 </div><!-- Automation  -->
 
@@ -450,20 +450,20 @@ $(function(){
 <div class="fn" id="recipes-p">
 <div id="recipe-list-panel">
 <ol id="recipe-list">
-  <li class="ui-widget-content" id="recipe-options">Options</li>
-  <li class="ui-widget-content" id="recipe-import">Import</li>
+  <li class="ui-widget-content" id="recipe-options">Настройки</li>
+  <li class="ui-widget-content" id="recipe-import">Импорт</li>
   <hr>
 </ol>
 </div>
 <div id="recipe-display">
-<div id="recipe-options-panel"><h3>Recipe Options</h3>
+<div id="recipe-options-panel"><h3>Настройка Рецепта</h3>
 <table>
- <tr><td>Unit</td>
+ <tr><td>Единицы измерения</td>
    <td colspan="3">
     <input type="radio" name="genunit" id="unit_metric" value="m">
-    <label for="unit_metric">Metric</label>
+    <label for="unit_metric">Метрические</label>
     <input type="radio" name="genunit" id="unit_us" value="u">
-    <label for="unit_us">US</label>
+    <label for="unit_us">США</label>
     </td></tr>
 
  <tr><td>Gravity/Plato</td>
@@ -474,51 +474,51 @@ $(function(){
     <label for="su_plato">°Plato</label>
     </td></tr>
 
- <tr><td rowspan="4">Mash In Temperature</td>
+ <tr><td rowspan="4">Температура Mash In</td>
     <td>
       <input type="radio" name="mashin_temp" id="mi_1stRest" value="1">
       <label for="mi_1stRest">As First Rest</label>
     </td>
     <td colspan="2"></td></tr>
   <tr><td rowspan="3"><input type="radio" name="mashin_temp" id="mi_cal" value="c">
-      <label for="mi_cal">Calculated</label></td>
-    <td><label for="grain-temp">Grain Temperature</label></td><td><input type="text" id="grain-temp" size="4"></input><span class="tmp_unit">°C</span></td>
+      <label for="mi_cal">Рассчитано</label></td>
+    <td><label for="grain-temp">Температура дробины</label></td><td><input type="text" id="grain-temp" size="4"></input><span class="tmp_unit">°C</span></td>
     </tr>
-  <tr><td><label for="equip-adj" >Equipment Adjust</label></td><td><input type="text" id="equip-adj" size="4"></input><span class="tmp_unit">°C</span></td></tr>
-  <tr><td><label for="kettle-mass" >Kettle equiv. mass</label></td><td><input type="text" id="kettle-mass" size="4"></input><span id="kettlemass_unit">L</span></td></tr>
+  <tr><td><label for="equip-adj" >Настройка оборудования</label></td><td><input type="text" id="equip-adj" size="4"></input><span class="tmp_unit">°C</span></td></tr>
+  <tr><td><label for="kettle-mass" >Объём котла</label></td><td><input type="text" id="kettle-mass" size="4"></input><span id="kettlemass_unit">L</span></td></tr>
   <tr><td>
     <input type="radio" name="mashin_temp" id="mi_fixed" value="s">
     <label for="mi_fixed">Specified</label>
    </td><td>
-    <label for="mashin-temp">Temperature</label></td><td><input type="text" id="mashin-stemp" size="4"></input><span class="tmp_unit">°C</span>
+    <label for="mashin-temp">Температура</label></td><td><input type="text" id="mashin-stemp" size="4"></input><span class="tmp_unit">°C</span>
       </td></tr>
-   <tr><td rowspan="2">Default Mash Out</td>
+   <tr><td rowspan="2">Mash Out По умолчанию</td>
     <td colspan="2">
-      <label for="mo-temp">Temperature</label></td><td><input type="text" id="mo-temp" size="4"></input><span class="tmp_unit">°C</span></td></tr>
-   <tr><td colspan="2"><label for="mo-time" >Time</label></td><td><input type="text" id="mo-time" size="4"></input>M
+      <label for="mo-temp">Температура</label></td><td><input type="text" id="mo-temp" size="4"></input><span class="tmp_unit">°C</span></td></tr>
+   <tr><td colspan="2"><label for="mo-time" >Время</label></td><td><input type="text" id="mo-time" size="4"></input>M
    </td></tr>
 </table>
 <br>
-<button id="recipe-option-update">Update</button>
+<button id="recipe-option-update">Обновить</button>
 </div>
-<div id="recipe-import-panel"><h3>Import BeerXML</h3>
-	<div id="fileinputgrp">
+<div id="recipe-import-panel"><h3>Импорт BeerXML</h3>
+	<div id="fileinputgrp">         	
 	<input type="file" id="fileinput" /> 
 	</div><br>
 	<div id="import-xml-pane">
 		<div>
     	<select name="xml-recipe-select" id="xml-recipe-select">
     	</select>
-    	<br>Save as<input type="text" size="20" maxlength="28" id="xml-savename"></input>
-    	<button id="xml-save">Save</button>
-    	<button id="xml-brew">Brew</button>
+    	<br>Сохранить как<input type="text" size="20" maxlength="28" id="xml-savename"></input>
+    	<button id="xml-save">Сохранить</button>
+    	<button id="xml-brew">Сварить по этому рецепту</button>
     	</div>
 	</div>
 </div>
-<div id="recipe-view-panel"><h3>Recipe</h3>
+<div id="recipe-view-panel"><h3>Рецепт</h3>
 		<div>
-    	<button id="recipe-del">Delete</button>
-    	<button id="recipe-brew">Brew</button>
+    	<button id="recipe-del">Удалить</button>
+    	<button id="recipe-brew">Сварить по этому рецепту</button>
     	</div>	
 </div>
 </div>
@@ -526,42 +526,42 @@ $(function(){
 <hr>
 <table id="xml-recipe">
 <tr><td><table class="subcat">
-		<tr><th>Name</th><td><span class="recipe-name"></span></td></tr>
-		<tr><th>Style</th><td><span class="recipe-style"></span></td></tr>
-		<tr><th>Batch Size</th><td><span class="batch-size"></span></td></tr>
-		<tr><th><span class="auto_value">Boil Time</span></th><td><span class="boil-time"></span></td></tr>
+		<tr><th>Название</th><td><span class="recipe-name"></span></td></tr>
+		<tr><th>Стиль пива</th><td><span class="recipe-style"></span></td></tr>
+		<tr><th>Объём варки</th><td><span class="batch-size"></span></td></tr>
+		<tr><th><span class="auto_value">Время кипячения</span></th><td><span class="boil-time"></span></td></tr>
 	</table></td></tr>
 
 <tr><td><table class="subcat">
-		<tr><th>Efficiency</th><th>OG</th><th>FG</th><th>ABV</th><th>Color</th><th>IBU</th></tr>
+		<tr><th>Эффективность</th><th>OG</th><th>FG</th><th>ABV</th><th>Цвет</th><th>IBU</th></tr>
 		<tr><td><span class="recipe-eff">-</span>%</td><td><span class="recipe-og"></span></td><td><span class="recipe-fg"></span></td>
 		<td><span class="recipe-abv"></span>%</td><td><span class="color-block"></span> <span class="recipe-color"></span></td><td><span class="recipe-ibu"></span></td></tr>
 	</table></td></tr>
 <tr><th>Fermentables</th></tr>
 <tr><td>
 	<table class="subcat">
-	<tr class="ferm-header"><th>Fermentable</th><th>Weight</th><th><span class="yieldtitle">Yield</span><span class="ppgtitle">PPG</span></th><th>Color</th><th>Note</th></tr>
+	<tr class="ferm-header"><th>Fermentable</th><th>Масса</th><th><span class="yieldtitle">Yield</span><span class="ppgtitle">PPG</span></th><th>Цвет</th><th>Примечание</th></tr>
 	<tr class="ferm-row"><td class="ferm-name">TT</td><td class="ferm-weight RA"></td><td class="ferm-yield RA"></td><td class="ferm-color RA"></td><td class="ferm-af"></td></tr>
 	</table></td></tr>
-<tr><th>Hops & Misc </th></tr>
+<tr><th>Хмель & Добавки </th></tr>
 <tr><td><table class="subcat">
-	<tr class="hop-header"><th></th><th>Time</th><th>Name</th><th>Weight</th><th>alpha</th><th>Note</th></tr>
+	<tr class="hop-header"><th></th><th>Время</th><th>Название</th><th>Масса</th><th>Альфа</th><th>Примечание</th></tr>
 	<tr class="hop-row"><td class="hop-order"></td><td class="hop-time"></td><td class="hop-name"></td><td class="hop-weight RA"></td><td class="hop-alpha RA"></td><td class="hop-note"></td></tr>
 	</table></td></tr>
-<tr><th>Mash Profile</th></tr>
+<tr><th>Профиль затирания</th></tr>
 <tr><td><table class="subcat">
-	<tr class="mash-header"><th></th><th>Name</th><th>Temperature</th><th>Time</th><th>Type</th><th>Water</th></tr>
+	<tr class="mash-header"><th></th><th>Название</th><th>Температура</th><th>Время</th><th>Тип</th><th>Вода</th></tr>
 	<tr class="mash-row"><td class="mash-autorest"><td class="mash-name"></td><td class="mash-temp RA"></td><td class="mash-time"></td><td class="mash-type"></td><td class="mash-water RA"></td></tr>
 	</table></td></tr>
-<tr><th>Yeast</th></tr>
+<tr><th>Дрожжи</th></tr>
 <tr><td><table class="subcat">
-	<tr class="yeast-header"><th>Name</th><th>Lab/Product</th><th>Temperature</th><th>Attenuation</th></tr>
+	<tr class="yeast-header"><th>Название</th><th>Производитель/Наименование</th><th>Температура</th><th>Attenuation</th></tr>
 	<tr class="yeast-row"><td><span class="yeast-name"></span></td><td><span class="yeast-pid"></span></td><td><span class="yeast-temp"></span></td><td><span class="yeast-att"></span>%</td></tr>
 </table></td></tr>
-<tr><th>Fermentation</th></tr>
+<tr><th>Брожение</th></tr>
 <tr><td><table class="subcat">
-	<tr class="fermstage-header"><th>Stage</th><th>Temperature</th><th>Duration</th></tr>
-	<tr class="fermstage-row"><td><span  class="ferm-stage"></span></td><td><span  class="ferm-temp"></span></td> <td><span class="ferm-time"></span> days</td></tr>
+	<tr class="fermstage-header"><th>Стадия</th><th>Температура</th><th>Продолжительность</th></tr>
+	<tr class="fermstage-row"><td><span  class="ferm-stage"></span></td><td><span  class="ferm-temp"></span></td> <td><span class="ferm-time"></span> дней</td></tr>
 	</table></td></tr>
 <tr><th>Note:</th></tr>
 <tr><td class="recipe-note"></td></tr>
@@ -592,28 +592,28 @@ Sensor Assignment:
 
 <!-- Network  -->
 <div class="fn" id="network-p">
-<h2>Network Settings</h2>
+<h2>Настройки сети</h2>
 <table>
-<tr><td>Host/Network Name</td><td><input id="hostname" type="text" size="20" maxlength="20"></td></tr>
-<tr><td>Always need password</td><td><input type="checkbox" id="protected" value="yes"></td></tr>
-<tr><td>New User Name</td><td><input id="newusername" type="text" size="20" maxlength="20"></td></tr>
-<tr><td>New Password</td><td><input id="newpasswd" type="password" size="20" maxlength="16"></td></tr>
-<tr><td>Retype new Password</td><td><input id="newpasswd2" type="password" size="20" maxlength="16"></td></tr>
-<tr><td colspan="2" id="passmatch">New passwords don't match!!</td></tr>
-<tr><td>User Name</td><td><input id="username" type="text" size="20" maxlength="20"></td></tr>
-<tr><td>Password</td><td><input id="password" type="password" size="20" maxlength="16"></td></tr>
-<tr><td><button id="wifidisc">Disconnect WiFi</button></td><td><button id="savecfg">Save</button></td></tr>
-<tr><td colspan="2" id="saveok">New setting will be effective after restart.</td></tr>
-<tr><td colspan="2" id="savefail">Update failed!!</td></tr>
+<tr><td>Хост/Сетевое Имя</td><td><input id="hostname" type="text" size="20" maxlength="20"></td></tr>
+<tr><td>Всегда требовать ввод пароля</td><td><input type="checkbox" id="protected" value="yes"></td></tr>
+<tr><td>Новое Имя Пользователя</td><td><input id="newusername" type="text" size="20" maxlength="20"></td></tr>
+<tr><td>Новый Пароль</td><td><input id="newpasswd" type="password" size="20" maxlength="16"></td></tr>
+<tr><td>Повторите Новый Пароль</td><td><input id="newpasswd2" type="password" size="20" maxlength="16"></td></tr>
+<tr><td colspan="2" id="passmatch">Новый пароль не совпадает!!</td></tr>
+<tr><td>Имя Пользователя</td><td><input id="username" type="text" size="20" maxlength="20"></td></tr>
+<tr><td>Пароль</td><td><input id="password" type="password" size="20" maxlength="16"></td></tr>
+<tr><td><button id="wifidisc">Отключение WiFi</button></td><td><button id="savecfg">Сохранить</button></td></tr>
+<tr><td colspan="2" id="saveok">Новая настройки будут применены после перезагрузки.</td></tr>
+<tr><td colspan="2" id="savefail">Не удалось обновить!!</td></tr>
 </table>
 </div> <!-- Network  -->
 <!-- Logs  -->
 <div class="fn" id="brewlog-p">
-<em>Brew Logs</em>
-<button id="listfile">Refresh</button>
+<em>Журнал варки</em>
+<button id="listfile">Обновить</button>
 <table id="loglist">
-<tr><th style="width:30%;">Log</th><th style="width:40%;">Date</th><th>Action</th></tr>
-<tr><td class="logid"></td><td class="logdate"></td><td><button class="dlbutton">Download</button><button class="viewbutton">View</button></td></tr>
+<tr><th style="width:30%;">Журнал</th><th style="width:40%;">Дата</th><th>Действие</th></tr>
+<tr><td class="logid"></td><td class="logdate"></td><td><button class="dlbutton">Скачать</button><button class="viewbutton">Посмотреть</button></td></tr>
 </table>
 <br>
 
@@ -627,24 +627,24 @@ Sensor Assignment:
 
 <div  class="fn"  id="utility-p">
   <fieldset class="commonset">
-    <legend>Volume</legend>
+    <legend>Объём</legend>
     <input type="radio" name="volume_unit" id="volume_liter" value="L">
-    <label for="volume_liter">L</label>
+    <label for="volume_liter">Литр</label>
     <input type="radio" name="volume_unit" id="volume_gallon" value="G">
-    <label for="volume_gallon">gal</label>
+    <label for="volume_gallon">Галлон</label>
     <input type="radio" name="volume_unit" id="volume_quart" value="Q">
-    <label for="volume_quart">qt</label>
+    <label for="volume_quart">Кварта</label>
   </fieldset>
 
   <fieldset class="commonset">
-    <legend>Weight</legend>
+    <legend>Вес</legend>
     <input type="radio" name="weight_unit" id="weight_kg" value="M">
-    <label for="weight_kg">kg</label>
+    <label for="weight_kg">килограммы</label>
     <input type="radio" name="weight_unit" id="weight_lb" value="U">
-    <label for="weight_lb">lb</label>
+    <label for="weight_lb">фунты</label>
   </fieldset>
   <fieldset class="commonset">
-    <legend>Temperature</legend>
+    <legend>Температура</legend>
     <input type="radio" name="temp_unit" id="temp_c" value="C">
     <label for="temp_c">°C</label>
     <input type="radio" name="temp_unit" id="temp_f" value="F">
@@ -654,28 +654,28 @@ Sensor Assignment:
 <br class="fieldsetspace">
   
 <fieldset class="FWSG">
-<legend>First Wort SG</legend>
+<legend>Плотность Первичного сусла </legend>
 <table>
-<tr><th>Grains</th>    <td><input size="5"  class="grain weightinput fwsg"></input><span class="weight_u">kg</span></td></tr>
-<tr><th>Mash Water</th><td><input size="5" class="water volinput fwsg"></input><span class="vol_u">L</span></td></tr>
+<tr><th>Зерновая засыпь</th>    <td><input size="5"  class="grain weightinput fwsg"></input><span class="weight_u">кг</span></td></tr>
+<tr><th>Вода, в которой затирается солод</th><td><input size="5" class="water volinput fwsg"></input><span class="vol_u">литр</span></td></tr>
 <tr><th>FW SG</th>     <td><span class="result"></span></td></tr>
 </table>
 </fieldset>
 
 <fieldset class="HYDROMETER">
-<legend>Hydrometer</legend>
+<legend>Ареометр</legend>
 <table>
-<tr><th>Gravity:</th>     <td><input size="5" value="1.0" class="hydroinput sgfraction"></input></td><tr>
-<tr><th>Temperature:</th> <td> <input size="3" class="hydroinput tempinput sgtemp"></input><span class="tmp_u">°C</span></td></tr>
+<tr><th>Плотность:</th>     <td><input size="5" value="1.0" class="hydroinput sgfraction"></input></td><tr>
+<tr><th>Температура:</th> <td> <input size="3" class="hydroinput tempinput sgtemp"></input><span class="tmp_u">°C</span></td></tr>
 <tr><th>Corrected at</th> <td> <input size="3" value="20" class="hydroinput tempinput correctedTemp"></input><span class="tmp_u">°C</span></td><tr>
 <tr><th>Corrected SG:</th><td><span class="result"></span></td></tr>
 </table>
 </fieldset>
 
 <fieldset class="REFRACTO">
-<legend>Refractometer</legend>
+<legend>Рефрактометр</legend>
 <table>
-<tr><th>Reading </th>       <td><input size="3" class="brixinput brixreading"></input>%</td></tr>
+<tr><th>Показание </th>       <td><input size="3" class="brixinput brixreading"></input>%</td></tr>
 <tr><th>Wort Correction</th><td><input size="4" value="1.04" class="brixinput wortcorrection"></input></td></tr>
 <tr><th>Corrected SG</th>   <td><span class="result"></span></td></tr>
 </table>
@@ -684,12 +684,12 @@ Sensor Assignment:
 <fieldset class="BOILOFF">
 <legend>Boil off</legend>
 <table>
-<tr><th>Current Gravity</th>	<td><input size="5" class="boiloffinput sg" value="1.0"></input></td></tr>
-<tr><th>Current Volume</th>		<td><input size="5" class="boiloffinput vol" value="6"></input><span class="vol_u">L</span></td></tr>
-<tr><th>Desired SG</th>			<td><input size="5" class="boiloffinput newsg" value="1.0"></input></td></tr>
-<tr><th>New Volume</th>			<td><span class="resultvol">--</span><span class="vol_u">L</span></td></tr>
-<tr><th>Desired Volume</th>		<td><input size="5" class="boiloffinput newvol"></input><span class="vol_u">L</span></td></tr>
-<tr><th>New SG</th>			<td><span class="resultsg">--</span></td></tr>
+<tr><th>Текущая плотность</th>	<td><input size="5" class="boiloffinput sg" value="1.0"></input></td></tr>
+<tr><th>Объём</th>		<td><input size="5" class="boiloffinput vol" value="6"></input><span class="vol_u">L</span></td></tr>
+<tr><th>Желаемая плотность SG</th>			<td><input size="5" class="boiloffinput newsg" value="1.0"></input></td></tr>
+<tr><th>Новый объём</th>			<td><span class="resultvol">--</span><span class="vol_u">L</span></td></tr>
+<tr><th>Желаемый объём</th>		<td><input size="5" class="boiloffinput newvol"></input><span class="vol_u">L</span></td></tr>
+<tr><th>Новая плотность SG</th>			<td><span class="resultsg">--</span></td></tr>
 </table>
 </fieldset>
 </div> <!-- utility -->
@@ -697,9 +697,9 @@ Sensor Assignment:
 <!-- About  -->
 <div class="fn" id="about-p">
 	<p> BrewManiacEx
-	<br> firmware version: <span id="firmware-version"></span>
-	<br> HTML/JS version: <span id="js-version"></span>
-	<p>By Vito Tai. <a href="http://vito.tw/?cat=11" target="_blank">More Info.</a></p>
+	<br> Версия программы: <span id="firmware-version"></span>
+	<br> Версия HTML/JS: <span id="js-version"></span>
+	<p>Разработка Vito Tai. <a href="http://vito.tw/?cat=11" target="_blank">Дополнительная информация</a></p>
 	<p style="{text-align:left;}">Powered by</p>
 	<ul> 
 	<li><a href="http://jquery.com" target="_blank">jQuery</a></li>
@@ -713,19 +713,19 @@ Sensor Assignment:
 <!-- Dialogs -->
 
 <div id="d_ConnectionError" title="Error!" class="dialog">
- <p>The connection to BrewManiac is down. It might be wireless issue or ESP8266 issue. Check your Brew ASAP.</p>
+ <p>Подключение к BrewManiac отсутствует! Возможно проблема с беспроводным соединением или с ESP8266. Проверьте Пивоварню как можно скорее!</p>
 </div>
 <div id="d_warning" title="Warning!" class="no-close dialog">
 <ul>
-<li>Never leave your brew unattended!</li>
-<li>Wireless connection may be unstable, and the status may be out of sync.</li>
-<li>Use at your own risk.</li>
+<li>Никогда не оставляйте без присмотра ваш пивоварню!</li>
+<li>Беспроводное соединение может быть нестабильным, и статус варки может быть не синхронизирован.</li>
+<li>Используйте на свой риск.</li>
 </ul>
-<label><input type="checkbox" id="nshow" class="dialog"> Don't show this again. </label>
+<label><input type="checkbox" id="nshow" class="dialog"> Не показывать это снова. </label>
 </div>
 
 <div id="d_home_confirm" title="Note:" class="dialog">
- <p>Do you Really want to END current job and go back to Main screen?</p>
+ <p>Вы действительно хотите Закончить текущую работу и вернуться к главному экрану?</p>
 </div>
 
 
