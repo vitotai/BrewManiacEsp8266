@@ -744,7 +744,11 @@ void uiDisplaySettingTemperature(float settemp)
 
 void uiClearPwmDisplay(void)
 {
+#if	MaximumNumberOfSensors > 1
+	uiLcdClear(8,2,3);
+#else
 	uiLcdClear(1,2,8);
+#endif
 }
 
 void uiShowPwmLabel(void)
@@ -753,7 +757,7 @@ void uiShowPwmLabel(void)
 	char buf[2];
 	buf[0]='%';
 	buf[1]='\0';
-	uiLcdPrint(1,10,buf);
+	uiLcdPrint(10,2,buf);
 #else
 	uiLcdPrint_P(1,2,STR(PWM_Is));
 #endif
