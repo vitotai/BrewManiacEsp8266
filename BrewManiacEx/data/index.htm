@@ -6,7 +6,7 @@
 	<title>BrewManiac</title>
 	<!-- <link rel="stylesheet" href="lib.css"> -->
 	<script type="text/javascript" src="lib.js"></script>
-	<script type="text/javascript" src="bm.js"></script>
+	<script type="text/javascript" src="bm.025.js"></script>
 
 	<style>
 /*! jQuery UI - v1.11.4 - 2015-03-11
@@ -110,12 +110,14 @@ AddMalt:"Add Malt",
 RemoveMalt:"Remove Malt",
 Boil:"Boil",
 HopN:"Hop#",
+PBHN:"PBH#",
+HopStandSession:"Session",
 Cooling:"Cooling",
 Automation:"Automation",
 PIDAutoTune:"PID AutoTune",
 DelayStart:"Wait to Start Automation",
 PumpRest:"--Pump Rest--",
-Idle:"BrewManiacEx 0.2",
+Idle:"BrewManiacEx 0.2.3",
 ManualMode:"Manual Mode",
 Setup:"Setup",
 PaddleLed:"STIR",
@@ -130,6 +132,13 @@ BoilEnd:"Boil Finished",
 ResumeBrew:"Brew Resumed",
 spargeSensor:"SPG:",
 stageName:["Mash In","Mash Step(1)","Mash Step(2)","Mash Step(3)","Mash Step(4)","Mash Step(5)","Mash Step(6)","Mash Out","Boiling","Cooling","Whirlpool"],
+errorWrongHopSchedule:"Wrong Hop Schedule.",
+errorMashoutTimeZero:"Mashout time is Zero.",
+errorHopStandSession:"Wrong Hop Stand session setting.",
+errorPostHopSchedule:"Wrong post boil Hop schedule.",
+errorTooManyHop:"Maximum hop number is 10.",
+errorTooManyHopStand:"Maximum hop stand session is 5.",
+errorTooManyPostBoilHop:"Maximum Post Boil Hop is 10.",
 event:["","Temperature Reached",
 				"Add Malt",	
 				"Remove Malt",	
@@ -280,6 +289,7 @@ $(function(){
 #xml-recipe table, #xml-recipe tr, #xml-recipe th,#xml-recipe td {border:1px black solid;}
 #xml-recipe table.subcat { width:100%; border-collapse:collapse;}
 .RA {text-align: right;}
+#recipe-options-panel table {text-align: left;}
 #xml-recipe th {background-color: lightgray;
     font-weight:bold;}
 #xml-recipe .auto_value { color:red;}
@@ -328,9 +338,9 @@ $(function(){
 <tr>
 	<td rowspan="3">
 		<div id="maintemp" class="panel">
-		<div class="Tcon"><span class="label TID">T:</span><span id="currenttemp" class="temperature NUM">100.75</span><span class="tmp_unit label">°C</span></div>
+		<div class="Tcon"><span class="label TID">T:</span><span id="currenttemp" class="temperature NUM">100.75</span><span class="tmp_unit label">&deg;C</span></div>
 		<hr id="currenttempend">
-		<span class="label">SP</span><span id="setpoint" class="temperature NUM">64.75</span><span class="tmp_unit label">°C</span>
+		<span class="label">SP</span><span id="setpoint" class="temperature NUM">64.75</span><span class="tmp_unit label">&deg;C</span>
 		</div>
 	</td>
 	<td>
@@ -401,20 +411,20 @@ $(function(){
   	<tr><td>Sample Time  </td><td><span id="s_sample_time">-</span> </td></tr>
   	<tr><td>WindowSet </td><td><span id="s_window">-</span> ms</td></tr>
     <tr><td>Heat/PWM in Boil </td><td><span id="s_pwm">-</span> %</td></tr>
-    <tr><td class="TCAL_T">Sensor Calibration </td><td><span id="s_cal" class="TCAL_V">-</span><span class="tmp_unit">°C</span></td></tr>
-    <tr><td>PID Start</td><td><span id="s_pidstart">-</span> <span class="tmp_unit">°C</span></td></tr>
+    <tr><td class="TCAL_T">Sensor Calibration </td><td><span id="s_cal" class="TCAL_V">-</span><span class="tmp_unit">&deg;C</span></td></tr>
+    <tr><td>PID Start</td><td><span id="s_pidstart">-</span> <span class="tmp_unit">&deg;C</span></td></tr>
     <tr><td>PID when Doughing-In</td><td><span id="s_piddoughin">-</span></td></tr>
 	<tr><td colspan="2" class="setting-category">Unit Parameters</td></tr>
-    <tr><td>Temperature Unit</td><td><span id="s_unit" class="tmp_unit">°C</span></td></tr>
+    <tr><td>Temperature Unit</td><td><span id="s_unit" class="tmp_unit">&deg;C</span></td></tr>
     <tr><td>Disable Delay Start</td><td><span id="s_nodelay">-</span></td></tr>
-    <tr><td>Boil Temperature</td><td><span id="s_boil">-</span> <span class="tmp_unit">°C</span></td></tr>
+    <tr><td>Boil Temperature</td><td><span id="s_boil">-</span> <span class="tmp_unit">&deg;C</span></td></tr>
     <tr><td>Pump Cycle </td><td><span id="s_pumpcycle">-</span> minutes</td></tr>
     <tr><td>Pump Rest </td><td><span id="s_pumprest">-</span> minutes</td></tr>
     <tr><td>Pump PreMash </td><td><span class="onoff" id="s_pumppremash">-</span></td></tr>
     <tr><td>Pump on Mash </td><td><span class="onoff" id="s_pumpmash">-</span></td></tr>
     <tr><td>Pump MashOut </td><td><span class="onoff" id="s_pumpmashout">-</span> </td></tr>
     <tr><td>Pump on Boil </td><td><span class="onoff" id="s_pumpboil">-</span></td></tr>
-    <tr><td>Pump Stop Temperature</td><td><span id="s_pumpstop">-</span><span class="tmp_unit">°C</span></td></tr>
+    <tr><td>Pump Stop Temperature</td><td><span id="s_pumpstop">-</span><span class="tmp_unit">&deg;C</span></td></tr>
     <tr><td>PID Pipe </td><td><span id="s_pipe">-</span></td></tr>
     <tr><td>Skip Add </td><td><span class="yesno" id="s_skipadd">-</span></td></tr>
     <tr><td>Skip Remove </td><td><span  class="yesno" id="s_skipremove">-</span></td></tr>
@@ -425,7 +435,7 @@ $(function(){
     <tr><td>Control Sparge Heating</td><td><span id="s_spenable">-</span></td></tr>
     <tr><td>Temperature Control</td><td><span id="s_sptempctrl">-</span></td></tr>
     <tr><td>Sensor Index</td><td><span id="s_spsensor">-</span></td></tr>
-    <tr><td>Target Temperature</td><td><span id="s_sptemp">-</span><span class="tmp_unit">°C</span></td></tr>
+    <tr><td>Target Temperature</td><td><span id="s_sptemp">-</span><span class="tmp_unit">&deg;C</span></td></tr>
     <tr><td>Temp. Difference</td><td><span id="s_spdiff">-</span></td></tr>
 	</table>
 </div><!-- Setting  -->
@@ -438,8 +448,8 @@ $(function(){
 <table id="auto_table">
 <tr><td colspan="3"  class="setting-category">Mash Schedule <button id="addrest" class="editbtn">Add Mash Rest</button></td></tr>
 <tr><th> Rest</th><th>Temperature</th><th>Time</th></tr>
-<tr><td> Mash In </td><td><span id="s0_tp">-</span><span class="tmp_unit">°C</span></td><td>-</td></tr>
-<tr><td> Mash Out </td><td><span id="s7_tp">-</span><span class="tmp_unit">°C</span></td><td><span id="s7_tm">-</span> min</td></tr>
+<tr><td> Mash In </td><td><span id="s0_tp">-</span><span class="tmp_unit">&deg;C</span></td><td>-</td></tr>
+<tr><td> Mash Out </td><td><span id="s7_tp">-</span><span class="tmp_unit">&deg;C</span></td><td><span id="s7_tm">-</span> min</td></tr>
 <tr>
 <tr><td colspan="3"  class="setting-category">Boil & Hop <button id="addhop" class="editbtn">Add Hop</button></td></tr>
 <tr><td> Boil Time</td><td colspan="2"><span id="boiltime">-</span> min</td></tr>
@@ -471,30 +481,33 @@ $(function(){
     <input type="radio" name="sugarunit" id="su_gravity" value="g">
     <label for="su_gravity">Gravity</label>
     <input type="radio" name="sugarunit" id="su_plato" value="p">
-    <label for="su_plato">°Plato</label>
+    <label for="su_plato">&deg;Plato</label>
     </td></tr>
 
- <tr><td rowspan="4">Mash In Temperature</td>
-    <td>
+ <tr><td rowspan="6">Mash In Temperature</td>
+    <td colspan="3">
+      <input type="checkbox" name="perfer_infuse" id="mi_prefer_infuse">
+      <label for="mi_prefer_infuse">Prefer INFUSE_TEMP in 1st rest</label>
+    </td></tr>
+    <td colspan="3">
       <input type="radio" name="mashin_temp" id="mi_1stRest" value="1">
       <label for="mi_1stRest">As First Rest</label>
-    </td>
-    <td colspan="2"></td></tr>
+    </td></tr>
   <tr><td rowspan="3"><input type="radio" name="mashin_temp" id="mi_cal" value="c">
       <label for="mi_cal">Calculated</label></td>
-    <td><label for="grain-temp">Grain Temperature</label></td><td><input type="text" id="grain-temp" size="4"></input><span class="tmp_unit">°C</span></td>
+    <td><label for="grain-temp">Grain Temperature</label></td><td><input type="text" id="grain-temp" size="4"></input><span class="tmp_unit">&deg;C</span></td>
     </tr>
-  <tr><td><label for="equip-adj" >Equipment Adjust</label></td><td><input type="text" id="equip-adj" size="4"></input><span class="tmp_unit">°C</span></td></tr>
+  <tr><td><label for="equip-adj" >Equipment Adjust</label></td><td><input type="text" id="equip-adj" size="4"></input><span class="tmp_unit">&deg;C</span></td></tr>
   <tr><td><label for="kettle-mass" >Kettle equiv. mass</label></td><td><input type="text" id="kettle-mass" size="4"></input><span id="kettlemass_unit">L</span></td></tr>
   <tr><td>
     <input type="radio" name="mashin_temp" id="mi_fixed" value="s">
     <label for="mi_fixed">Specified</label>
    </td><td>
-    <label for="mashin-temp">Temperature</label></td><td><input type="text" id="mashin-stemp" size="4"></input><span class="tmp_unit">°C</span>
+    <label for="mashin-temp">Temperature</label></td><td><input type="text" id="mashin-stemp" size="4"></input><span class="tmp_unit">&deg;C</span>
       </td></tr>
    <tr><td rowspan="2">Default Mash Out</td>
     <td colspan="2">
-      <label for="mo-temp">Temperature</label></td><td><input type="text" id="mo-temp" size="4"></input><span class="tmp_unit">°C</span></td></tr>
+      <label for="mo-temp">Temperature</label></td><td><input type="text" id="mo-temp" size="4"></input><span class="tmp_unit">&deg;C</span></td></tr>
    <tr><td colspan="2"><label for="mo-time" >Time</label></td><td><input type="text" id="mo-time" size="4"></input>M
    </td></tr>
 </table>
@@ -646,9 +659,9 @@ Sensor Assignment:
   <fieldset class="commonset">
     <legend>Temperature</legend>
     <input type="radio" name="temp_unit" id="temp_c" value="C">
-    <label for="temp_c">°C</label>
+    <label for="temp_c">&deg;C</label>
     <input type="radio" name="temp_unit" id="temp_f" value="F">
-    <label for="temp_f">°F</label>
+    <label for="temp_f">&deg;F</label>
   </fieldset>
   
 <br class="fieldsetspace">
@@ -666,8 +679,8 @@ Sensor Assignment:
 <legend>Hydrometer</legend>
 <table>
 <tr><th>Gravity:</th>     <td><input size="5" value="1.0" class="hydroinput sgfraction"></input></td><tr>
-<tr><th>Temperature:</th> <td> <input size="3" class="hydroinput tempinput sgtemp"></input><span class="tmp_u">°C</span></td></tr>
-<tr><th>Corrected at</th> <td> <input size="3" value="20" class="hydroinput tempinput correctedTemp"></input><span class="tmp_u">°C</span></td><tr>
+<tr><th>Temperature:</th> <td> <input size="3" class="hydroinput tempinput sgtemp"></input><span class="tmp_u">&deg;C</span></td></tr>
+<tr><th>Corrected at</th> <td> <input size="3" value="20" class="hydroinput tempinput correctedTemp"></input><span class="tmp_u">&deg;C</span></td><tr>
 <tr><th>Corrected SG:</th><td><span class="result"></span></td></tr>
 </table>
 </fieldset>
