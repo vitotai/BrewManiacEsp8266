@@ -36,6 +36,8 @@
 #endif
 
 #define UsePaddleInsteadOfPump false
+#define SecondaryHeaterSupport false
+#define SpargeHeaterSupport false
 
 /**************************************************************************************/
 /*  BrewManiac Related settings                                                       */
@@ -48,7 +50,6 @@
 //- See more at: http://www.esp8266.com/viewtopic.php?f=23&t=6394#sthash.5cMDbhuW.dpuf
 #define SerialDebug false
 #define DebugPort Serial
-#define SpargeHeaterSupport true
 #define MANUAL_PUMP_MASH true
 // DELAY start
 #define NoDelayStart false
@@ -67,6 +68,8 @@
 #define  PidAutoTuneLookBack  30
 
 #define MinimumTemperatureReadGap 500
+
+#define NumberSensorStage 6
 
 //debug setting
 #define FakeHeating false
@@ -130,7 +133,7 @@
 /*  version information     														  */
 /**************************************************************************************/
 
-#define BME8266_VERSION "0.2.3"
+#define BME8266_VERSION "0.3"
 
 #if MaximumNumberOfSensors >  1
 	#if LCD_USE_SSD1306 == true

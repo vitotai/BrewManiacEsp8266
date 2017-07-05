@@ -6,7 +6,7 @@
 	<title>BrewManiac</title>
 	<!-- <link rel="stylesheet" href="lib.css"> -->
 	<script type="text/javascript" src="lib.js"></script>
-	<script type="text/javascript" src="bm.025.js"></script>
+	<script type="text/javascript" src="bm.030.js"></script>
 
 	<style>
 /*! jQuery UI - v1.11.4 - 2015-03-11
@@ -34,6 +34,7 @@
   	#top-bar {background-color:#222;}
 	/* general */	
 	.setting-category{ text-align:center; font-weight:bold; font-size: 1.2em; background-color:yellow;}
+	.setting-subcategory{background-color:lightgoldenrodyellow;}
   	#status-p,#settings-p,#automation-p,#sensors-p,#about-p,#top-bar {margin: auto; padding:10px; width:100%}
   	#about-p {text-align:left;}
   	ul {text-align:left;}
@@ -75,7 +76,7 @@ a { -webkit-user-select: none; -webkit-touch-callout: none;}
 
 #status-p table, #status-p tr, #status-p td { border:0px; margin:0px;}
 #ctrlpanel { width: fit-content; margin-left:auto; margin-right:auto; display:inline-block; background-color:#C0C0C0;}
-
+table .ledpanel { text-align:center; width:100%; }
 #btnpanel {width:fit-content; height:fit-content; position:relative;}
 #btnpanel td { width:25%;}
 #btngap { height:5px;}
@@ -101,6 +102,7 @@ a.round-button { width:52px; height:52px; display: table-cell;  text-align:cente
  fieldset { margin: 10px; display:inline-block;}
  fieldset th {text-align:right;}
  fieldset td {text-align:left;}
+.eventaudio {display:none; }
 </style>
 <script>
 // strings, for localization
@@ -117,7 +119,7 @@ Automation:"Automation",
 PIDAutoTune:"PID AutoTune",
 DelayStart:"Wait to Start Automation",
 PumpRest:"--Pump Rest--",
-Idle:"BrewManiacEx 0.2.3",
+Idle:"BrewManiacEx 0.3",
 ManualMode:"Manual Mode",
 Setup:"Setup",
 PaddleLed:"STIR",
@@ -128,10 +130,11 @@ Mash:"Mash Step",
 Connected:"Connected",
 ConnectionError:"Connection Error",
 StartBrew:"Brewing started.",
-BoilEnd:"Boil Finished",
+BoilEnd:"Boil Finishing",
+EndHopStand:"HopStand Finishing",
 ResumeBrew:"Brew Resumed",
 spargeSensor:"SPG:",
-stageName:["Mash In","Mash Step(1)","Mash Step(2)","Mash Step(3)","Mash Step(4)","Mash Step(5)","Mash Step(6)","Mash Out","Boiling","Cooling","Whirlpool"],
+stageName:["Mash In","Mash Step(1)","Mash Step(2)","Mash Step(3)","Mash Step(4)","Mash Step(5)","Mash Step(6)","Mash Out","Boiling","Cooling","Whirlpool","Chilling","HopStand"],
 errorWrongHopSchedule:"Wrong Hop Schedule.",
 errorMashoutTimeZero:"Mashout time is Zero.",
 errorHopStandSession:"Wrong Hop Stand session setting.",
@@ -152,12 +155,14 @@ event:["","Temperature Reached",
 				"Brew Finished!"],
 
 };
+
 var STR_paddle={
 PumpRest:"--Stir Rest--",
 };
 var Beep= new Audio(
-  "data:audio/mp3;base64,//NAxAAUApbIAU8oAH79+/fv38e8R48ePHjx48V7POwFsFsE0FwQgXUTD4fOc7/////xMBwDAMDhwOBwhP/////6CAcAMAw+f//////U4mHA4HAwsPu//8QA+D4fHht4jDvjUFvjqAj/80LECxZ71ugBh5gAwBEk1DLYUYUQT6J9Mi8l+tv/6kv/RLoYkIeijw5cmPhyhD//q///SLAsSSX/GoRBv+ofQqm//RNyRX/+41zX/+43Tf9f6yM///yP///yGP//UkZG5DQFgCBggAj/80DEDRcbXrwB1aAAGthABhEBDTIqXjMnUf/+r//9FkhXgy0BuyIWijNDHF42//+t///5kbjGgZcaG2lWl//+cb//51FExHNAwwYWUVn///nTb///OF4AkGMyatW7Hxsga9QQhdYtoP/zQsQLFltalAAFqr2lqKX//LH//9nPD0BkoBAGljrBAA0yX//8f3///WcI8UoBrIPBpRVSb//8XRr//6hfGKRsQUDOofDSSsz///i7J63//skakGAyYGg0oqrKs54bYGvQEIaeVE01LP/zQMQNFlNalAAFqr2n//yx///djccAGSkEAaAOQCQDDqv//j+3//1qMx0C/A1iIgusVmf//8XRv//6xfnFsQcDOgfDSy07f//i7JBTf//Y3IIBk0NBpBXA6rsfHYBrzDcGmFc0QWom//NCxA4XO1qUAAWqvT//lh///2TLgucDJAG8LljlgLgLQX//8fy1//9SZgOsMvAagNob2edv//xuD3//6hnE2TFcAy+ZA4wroP//+NUVBTf//WYCvgYyLIg8uBmzmg4wNdgrw0sqG6al//NAxA0XM1qUAAWqvZF//+WH///TQL4hIBkPFUGFByAAAEJq//+SpLf//WgZjkBaKBn9QCDDdv//5HDD//9ZDzRzgkYGMkaJ3Liav//yiIspv//Wo6KYASchyDOluxuMwBrlHQGkFc3/80LECxcDXpQABaq8EFqIJ//ywf///QTLgjsDHkN8N/IGBgFAKaP//8lSE///TMCBg2eAycxRZZgv//+ZCr//+Wj6JRESCKaH46pf//5QECq//+kiZChQMOmkTqZLs5oM2Bp+HyHbKib/80DECxaDXpgABaq8mpZB//+WD///60DMTYBizHEIAEAAGAYbt//86Qn//6CZMA2JAwKth8GKv//6Yxf//k0apGQoUDFJ5Fwl5H//+PgYKn//+kiOUBjgYB9jV9kxzAPvtoUQ3QUtRP/zQsQMFHteoAAFarxD//nD///6lmAtYGZF+LjL4DQDPP//9ZLf//2NwxkBg9CkBSR///lkhf//WRqSKI5QGNh0J+NX///j8Vb///Zy0ChaE0Ps3QIGB9R8ijmia6yJ//84f///WozFCP/zQMQWFCteoAAFaLwGQWYOYXALAQ+3//1Et///dEN9A3HYXEapf//yVJL//1D8tJInQOKLExPs///4/G9///0CHgaJGKOaPdkxyAPkxYUQ3QVURD//qP///qWcFPAwk1SBm4LAs8////NCxCAUM1agAAVovf84S3//9ZkI2A6t0T6bIv//+Spt//6x/UtifA4gsTM87f//koPa3//+o6PgDDviCFnTMBZ4H/LCI3NE01LHf//1H///1qOiVAYCexKGgOCJ9v//lglv//6iyKoD//NAxCsUU1acAAVovfUAPsapN//+P6H//qHwnTHIA4cYRobof//ykMVf//6zgvQCaJAaVdBMYwD1tKE+G6Cqh2f/9R///+s4KaBjNokVcEQKPP//8sFr//9SygQcAfGJibN///JUqf//80LENBODVqAABWi9/ybZ1DXAzFccaC///6YxV///qRHUBmlwsQvTMBjwPOWMWM0TXWO///qP///1HRagMsMQgyIDQFNm//+WD3//60CmPoD2GRNTz///yyQn//zzomIugjgJRav//5H/80DEQhPDXqAABWi849Lb//7JE6BqwYmJ9tAzFcA+PshPhugg6hbP//Lf//9ZkLSBo9mjInADgUav//8lG///UmQwQqB8awkh9v//50b3//yaNUjIWkDQ5xcKSP//8bpJW//+6BFwNv/zQsROFKNanAAFaL1FRDzRZdMwE9gew5Yn80TTZYt///lv//+kYjHAasWAox0AYAmzf//JT//+mgTYZaA6n0WND///QG9//6x8pImI5QHCjCNjVL//+N00t//9RmM4BnYAsBugrQMxCP/zQMRXFLtenAAFaLwAzqomE4F9BBNAUT//rLf//9FIWaBjjFKIFKAAIAjVL//5KH///0EyYBsdAxurBmFq///lAb3//qGsikbEFAzGFw3krM///41RsKb//1LOC7AoYyPOLqkygHFg//NCxF8Wc16YAAWqvGfhSIgGXE00ExD//+st///s5qLmAyNCEDKkPAIAWZI///H4l///00CLgKAYBDXHyZIq///H4bP//rF+cWxBwM6B8NLLTt//+Romim//9FIxFDAYiMgj4upV/6b///NAxGEXW16UAAWqvFucKiwvWBg8JgaNYgGEgoAwCB2FAZQiBUQ//7///QWZikxBMCYsMEDoF0TBp//9T///zBEdgEFA3BwGjJ///OI//+gYIGhTHPAxowSgVGX///LX//9ZfJsA4GP/80LEXhfjWrgBVaAAQTUuaegq38lhlQIP4miMbCVfg20AIogS0COhxiyeKMKUWYoE1ycOp1Jf6B0n9TmPyyIDgodDCpTK61k6M8TRWMf90HV0D62/X/yYH0FwpWLh9BmU+gXjJbLq////80DEWh0zNswBj6AA6CyfDFokk0Wndb+5iYsZKf////JsT6RP/lRVTEFNRTMuOTkuNVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRAAAADSAHAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ=="
+"data:audio/mp4;base64,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"
 );
+
 var ButtonLabels={
 0:{u:"",d:"",s:"Quit",e:"Go",i:""},
 1:{u:"",d:"",s:"",e:"Ok",i:""},
@@ -195,6 +200,8 @@ var ButtonLabels={
 33:{u:"",d:"",s:"No",e:"Yes",i:"Stop AutoTune?"},
 34:{u:"",d:"",s:"",e:"Yes", i:"Run AP Mode?"},
 35:{u:"Extend",d:"",s:"Skip",e:"Back", i:""},
+36:{u:"UP", d:"DWON", s:"Skip", e:"Pump", i:""},
+37:{u:"", d:"", s:"Mash Out", e:"Extend", i:""}
 };
 
 var ButtonLabels_paddle={
@@ -208,8 +215,11 @@ var ButtonLabels_paddle={
 19:{u:"UP",d:"Down",s:"Stir Pause",e:"STP",i:""},
 26:{u:"UP",d:"Down",s:"Pause",e:"Stir",i:""},
 27:{u:"UP",d:"Down",s:"RUN",e:"Stir",i:""},
-31:{u:"",d:"",s:"Exit",e:"Stir",i:""}
+31:{u:"",d:"",s:"Exit",e:"Stir",i:""},
+36:{u:"UP", d:"DWON", s:"Skip", e:"Stir", i:""}
+
 };
+
 
 $(function(){
 	$(".fn").hide();
@@ -239,10 +249,18 @@ $(function(){
 	Logs.init();
 	BrewUtils.init("#utility-p");
 	Recipes.init();
+	Sound.init();
 	
 	// create customized alert and confirm
 	$("#dialog-confirm").hide();
 	$("#dialog-alert").hide();
+	
+	// test 
+//	$("#soundid").selectmenu();
+	$("#playsound").button().click( function( event ) {
+        event.preventDefault();
+        Sound.play($( "select#soundid option:checked" ).val());
+    });
 });
 	var jAlert=function(msg){
 		$( "#dialog-alert .dialog-msg" ).text(msg);
@@ -307,7 +325,6 @@ $(function(){
   <li class="ui-widget-content" id="settings">Settings</li>
   <li class="ui-widget-content" id="automation">Automation</li>
   <li class="ui-widget-content" id="recipes">Recipes</li>
-  <li class="ui-widget-content" id="sensors">Sensors</li>
   <li class="ui-widget-content" id="brewlog">Brew Logs</li>
   <li class="ui-widget-content" id="network">Network</li>
   <li class="ui-widget-content" id="utility">Calculators</li>
@@ -327,16 +344,37 @@ $(function(){
 
 
 <!-- MainScreren Panel  -->
-
 <div class="fn" id="status-p">
 <div id="ctrlpanel" class="panel">
 <table>
-<tr><td colspan="4">
-<div id="title">BrewManiacEx 0.2</div>
+<tr><td colspan="2">
+<div id="title">BrewManiacEx 0.3</div>
 <hr id="tline">
 </td></tr>
 <tr>
-	<td rowspan="3">
+	<td colspan="2">
+<table class="ledpanel"><tbody><tr>
+	<td class="leds">
+		<div  id="heatled" class="round-led-circle ledreddim"><span class="round-led"></span></div>
+		<div class="label">HEAT</div>
+	</td>
+	<td class="leds dualheating">
+		<div  id="heat2led" class="round-led-circle ledreddim"><span class="round-led"></span></div>
+		<div class="label">HE#2</div>
+	</td>
+	<td class="leds" id="auxledcon">
+		<div  id="auxled" class="round-led-circle ledreddim"><span class="round-led"></span></div>
+		<div class="label">SPGW</div>
+    </td>
+    <td class="leds">
+		<div  id="pumpled" class="round-led-circle ledgreendim"><span class="round-led"></span></div>
+		<div class="label"><span id="pump-led-label">PUMP</span></div>
+    </td>
+</tr></tbody></table>
+    </td>
+</tr>
+<tr>
+	<td rowspan="2">
 		<div id="maintemp" class="panel">
 		<div class="Tcon"><span class="label TID">T:</span><span id="currenttemp" class="temperature NUM">100.75</span><span class="tmp_unit label">&deg;C</span></div>
 		<hr id="currenttempend">
@@ -344,38 +382,24 @@ $(function(){
 		</div>
 	</td>
 	<td>
-		<div  id="heatled" class="round-led-circle ledreddim"><span class="round-led"></span></div>
-		<div class="label">HEAT</div>
-	</td>
-	<td id="auxledcon">
-		<div  id="auxled" class="round-led-circle ledreddim"><span class="round-led"></span></div>
-		<div class="label">SPGW</div>
-	</td>
-
-	<td>
-		<div  id="pumpled" class="round-led-circle ledgreendim"><span class="round-led"></span></div>
-		<div class="label"><span id="pump-led-label">PUMP</span></div>
-	</td>
-</tr>
-<tr>
-	<td colspan="3">
 		<div id="pwmPanel" class="panel">
 		<span class="label">PWM</span>
 		<span id="pwm" class="NUM">99</span>
 		<span class="label">%</span>
 		</div>
 	</td>
+
 </tr>
 <tr>
-	<td colspan="3">
+	<td>
 		<div id="timerPanel" class="panel">
 		<div id="timer" class="NUM">01:59:38</div>
 		<div class="label">Time</div>
 		</div>
 	</td>
 </tr>
-<tr><td colspan="4"><div id="info" class="panel"></div></td></tr>
-<tr><td colspan="4">
+<tr><td colspan="2"><div id="info" class="panel"></div></td></tr>
+<tr><td colspan="2">
 <div id="btnpanel">
 <table><tr><td id="btngap" colspan="4"></td></tr><tr>
 <td><div class="round-button-circle"><a id="btn-up" class="round-button">Up</a></div></td>
@@ -403,20 +427,27 @@ $(function(){
 <span class="section">Settings</span>
 <button id="esetting" class="editbtn">Set</button>
 <button id="savesetting" class="editbtn">Save</button>
+<button id="exportsetting" class="editbtn">Export</button>
+<button id="importsetting" class="editbtn">Import</button>
 	<table>
 	<tr><td colspan="2" class="setting-category">PID — PWM</td></tr>
-  	<tr><td>Constant kP </td><td><span id="s_kp">-</span> </td></tr>
-  	<tr><td>Constant kI </td><td><span id="s_ki">-</span> </td></tr>
-  	<tr><td>Constant kD </td><td><span id="s_kd">-</span> </td></tr>
+  	<tr><td>kP<span class="dualheating"> primary heater</span> </td><td><span id="s_kp">-</span> </td></tr>
+  	<tr><td>kI<span class="dualheating"> primary heater</span> </td><td><span id="s_ki">-</span> </td></tr>
+  	<tr><td>kD<span class="dualheating"> primary heater</span> </td><td><span id="s_kd">-</span> </td></tr>
+  	<tr class="dualheating"><td>kP secondary heater  </td><td><span id="s_kp2">-</span> </td></tr>
+  	<tr class="dualheating"><td>kI secondary heater  </td><td><span id="s_ki2">-</span> </td></tr>
+  	<tr class="dualheating"><td>kD secondary heater</td><td><span id="s_kd2">-</span> </td></tr>
+  	<tr class="dualheating"><td>kP both Elements </td><td><span id="s_kpall">-</span> </td></tr>
+  	<tr class="dualheating"><td>kI both Elements </td><td><span id="s_kiall">-</span> </td></tr>
+  	<tr class="dualheating"><td>kD both Elements</td><td><span id="s_kdall">-</span> </td></tr>
+
   	<tr><td>Sample Time  </td><td><span id="s_sample_time">-</span> </td></tr>
   	<tr><td>WindowSet </td><td><span id="s_window">-</span> ms</td></tr>
     <tr><td>Heat/PWM in Boil </td><td><span id="s_pwm">-</span> %</td></tr>
     <tr><td class="TCAL_T">Sensor Calibration </td><td><span id="s_cal" class="TCAL_V">-</span><span class="tmp_unit">&deg;C</span></td></tr>
     <tr><td>PID Start</td><td><span id="s_pidstart">-</span> <span class="tmp_unit">&deg;C</span></td></tr>
-    <tr><td>PID when Doughing-In</td><td><span id="s_piddoughin">-</span></td></tr>
 	<tr><td colspan="2" class="setting-category">Unit Parameters</td></tr>
     <tr><td>Temperature Unit</td><td><span id="s_unit" class="tmp_unit">&deg;C</span></td></tr>
-    <tr><td>Disable Delay Start</td><td><span id="s_nodelay">-</span></td></tr>
     <tr><td>Boil Temperature</td><td><span id="s_boil">-</span> <span class="tmp_unit">&deg;C</span></td></tr>
     <tr><td>Pump Cycle </td><td><span id="s_pumpcycle">-</span> minutes</td></tr>
     <tr><td>Pump Rest </td><td><span id="s_pumprest">-</span> minutes</td></tr>
@@ -425,19 +456,53 @@ $(function(){
     <tr><td>Pump MashOut </td><td><span class="onoff" id="s_pumpmashout">-</span> </td></tr>
     <tr><td>Pump on Boil </td><td><span class="onoff" id="s_pumpboil">-</span></td></tr>
     <tr><td>Pump Stop Temperature</td><td><span id="s_pumpstop">-</span><span class="tmp_unit">&deg;C</span></td></tr>
-    <tr><td>PID Pipe </td><td><span id="s_pipe">-</span></td></tr>
+    <tr><td>PID when Doughing-In</td><td><span id="s_piddoughin">-</span></td></tr>
+    <tr><td>PID when Remove Malt </td><td><span id="s_pipe">-</span></td></tr>
     <tr><td>Skip Add </td><td><span class="yesno" id="s_skipadd">-</span></td></tr>
     <tr><td>Skip Remove </td><td><span  class="yesno" id="s_skipremove">-</span></td></tr>
     <tr><td>Skip Iodine </td><td><span  class="yesno" id="s_skipiodine">-</span></td></tr>
     <tr><td>Iodine Time </td><td><span id="s_iodine">-</span></td></tr>
     <tr><td>Whirlpool</td><td><span id="s_whirlpool">-</span></td></tr>
-    <tr><td colspan="2" class="setting-category">Sparge Water Heating Control</td></tr>
-    <tr><td>Control Sparge Heating</td><td><span id="s_spenable">-</span></td></tr>
-    <tr><td>Temperature Control</td><td><span id="s_sptempctrl">-</span></td></tr>
-    <tr><td>Sensor Index</td><td><span id="s_spsensor">-</span></td></tr>
-    <tr><td>Target Temperature</td><td><span id="s_sptemp">-</span><span class="tmp_unit">&deg;C</span></td></tr>
-    <tr><td>Temp. Difference</td><td><span id="s_spdiff">-</span></td></tr>
+    <tr><td colspan="2" class="setting-category">Misc Settings</td></tr>
+    <tr><td>Disable Delay Start</td><td><span id="s_nodelay">-</span></td></tr>
+    <tr><td>Buzz On Button</td><td><span id="s_btnbuzz">-</span></td></tr>
+    <tr><td>Pump Prime Cycle</td><td><span id="s_pprime">-</span></td></tr>
+    <tr><td>Pump Prime On Time</td><td><span id="s_ppon">-</span>ms</td></tr>
+    <tr><td>Pump Prime Off Time</td><td><span id="s_ppoff">-</span>ms</td></tr>
+    <tr class="spargeheating"><td colspan="2" class="setting-subcategory">Sparge Water Heating Control</td></tr>
+    <tr class="spargeheating"><td>Control Sparge Heating</td><td><span id="s_spenable">-</span></td></tr>
+    <tr class="spargeheating"><td>Temperature Control</td><td><span id="s_sptempctrl">-</span></td></tr>
+    <tr class="spargeheating"><td>Sensor Index</td><td><span id="s_spsensor">-</span></td></tr>
+    <tr class="spargeheating"><td>Target Temperature</td><td><span id="s_sptemp">-</span><span class="tmp_unit">&deg;C</span></td></tr>
+    <tr class="spargeheating"><td>Temp. Difference</td><td><span id="s_spdiff">-</span></td></tr>
+    <tr class="dualheating"><td colspan="2" class="setting-subcategory">Heating Element Usage</td></tr>
+    <tr class="dualheating"><td>PreMash Heating Element</td><td><span id="s_preheat">-</span></td></tr>
+    <tr class="dualheating"><td>Mashing Heating Element</td><td><span id="s_mashheat">-</span></td></tr>
+    <tr class="dualheating"><td>Boiling Heating Element</td><td><span id="s_boilheat">-</span></td></tr>
+    <tr class="dualheating"><td>Post Boil Heating Element</td><td><span id="s_pbheat">-</span></td></tr>
 	</table>
+
+<!-- Sensors  -->
+
+<div id="multisensor">
+<h3>Temperature Sensors</h3>
+<table>
+<tr class="setting-category"><th>#</th><th>Address</th></tr>
+<tr class="sensor_row"><td class="sensor_id">1</td><td class="sensor_addr">0xFFFFFFFFFFFFFFFF</td></tr>
+</table>
+<br>
+Sensor Assignment:
+<table>
+<tr class="setting-category"><th>Stage</th><th>Primary</th><th>Auxiliary</th></tr>
+<tr><td>Main Screen</td><td id="sensor_P_0">1</td><td id="sensor_S_0">1</td></tr>
+<tr><td>Manual Mode</td><td id="sensor_P_1">1</td><td id="sensor_S_1">1</td></tr>
+<tr><td>Pre-Mash</td><td id="sensor_P_2">1</td><td id="sensor_S_2">1</td></tr>
+<tr><td>Mashing</td><td id="sensor_P_3">1</td><td id="sensor_S_3">1</td></tr>
+<tr><td>Boil</td><td id="sensor_P_4">1</td><td id="sensor_S_4">1</td></tr>
+<tr><td>Cooling</td><td id="sensor_P_5">1</td><td id="sensor_S_5">1</td></tr>
+</table>
+</div> <!-- div id="multisensor" -->
+
 </div><!-- Setting  -->
 
 <!-- Automation  -->
@@ -453,6 +518,9 @@ $(function(){
 <tr>
 <tr><td colspan="3"  class="setting-category">Boil & Hop <button id="addhop" class="editbtn">Add Hop</button></td></tr>
 <tr><td> Boil Time</td><td colspan="2"><span id="boiltime">-</span> min</td></tr>
+<tr><td colspan="3"  class="setting-category">Hop Stand <button id="addhopstand" class="editbtn">Add Session</button></td></tr>
+<tr><td>Session <span class="session-number">1</span></td><td>start: <span class="session-start-temp">99</span><span class="tmp_unit">&deg;C</span></td>
+    <td>keep:<span class="session-hold-temp"> 80</span><span class="tmp_unit">&deg;C</span> <button class="editbtn addpbh">Add Hop</button></td></tr>
 </table>
 </div><!-- Automation  -->
 
@@ -582,27 +650,6 @@ $(function(){
 </div>
 </div><!-- recipes  -->
 
-<!-- Sensors  -->
-<div class="fn" id="sensors-p">
-<div id="multisensor">
-<table>
-<tr class="setting-category"><th>#</th><th>Address</th></tr>
-<tr class="sensor_row"><td class="sensor_id">1</td><td class="sensor_addr">0xFFFFFFFFFFFFFFFF</td></tr>
-</table>
-<br>
-Sensor Assignment:
-<table>
-<tr class="setting-category"><th>Stage</th><th>Primary</th><th>Auxiliary</th></tr>
-<tr><td>Main Screen</td><td id="sensor_P_0">1</td><td id="sensor_S_0">1</td></tr>
-<tr><td>Manual Mode</td><td id="sensor_P_1">1</td><td id="sensor_S_1">1</td></tr>
-<tr><td>Pre-Mash</td><td id="sensor_P_2">1</td><td id="sensor_S_2">1</td></tr>
-<tr><td>Mashing</td><td id="sensor_P_3">1</td><td id="sensor_S_3">1</td></tr>
-<tr><td>Boil</td><td id="sensor_P_4">1</td><td id="sensor_S_4">1</td></tr>
-<tr><td>Cooling</td><td id="sensor_P_5">1</td><td id="sensor_S_5">1</td></tr>
-</table>
-</div> <!-- div id="multisensor" -->
-</div><!-- Sensors  -->
-
 <!-- Network  -->
 <div class="fn" id="network-p">
 <h2>Network Settings</h2>
@@ -720,6 +767,27 @@ Sensor Assignment:
 	<li><a href="http://olance.github.io/jQuery-switchButton/" target="_blank">jQuery UI iPhone-like Switch Button by Olivier Lance</a></li>
 	<li><a href="http://www.chartjs.org" target="_blank">Chart.js</a></li>
 	</ul>
+    <div>
+   <select name="soundid" id="soundid">
+      <option value="open">Welcome</option>
+      <option value="tr">Temperature Reached</option>
+      <option value="addhop">Time to Add Hop</option>
+      <option value="addmalt">Add Malt</option>
+      <option value="boil">Start Boil</option>
+      <option value="boilend">Boil Finished</option>
+      <option value="bye">Brew Finished</option>
+      <option value="chill">Time to Chill</option>
+      <option value="cool">Time to Cool</option>
+      <option value="iodine">Time for iodeine</option>
+      <option value="maltin">Doughing In</option>
+      <option value="mashout">Mash Out</option>
+      <option value="nmash">Next Mash step</option>
+      <option value="removemalt">Remove Malt</option>
+      <option value="whirlpool">Whirlpoool</option>
+      <option value="disc">Disconnected</option>
+    </select>
+    <button id="playsound">Play</button>
+    </div>
 </div>
 
 </div> <!-- <div id="sb-site"> -->
@@ -749,6 +817,11 @@ Sensor Assignment:
 
 <div id="dialog-alert" title="Alert!">
   <p><span class="ui-icon ui-icon-alert" style="float:left; margin:12px 12px 20px 0;"></span>
+  <span class="dialog-msg"></span></p>
+</div>
+
+<div id="dialog-file" title="Select File">
+  <p><input type="file"></input>
   <span class="dialog-msg"></span></p>
 </div>
 

@@ -14,7 +14,7 @@
 // Persistence Storage
 //  PID MENU
 
-#define PS_SPACE   0  //	Use Gas
+#define PS_SPACE   0  //	reserved
 #define PS_PidBase PS_SPACE
 
 #define PS_AddrOfPidSetting(i) (PS_PidBase+i)
@@ -59,46 +59,28 @@
 #define PS_SpargeWaterTemperatureAddress	35
 #define PS_SpargeWaterTemperatureDifferenceAddress	36
 
+//     37 -  41 reserved 
 
-//  RUN  (HTemp °C - LTemp °C - HTemp °F - LTemp °F - Time)
-#define PS_RunBase 37
-#define PS_StageTemperatureAddr(i) ((PS_RunBase)+(i)* 5)
-#define PS_StageTimeAddr(i) ((PS_RunBase)+(i)*5+4)
-#define ToTempInStorage(t) ((int)((t)*16))
-#define TempFromStorage(t)  ((float)(t)/16.0)
+#define PS_ButtonFeedback    42
+#define PS_PumpPrimeCount    43
+#define PS_PumpPrimeOnTime   44
+#define PS_PumpPrimeOffTime  45
+
+//    46 -  49 reserved 
+#define PS_PreMashHeating    50
+#define PS_MashingHeating    51
+#define PS_BoilingHeating    52
+#define PS_PostBoilHeating   53
+// space
+#define PS_kP_Secondary      55  // 	kP
+#define PS_kI_Secondary      56  //	kI
+#define PS_kD_Secondary      57  //     kD
+
+#define PS_kP_AllOn      58  // 	kP
+#define PS_kI_AllOn      59  //	kI
+#define PS_kD_AllOn      60  //     kD
 
 
-// 0:   37 -  41  [T1 T2 T3 T4 Time]   MashIn
-// 
-// 7:   72 - 76   Mash Out
-
-#define PS_NumberOfHops    77  //      Numbers of Hops
-#define PS_BoilTime     78    //   Boil Time 
-#define PS_HopTimeBase 79
-#define PS_TimeOfHop(i) ((PS_HopTimeBase)+i)
-/*
-    79       Time Hop  1
-    80       Time Hop  2
-    81       Time Hop  3
-    82       Time Hop  4
-    83       Time Hop  5
-    84       Time Hop  6
-    85       Time Hop  7
-    86       Time Hop  8
-    87       Time Hop  9
-    88       Time Hop 10
-*/
-
-//[90-93]  RESUME automation
-/*
-#define  PS_AutomodeStarted    90    //   FLAG Automode Started
-
-#define PS_StageResume    91 //      HANDLE Stage
-#define PS_HopAdd    92     //  Hop Add
-// simple wear leveling, leave 5 space for time rest
-#define PS_StageTimeLeft    93 //      HANDLE Time Rest
-// 93,94,95,96,97
-*/
 //[94-98,99-103] Sensor index for stages, total 6 stages
 // Idle, Manual, PreMash, Mashing, Boiling, Cooling
 #define PS_SensorUseBase    100 
@@ -155,42 +137,28 @@ const unsigned char  DEFAULT_EEPROM[] PROGMEM={
 #define PS_SpargeWaterTemperatureAddress	35
 #define PS_SpargeWaterTemperatureDifferenceAddress	36 */
 0,0,1,78,1,
-//  RUN  (HTemp °C - LTemp °C - HTemp °F - LTemp °F - Time)
-//#define PS_RunBase 37
-// 0:   37 -  41  [T1 T2 T3 T4 Time]   MashIn
-// 
-// 7:   72 - 77   Mash Out
-2,208,0,0,1, // 0:   37 -  41 MashIn
-4,16,0,0,60, // 1:   42 -  46 Fitasi / phytase
-0,0,0,0,0, // 2:   47 -  51 Glucanasi /glucanase
-0,0,0,0,0, // 3:   52 -  55 Proteasi /protease
-0,0,0,0,0, // 4:   57 -  61 B-Amilasi /B-amylase
-0,0,0,0,0, // 5:   62 -  66 A-Amilasi 1 
-0,0,0,0,0, // 6:   67 -  71 A-Amilasi 2
-4,176,0,0,20,// 7:   72 -  76 Mash Out
+//     37 -  41 reserved 
+0,0,0,0,0,
+1, //#define PS_ButtonFeedback    42
+5, //#define PS_PumpPrimeCount    43
+10, //#define PS_PumpPrimeOnTime   44
+4, //#define PS_PumpPrimeOffTime  45
+0,0,0,0, //    46 -  49 reserved 
+1, //#define PS_PreMashHeating    50
+1, //#define PS_MashingHeating    51
+1, //#define PS_BoilingHeating    52
+1, //#define PS_PostBoilHeating   53
+0,// space 54
+200,//#define PS_kP_Secondary      55  // 	kP
+200,//#define PS_kI_Secondary      56  //	kI
+200,//#define PS_kD_Secondary      57  //     kD
 
-1, //#define PS_NumberOfHops    77  //      Numbers of Hops
-60, //#define PS_BoilTime     78    //   Boil Time 
-60, //#define PS_HopTimeBase 79
-//#define PS_TimeOfHop(i) ((PS_HopTimeBase)+i)
-0,0,0,0,0,0,0,0,0,
-/*
-    79       Time Hop  1
-    88       Time Hop 10
-*/
-0, // 89 space
-0, //#define  PS_AutomodeStarted    90    //   FLAG Automode Started
-
-//  RESUME
-0, //#define PS_StageResume    91 //      HANDLE Stage
-0,//#define PS_StageTimeLeft    92 //      HANDLE Time Rest
-0 //#define PS_HopAdd    93     //  Hop Add
+200,//#define PS_kP_AllOn      58  // 	kP
+200,//#define PS_kI_AllOn      59  //	kI
+200,//#define PS_kD_AllOn      60  //     kD
+0
 };
 #include "SpiffsEeprom.h"
-
-#define USE_SPIFFS_EEPROM true
-
-#if USE_SPIFFS_EEPROM
 
 void commitSetting(void)
 {
@@ -235,74 +203,15 @@ void EepromInit(void)
 
 }
 
-
-#else //#if USE_SPIFFS_EEPROM
-bool isEepromInitialized(void)
-{
-
-	if(EEPROM.read(29)=='M'
-	 && EEPROM.read(30)=='E'
-	 && EEPROM.read(31)=='X') return true;
-	return false;
-}
-
-void setEepromDefault(void)
-{
-	for(byte i=0;i<88;i++){
-		EEPROM.write(i,pgm_read_byte_near(& DEFAULT_EEPROM[i]));
-	}
-}
-
-bool _eepromDirty=false;
-void commitSetting(void)
-{
-	if(_eepromDirty)
-	{
-		EEPROM.commit();
-		_eepromDirty=false;
-	}
-}
-
-byte readSetting(int addr)
-{
-	return EEPROM.read(addr);
-}
-
-bool updateSetting(int addr,byte value)
-{
-    byte old=readSetting(addr);
-	if(old != value){
-		EEPROM.write(addr,value);
-		_eepromDirty = true;
-		return true;
-	}
-	return false;
-}
-
-word readSettingWord(int addr)
-{
-	return word(EEPROM.read(addr),EEPROM.read(addr+1));
-}
-
-word updateSettingWord(int addr,word value)
-{
-  	//EEPROM.update(addr,highByte(value));
-  	//EEPROM.update((addr+1),lowByte(value));
-  	EEPROM.write(addr,highByte(value));
-  	EEPROM.write((addr+1),lowByte(value));
-	_eepromDirty = true;
-}
-void EepromInit(void)
-{
-	//ESP8266
-	EEPROM.begin(256);
-
-	if(!isEepromInitialized())
-	{
-		setEepromDefault();
-	}
-}
-#endif //#if USE_SPIFFS_EEPROM
-
 #endif
+
+
+
+
+
+
+
+
+
+
 

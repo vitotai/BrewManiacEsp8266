@@ -15,7 +15,6 @@
 
 #include "WiFiSetup.h"
 #include "HttpUpdateHandler.h"
-#include "BrewManiacProxy.h"
 #include "BrewManiacWeb.h"
 //#include "SPIFFSEditor.h"
 #include "ESPUpdateServer.h"
@@ -69,6 +68,11 @@ extern void startBrewManiac(void);
 #define RM_PATH 			"/rm.php"
 #define RECIPE_PATH_Base 	"/R/"
 #define RECIPE_PREFERNECE 	"/userpref.cfg"
+
+#define SETTIME_PATH 	"/settime"
+#define AUDIO_PATH 	"/audio"
+
+#define AUDIO_FILE 	"/sounds.json"
 
 #define MaxNameLength 32
 
@@ -301,13 +305,7 @@ TemperatureLogHandler logHandler;
 /**************************************************************************************/
 
 static const char* configFormat =
-R"END(
-{"host":"%s",
-"user":"%s",
-"pass":"%s",
-"secured":%d
-}
-)END";
+R"END({"host":"%s","user":"%s","pass":"%s","secured":%d})END";
 
 void requestRestart(bool disc);
 
@@ -435,19 +433,77 @@ NetworkConfig networkConfig;
 /**************************************************************************************/
 /* BrewManiac interface */
 /**************************************************************************************/
+class FileReader
+{  
+    File _file;
+    size_t _offset;
+    size_t _size;
+    size_t _filesize;
+    size_t _end;    
+public:
+    FileReader(void){}
+    bool prepare(String filename,int start, int end){
+		_file = SPIFFS.open(filename, "r+");
+		
+		if(!_file) return false;
+		_filesize=_file.size();
+		if(end <0){
+		    _size=_filesize-start +1;
+		    _end = _filesize -1;
+    	}else{
+    	    _size = end - start +1;
+    	    _end = end;
+    	}		        
+        return true;
+    }
+    
+    size_t size(void){return _size;}
+    size_t end(void){return _end; }
+    size_t filesize(void){return _filesize; }
+    size_t read(uint8_t *buffer, size_t maxLen, size_t index){
+        _file.seek(_offset + index, SeekSet);
+        return _file.read(buffer,maxLen);
+    }
+    void finished(void){
+        _file.close();
+    }
+} fileReader;
 
 class BmwHandler: public AsyncWebHandler 
 {
+protected:
+    void decodeRange(String range,int& start, int& end)
+    {
+        String startStr=range.substring(range.indexOf('=')+1);
+        
+        start = startStr.toInt();
+        int endIndex =range.indexOf('-');
+
+        if(endIndex <0){
+            end = -1;
+        }else{
+            int pend=range.substring(endIndex + 1 ).toInt();
+            if(pend  > 0) end = pend;
+        }
+    }
 public:
 	BmwHandler(void){}
 	void handleRequest(AsyncWebServerRequest *request){
 		
 		if(_gSecuredAccess && !request->authenticate(_gUsername, _gPassword))
 	        return request->requestAuthentication();
-
-	 	if(request->method() == HTTP_GET && request->url() == SETTING_PATH ){
-	 		String json;
-	 		bmWeb.getSettings(json);
+        if(request->method() == HTTP_GET && request->url() == SETTIME_PATH ){
+			if(request->hasParam("time")){
+  				AsyncWebParameter* tvalue = request->getParam("time");
+  				DBG_PRINTF("Set Time:%ld, current:%ld\n",tvalue->value().toInt(),TimeKeeper.getTimeSeconds());
+	 			TimeKeeper.setCurrentTime(tvalue->value().toInt());
+	 			request->send(200);
+	 		}
+	 		else request->send(400);
+	 	}else if(request->method() == HTTP_GET && request->url() == SETTING_PATH ){
+	 		String setting;
+	 		bmWeb.getSettings(setting);
+	 		String json= "{\"code\":0,\"result\":\"OK\", \"data\":"+ setting + "}";
 	 		request->send(200, "text/json", json);
 		
 			//piggyback the time from browser 
@@ -459,7 +515,12 @@ public:
 	 		
 	 	}else if(request->method() == HTTP_GET && request->url() == AUTOMATION_PATH){
 	 		String json;
-	 		bmWeb.getAutomation(json);
+	 		String autojson;
+
+	 		bmWeb.getAutomation(autojson);
+	 		json = "{\"code\":0,\"result\":\"OK\", \"data\":";
+            json += autojson;
+            json += "}";
 	 		request->send(200, "text/json", json);
 #if	MaximumNumberOfSensors	> 1 		
 	 	}else if(request->method() == HTTP_GET && request->url() == SCAN_SENSOR_PATH){
@@ -495,6 +556,14 @@ public:
 	 			request->send(400);
 	 		}
 	 	}else if(request->method() == HTTP_GET){
+	 	
+	 	    if(request->url() == AUDIO_PATH){
+	 	        // no cache.
+    	 		 request->send(SPIFFS,AUDIO_FILE);
+    	 		 return;
+	 		}
+
+	 	
 		 	AsyncWebServerResponse *response;
 		 	
 			String path=request->url();
@@ -514,28 +583,72 @@ public:
 				}
   			}else{
   				//DBG_PRINTF("non js file:\"%s\"\n",path.c_str());
-  			}  			
-	 		
-	 		String pathWithGz = path + ".gz";
-  			if(SPIFFS.exists(pathWithGz)){
-	 			response = request->beginResponse(SPIFFS, pathWithGz,"application/x-gzip");
-				response->addHeader("Content-Encoding", "gzip");
-  			}else{
-	 			response = request->beginResponse(SPIFFS, path);
+  			}	
+	 		if(path.endsWith(".m4a") || path.endsWith(".mp3") || path.endsWith(".ogg")){
+    	 		    
+    	 		int start=0;
+    	 		int end = -1;
+    	 		if(request->hasHeader("Range")){
+                    AsyncWebHeader* h = request->getHeader("Range");
+                    DBG_PRINTF("Range: %s\n", h->value().c_str());
+                    decodeRange(h->value(),start,end);
+                    DBG_PRINTF("decode: %d - %d\n", start, end);
+                }
+			        const char *mime;
+			        if(path.endsWith(".m4a")) mime = "audio/mp4";
+			        else if(path.endsWith(".mp3")) mime="audio/mepg";
+			        else if(path.endsWith(".ogg")) mime = "audio/ogg";
+
+                if(start ==0 && end == -1){
+    	 			response = request->beginResponse(SPIFFS, path,mime);
+	    		    response->addHeader("Accept-Ranges","bytes");
+		    	    response->addHeader("Cache-Control","max-age=2592000");
+			        request->send(response);
+			    }else{
+			        if(! fileReader.prepare(path,start,end)) { 
+			            request->send(500);
+			            return;
+			        }
+			        
+                    AsyncWebServerResponse *response = request->beginResponse(mime,fileReader.size() , [](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+                              return fileReader.read(buffer, maxLen, index);
+                    });
+                    char buff[128];
+                    sprintf(buff,"bytes %d-%d/%d",start,fileReader.end(),fileReader.filesize());
+                    //response->addHeader("Content-Range",buff);
+	    		    response->addHeader("Accept-Ranges","bytes");
+		    	    response->addHeader("Cache-Control","max-age=2592000");
+		    	    response->setCode(206);
+		    	    
+		    	    request->send(response);
+			    }
+	 		}else{
+    	 		String pathWithGz = path + ".gz";
+  	    		if(SPIFFS.exists(pathWithGz)){
+	 	    		response = request->beginResponse(SPIFFS, pathWithGz,"application/x-gzip");
+			    	response->addHeader("Content-Encoding", "gzip");
+  			    }else{
+	 			    response = request->beginResponse(SPIFFS, path);
+			    }
+
+			    response->addHeader("Cache-Control","max-age=2592000");
+			    request->send(response);
 			}
-
-			response->addHeader("Cache-Control","max-age=2592000");
-			request->send(response);
-
 		}	 	
 	 }
 	 
 	bool canHandle(AsyncWebServerRequest *request){
 	 	if(request->method() == HTTP_GET){
-	 		if(request->url() == SETTING_PATH || request->url() == AUTOMATION_PATH || request->url() == BUTTON_PATH  || request->url() == SCAN_SENSOR_PATH)
+	 		if(request->url() == SETTIME_PATH || request->url() == SETTING_PATH || request->url() == AUTOMATION_PATH 
+	 		    || request->url() == BUTTON_PATH  || request->url() == SCAN_SENSOR_PATH)
 	 			return true;
 	 		else{
+	 		    if(request->url() == AUDIO_PATH){
+    	 		    return SPIFFS.exists(AUDIO_FILE);
+	 		    }
 				// get file
+				request->addInterestingHeader("Range");
+				
 				String path=request->url();
 	 			if(path.endsWith("/")) path +=DEFAULT_INDEX_FILE;
 	 			//DBG_PRINTF("request:%s\n",path.c_str());
@@ -547,7 +660,7 @@ public:
 					//DBG_PRINTF("checking with:%s\n",pathWithJgz.c_str());
   			  		if(SPIFFS.exists(pathWithJgz)) return true;
   			  	}
-
+                
   				String pathWithGz = path + ".gz";
   				if(SPIFFS.exists(pathWithGz)) return true;
 		
@@ -662,8 +775,24 @@ void sseConnect(AsyncEventSourceClient *client)
 	getVersionInfo(version);
 	client->send(version.c_str());
 	String json;
+	// send setting, automation, and network config
+	bmWeb.getSettings(json);
+	client->send(json.c_str(),"setting");
+	bmWeb.getAutomation(json);
+	client->send(json.c_str(),"auto");
+	
+	char buf[128];
+	sprintf(buf,"{\"host\":\"%s\",\"secured\":%d}",_gHostname,_gSecuredAccess? 1:0);
+	
+	client->send(buf,"netcfg");
+	sprintf(buf,"{\"time\":%ld}",TimeKeeper.getTimeSeconds());
+
+    client->send(buf,"timesync");
+
 	bmWeb.getCurrentStatus(json,true);
 	client->send(json.c_str());
+
+    Serial.printf("sseconnectes!\n");
 }
 
 #endif
@@ -680,14 +809,14 @@ void broadcastMessage(String msg)
 #endif
 }
 
-void broadcastMessage(const char* msg)
+void broadcastMessage(const char* msg, const char* event=NULL)
 {
 #if UseWebSocket == true
 	ws.textAll(msg);
 #endif
 
 #if UseServerSideEvent == true
-	sse.send(msg);
+	sse.send(msg,event);
 #endif
 }
 
@@ -699,10 +828,21 @@ void bmwEventHandler(BrewManiacWeb* bmw, BmwEventType event)
 {
 	if(event==BmwEventAutomationChanged){
 		// request reload automation
-		broadcastMessage("{\"update\":\"recipe\"}");
+		//broadcastMessage("{\"update\":\"recipe\"}");
+
+    	String json;
+    	bmWeb.getAutomation(json);
+	    broadcastMessage(json.c_str(),"auto");
+		
 	}else if(event==BmwEventSettingChanged){
 		// request reload setting
-		broadcastMessage("{\"update\":\"setting\"}");
+//		broadcastMessage("{\"update\":\"setting\"}");
+    	
+    	String json;
+	    // send setting, automation, and network config
+	    bmWeb.getSettings(json);
+	    broadcastMessage(json.c_str(),"setting");
+
 	}else if(event==BmwEventStatusUpdate || event==BmwEventButtonLabel){
 		String json;
 //		if( event==BmwEventButtonLabel) DebugOut("Buttons\n");
@@ -1013,6 +1153,7 @@ void loop(void){
 #endif
 
 }
+//end of file
 
 
 

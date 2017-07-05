@@ -4,7 +4,7 @@
 
 #include "TimeKeeper.h"
 
-#define INVALID_RECOVERY_TIME 0xFF
+#define INVALID_RECOVERY_TIME 2147483647
 
 #define BREWING_TMPFILE "/brewing.tmp"
 
@@ -45,7 +45,7 @@ public:
 	bool checkRecovery(void){ return SPIFFS.exists(BREWING_TMPFILE);}
 	void clearRecovery(void){ if(checkRecovery()) SPIFFS.remove(BREWING_TMPFILE);}
 
-	void resumeSession(uint8_t *pStage,uint8_t *pTime)
+	void resumeSession(uint8_t *pStage,uint32_t *pTime)
 	{
 		_tmpFile=SPIFFS.open(BREWING_TMPFILE,"a+");
 		size_t fsize= _tmpFile.size();
@@ -103,10 +103,11 @@ public:
 
 	void abortSession(void){
 		if(!_started) return;
-		if(_stage >8){ // boil finished. just end normally
-			endSession();
-		}
+//		if(_stage >8){ // boil finished. just end normally
+//			endSession();
+//		}
 		_started=false;
+		_tmpFile.close();
 	}
 
 	void endSession(void){
@@ -234,8 +235,9 @@ private:
 	size_t  _tempLogPeriod;
 	size_t _starttime;
 	size_t _lastTempLog;
+	uint32_t _time;
+
 	byte _stage;
-	byte _time;
 	bool _started;
 
 	int _logIndex;
@@ -372,14 +374,14 @@ private:
 	void endProcessingResume(void)
 	{
 		if(!_timeRunning){
-			_time = 0xFF;
-			//DBG_PRINTF("timer not started\n");
+			_time = INVALID_RECOVERY_TIME;
+			DBG_PRINTF("timer not started\n");
 		}else{
 			int elapse=_tempCount - _timerStart - _pauseSum;
 			int ticks = elapse / _sensorNumber;
 			
 			_time=ticks * ((_tempLogPeriod/1000) / 60);
-			//DBG_PRINTF("timer: %d, ticks:%d \n",_time,ticks);
+			DBG_PRINTF("timer: %d, ticks:%d \n",_time,ticks);
 			
 		}
 	}
@@ -400,12 +402,30 @@ private:
 				_starttime = (*ptr <<24) | ( *(ptr+1) << 16) | ( *(ptr+2) << 8) | *(ptr+3);
 				ptr +=4;
 				
-				//DBG_PRINTF("Resume: sensor:%d, period:%d, start:%d\n",_sensorNumber,_tempLogPeriod,_starttime);
+				DBG_PRINTF("Resume: sensor:%d, period:%d, start:%d\n",_sensorNumber,_tempLogPeriod,_starttime);
 			}else if(b1 == StageTag){
 				_stage = b2;
-				_timeRunning=false;
-				_pauseSum=0;
-				//DBG_PRINTF("stage %d\n",_stage);
+				DBG_PRINTF("%ld - stage %d\n",ptr - data,_stage);
+				
+				if(_stage == 12){ //StageHopStand
+				    if(! _timeRunning){
+        				_timeRunning=true;
+        				_timerStart= _tempCount;
+        				DBG_PRINTF("hopstand :%ld\n",_timerStart);
+        			}else{
+        			    _pauseSum += _tempCount - _paused;
+        			    DBG_PRINTF("hopstandchill end:%ld\n",_pauseSum);
+        			}
+				}else if(_stage == 11){ //StageHopStandChill
+				    if(_timeRunning){
+    				    _paused = _tempCount;                        
+                    }
+                    DBG_PRINTF("hopstandchill :%ld\n",_timerStart);
+				}else{
+    				_timeRunning=false;
+	    			_pauseSum=0;
+				}
+				
 			}else if(b1 == EventTag){
 				if(b2 == 1){ //RemoteEventTemperatureReached
 					_timerStart= _tempCount;
@@ -416,8 +436,10 @@ private:
 				} else if(b2 == 6){ // resume
 					_pauseSum += _tempCount - _paused;
 					//DBG_PRINTF("resume @ %d. sum=Td\n",_tempCount,_pauseSum);
+				}else if (b2 == 10){ //RemoteEventBoilFinished
+    				_timeRunning=false;
+	    			_pauseSum=0;
 				}
-				
 			}else if(!(b1 & 0x80)){
 				// temperature reading
 				_tempCount ++;

@@ -52,6 +52,8 @@ Constant definition
 #define BoilingStage 8
 #define CoolingStage 9
 #define WhirlpoolStage 10
+#define HopStandChillingStage 11
+#define HopStandStage 12
 
 #define LeftAligned 0
 #define RightAligned 1
@@ -254,6 +256,18 @@ const byte RevPumpSymbol[8] PROGMEM = {B11111, B10001, B10101, B10001, B10111, B
 const byte HeatingSymbol[8] PROGMEM   = {	B00000, B01010, B01010, B01110, B01110, B01010, B01010, B00000};  // [5] HEAT symbol
 const byte RevHeatingSymbol[8] PROGMEM = {B11111, B10101, B10101, B10001, B10001, B10101, B10101, B11111};  // [6] reverse HEAT symbol
 const byte RevSpargeHeatingSymbol[8] PROGMEM={B11111,B10001,B1111,B10001,B11110,B1110,B10001,B11111};
+
+#if SecondaryHeaterSupport == true
+
+//1
+const byte PrimaryHeaterSymbol[8] PROGMEM= {0b00000, 0b00100, 0b01100, 0b00100, 0b00100, 0b00100, 0b01110, 0b00000};
+const byte RevPrimaryHeaterSymbol[8] PROGMEM = { 0b11111, 0b11011, 0b10011, 0b11011, 0b11011, 0b11011, 0b10001, 0b11111};
+
+//2
+const byte SecondaryHeaterSymbol[8] PROGMEM = { 0b00000, 0b00100, 0b01010, 0b00010, 0b00100, 0b01000, 0b01110, 0b00000 };
+const byte RevSecondaryHeaterSymbol[8]PROGMEM = {0b11111, 0b11011, 0b10101, 0b11101, 0b11011, 0b10111, 0b10001, 0b11111};
+
+#endif
 
 
 #define CreatecCustomChar(buff,idx,bm) uiGetBitmap((byte*)buff,bm); lcd.createChar(idx,(byte*)buff)
@@ -518,7 +532,57 @@ void uiSetMashExtensionStatus(uint8_t status)
 //******************************************************
 // General interface
 //******************************************************
+#if SecondaryHeaterSupport == true
+//   possiblie combination
+//    1     2
+//   ON     ON   On: Both on
+//   ON     OFF  On: Primary
+//   OFF    ON   On: Secondary
+//   OFF    OFF  OFF
+//   SUS    SUS  Suspended, both on
+//   SUS    OFF  suspended, 
+//   OFF    SUS  Suspended
+//   other combinations are invalid
+void loadHeatingIcons(byte mask)
+{
+    char buffer[8];
+    if(mask == 1){ // primary
+   	    CreatecCustomChar(buffer,LcdCharHeating,PrimaryHeaterSymbol);
+   	    CreatecCustomChar(buffer,LcdCharRevHeating,RevPrimaryHeaterSymbol);
+    }else if(mask == 2){ // secondary
+   	    CreatecCustomChar(buffer,LcdCharHeating,SecondaryHeaterSymbol);
+   	    CreatecCustomChar(buffer,LcdCharRevHeating,RevSecondaryHeaterSymbol);
+    }else{ // both
+   	    CreatecCustomChar(buffer,LcdCharHeating,HeatingSymbol);
+       	CreatecCustomChar(buffer,LcdCharRevHeating,RevHeatingSymbol);
+    } 
+}
 
+void uiHeatingStatus(byte primary, byte secondary)
+{
+    // suspended state must be sync to each other
+
+	if(primary==HeatingStatus_Off && secondary == HeatingStatus_Off){
+    	uiLcdClear(HeatingSymbolCol,HeatingSymbolRow,1);
+	}else{
+	    // check if the state is the same as previous.
+	    static byte loadedIconMask = 0;
+	    byte mask = ((primary != HeatingStatus_Off)? 1:0) | ((secondary != HeatingStatus_Off)? 2:0);
+
+	    if(mask != loadedIconMask){
+	        loadHeatingIcons(mask);
+	        loadedIconMask=mask;
+	    }
+	    
+	    if(primary==HeatingStatus_On || secondary == HeatingStatus_On){
+		    uiLcdDrawSymbol(HeatingSymbolCol,HeatingSymbolRow,LcdCharRevHeating);
+		}else{
+    		uiLcdDrawSymbol(HeatingSymbolCol,HeatingSymbolRow,LcdCharHeating);
+    	}
+	}
+}
+
+#else
 void uiHeatingStatus(byte status)
 {
 	if(status==HeatingStatus_On){
@@ -529,6 +593,7 @@ void uiHeatingStatus(byte status)
 		uiLcdClear(HeatingSymbolCol,HeatingSymbolRow,1);
 	}
 }
+#endif
 
 #if SpargeHeaterSupport == true
 
@@ -831,21 +896,34 @@ void uiAutoModeStage(byte idx)
 	else if(idx ==BoilingStage) str=STR( Boil);
 	else if(idx ==CoolingStage) str=STR( Cooling);
 	else if(idx ==WhirlpoolStage) str=STR( Whirlpool);
+	else if(idx ==HopStandChillingStage) str=STR( HopStandChilling);
+	else if(idx ==HopStandStage) str=STR( HopStand);
 
 	uiLcdClear(10,0,9);	
 	uiLcdPrint_P(10,0,str);
 }
 
-void uiAutoModeShowHopNumber(byte number)
+void uiAutoModeShowGeneralHopNumber(const char* hop,byte number)
 {
 	char buffer[20];
-	strcpy_P(buffer,STR(Hops_Number_x));
+	strcpy_P(buffer,hop);
 	
-	byte len=strlen_P(STR(Hops_Number_x));
+	byte len=strlen_P(hop);
 	buffer[len]='0' + (number/10);
 	buffer[len+1]='0' + (number%10);
 	buffer[len+2]='\0';
+	uiLcdClear(10,0,9);	
 	uiLcdPrint(10,0,buffer);
+}
+
+void uiAutoModeShowHopNumber(byte number)
+{
+    uiAutoModeShowGeneralHopNumber(STR(Hops_Number_x),number);
+}
+
+void uiAutoModeShowPostBoilHopNumber(byte number)
+{
+    uiAutoModeShowGeneralHopNumber(STR(Pbh_Number_x),number);
 }
 
 
@@ -885,6 +963,99 @@ void uiInitialize(void)
 }
 
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

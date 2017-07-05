@@ -1,10 +1,10 @@
 #Pre-built binaries
 
-## BrewManiacEx.01.bin
+## BrewManiacEx.*.bin
 The default settings:
 PCF8574 for buttons use address: 0x20.
 20x4 LCD. (auto detected address).
 Single sensor.
 
-## BrewManiacEx.multisensor.01.bin
+## BrewManiacEx.multisensor.*.bin
 Multiple sensor version of default settings.

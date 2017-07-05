@@ -126,7 +126,9 @@ void uiRunningTimePrint(unsigned long timeInSeconds)
 {
 	char buffer[10]; // using 10 bytes wan't too bad.
 	unsigned long hour = timeInSeconds / (60*60);
-	buffer[0]= (char)((hour/10) + '0');
+	int dec=(hour/10);
+
+	buffer[0]= (char) (dec<10)?(dec + '0'):(dec + 'A');
 	buffer[1]= (char)((hour%10) + '0');
 	buffer[2]=':';
 

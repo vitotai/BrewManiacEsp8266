@@ -25,12 +25,10 @@ typedef const char* str_t;
 
 StringConst(IpAddress,"IP:");
 
-StringConst(BT_Setup,"Bluetooth");
-StringConst(BT_NetworkName,"Name");
-StringConst(BT_UsePin,"Use PIN");
-StringConst(BT_PIN,"PIN:");
-
-
+StringConst(HS_Session_Number,"HS Session");
+StringConst(HS_Start,"Start HS");
+StringConst(HS_Keep,"Keep HS");
+StringConst(PBH_x,"PBH #");
 
 StringConst(min,"min");
 
@@ -174,6 +172,14 @@ DefineButtonLabel( Stop_No_Yes,       " Stop?     No  Yes",33);
 DefineButtonLabel( AccessPoint_Yes,   " Run AP Mode?  Yes",34);
 
 DefineButtonLabel( Extend_Skip_Back,   "Extend - Skip Back",35);
+
+#if UsePaddleInsteadOfPump
+DefineButtonLabel( Up_Down_Skip_Pmp,   "UP* *DWN Skip Stir",36);
+#else
+DefineButtonLabel( Up_Down_Skip_Pmp,   "UP* *DWN Skip  Pmp",36);
+#endif
+
+DefineButtonLabel( x_x_Mashout_Extend,   "        M.Out  Ext",37);
 // end of menu
 
 StringConst( SensorResolution ,"Sensor Res.");
@@ -184,7 +190,7 @@ StringConst( Water_Added ,"Water  Added?");
 #if SpargeHeaterSupport == true
 StringConst( SpargeWater_Added ,"SpargeWater Added?");
 StringConst( Sparge_Heater,"Sparge Heater");
-StringConst( Enable,"Enable");
+StringConst( Enable,"Sparge Heatine");
 StringConst( Temp_Ctrl,"Temp. Ctrl");
 StringConst( Sparge_Sensor,"Sparge Sensor");
 StringConst( Sparge_Temp,"Sparge Temp");
@@ -196,16 +202,46 @@ StringConst( PWM_Is, "PWM=   %");
 // Setting strings
 StringConst( Setup, "SETUP MENU");
 StringConst( PID_PWM, "PID -- PWM");
+StringConst( Misc_Setting, "Misc Setting");
 
+StringConst( Button_Buzz, "Button Buzz");
+StringConst( PumpPrime, "PumpPrime");
+StringConst( PrimeOn, "Prime On");
+StringConst( PrimeOff, "Prime Off");
 
 StringConst( PID_AUTOTUNE, "PID Auto Tune");
 
 //StringConst( Use, "Use");
 //StringConst( Electric, "Electric");
 //StringConst( Gas, "Gas");
+#if SecondaryHeaterSupport == true
+StringConst( kP_1, "1st Only kP");
+StringConst( kI_1, "1st Only kI");
+StringConst( kD_1, "1st Only kD");
+
+StringConst( kP_2, "2nd Only kP");
+StringConst( kI_2, "2nd Only kI");
+StringConst( kD_2, "2nd Only kD");
+
+StringConst( kP_both, "Both: kP");
+StringConst( kI_both, "Both: kI");
+StringConst( kD_both, "Both: kD");
+
+StringConst(HeaterPreMash, "Heat PreMash");
+StringConst(HeaterMashing,"Heat on Mash");
+StringConst(HeaterBoiling,"Heat on Boil");
+StringConst(HeaterPostBoil,"Heat PostBoil");
+
+StringConst(PrimaryHeater,"#1");
+StringConst(SecondaryHeater,"#2");
+StringConst(BothHeater,"Both");
+
+#else
 StringConst( kP, "Constant kP");
 StringConst( kI, "Constant kI");
 StringConst( kD, "Constant kD");
+#endif
+
 StringConst( SampleTime, "SampleTime");
 StringConst( WindowSet_ms, "WindowSet ms");
 StringConst( Heat_in_Boil, "Heat in Boil");
@@ -249,7 +285,7 @@ StringConst( Pump_Mashout, "Pmp Mashout");
 StringConst( Pump_On_Boil, "Pmp on Boil");
 StringConst( Pump_Stop, "Pump Stop");
 #endif
-StringConst( PID_Pipe, "PID Pipe");
+StringConst( PID_MaltOut, "PID Malt Out");
 StringConst( Active, "Active");
 StringConst( Passive, "Passive");
 
@@ -275,11 +311,14 @@ StringConst( Mash_out, "Mash Out");
 StringConst( Boil, "Boil");
 StringConst( Cooling, "Cooling");
 StringConst( Whirlpool, "Whirlpool");
+StringConst( HopStandChilling,"Chilling");
+StringConst( HopStand, "HopStand");
 StringConst( Number_Of_Hops, "Number of Hops");
 StringConst( Hops_Number_leftPara, "Hop nmbr#");
 StringConst( right_Para, ")");
 
 StringConst( Hops_Number_x, "Hop #");
+StringConst( Pbh_Number_x,"PBH #");
 
 StringConst( Manage_Recipes, "Manage Recipes");
 StringConst(Mash_x,"Mash ");
@@ -292,13 +331,13 @@ StringConst(Sensor_PreMash, "PreMash Primary");
 StringConst(Sensor_Mash, 	"Mash Primary");
 StringConst(Sensor_MashOut, "MashOut Primary");
 StringConst(Sensor_Boil,    "Boil Primary");
-StringConst(Sensor_Cooling,    "Colling Primary");
+StringConst(Sensor_PostBoil,    "PostBoil Primary");
 
 StringConst(AuxSensor_PreMash, "PreMash Aux");
 StringConst(AuxSensor_Mash,    "Mash Aux");
 StringConst(AuxSensor_MashOut, "MashOut Aux");
 StringConst(AuxSensor_Boil,    "Boil Aux");
-StringConst(AuxSensor_Cooling,    "Colling Aux");
+StringConst(AuxSensor_PostBoil,    "PostBoil Aux");
 
 StringConst(Sensor_Idle, "Idle Primary");
 StringConst(AuxSensor_Idle,   "Idle Aux");

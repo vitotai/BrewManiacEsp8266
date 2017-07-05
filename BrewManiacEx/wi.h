@@ -5,145 +5,78 @@
 #define	wiIndicationPut(a)
 #define	wiIndicationEnd()	
 
-#include "BrewManiacProxy.h"
-extern BrewManiacProxy bmproxy;
-
+#include "BrewManiacWeb.h"
+extern BrewManiacWeb bmWeb;
 
 void wiSendButtonLabel(const byte labelId)
 {
-	bmproxy.setButtonLabel(labelId);
+	bmWeb.setButtonLabel(labelId);
 }
-
-
+byte _currentStage=101;
 void wiReportCurrentStage(byte stage)
 {
-	bmproxy.stage=stage;
-	bmproxy.statusChange();
+    _currentStage = stage;
+    bmWeb.setBrewStage(stage);
 }
 
 #if SpargeHeaterSupport == true
 void wiReportAuxHeater(byte value)
 {
-	bmproxy.auxHeaterStatus=value;
+	bmWeb.setAuxHeaterStatus(value);
 }
-void wiReportHeater(byte value)
-{
-	bmproxy.heaterStatus=value;
-}
-
 void wiUpdateHeaterStatus(void)
 {
-	bmproxy.statusChange();
-}
-#else
-void wiReportHeater(byte value)
-{
-	bmproxy.heaterStatus=value;
-	bmproxy.statusChange();
+	bmWeb.statusChange();
 }
 #endif //#if SpargeHeaterSupport == true
 
+#if SecondaryHeaterSupport == true
+void wiReportHeater(byte primary,byte secondary)
+{
+	bmWeb.setHeaterStatus(primary,secondary);
+}
+
+#else
+void wiReportHeater(byte value)
+{
+	bmWeb.setHeaterStatus(value);
+}
+#endif
 
 
 void wiReportPump(byte value)
 {
-	bmproxy.pumpStatus=value;
-	bmproxy.statusChange();
+	bmWeb.setPumpStatus(value);
 }
 
 void wiReportEvent(byte event)
 {
-	bmproxy.brewEvent(event);
+	bmWeb.brewEvent(event);
 }
 
 void wiReportPwm(void)
 {
-	bmproxy.updatePwm(gBoilHeatOutput);
+	bmWeb.updatePwm(gBoilHeatOutput);
 }
 
-void wiReportSettingTemperature()
+void wiReportSettingTemperature(void)
 {
-	bmproxy.updateSettingTemp(gSettingTemperature);
+	bmWeb.updateSettingTemperature();
 }
 
 void wiTogglePwm(void)
 {
-	bmproxy.statusChange();
+	bmWeb.statusChange();
 }
 
 void wiRecipeChange(void)
 {
-	bmproxy.recipeChanged();
-}
-// read recipe
-void wiReadRecipe(AutomationRecipe *recipe)
-{
-	byte stage;
-	bool endMash=false;
-	for(stage=0;stage<8;stage++)
-	{
-		byte time=readSetting(PS_StageTimeAddr(stage));
-
-		if(stage ==0) time =1;
-		if(endMash && stage<7) time=0;
-
-		recipe->restTime[stage]=time;
-
-		if(time==0)
-		{
-			recipe->restTemp[stage]=0.0;
-			endMash=true;
-		}
-		else
-		{
-			int temp=readSettingWord(PS_StageTemperatureAddr(stage));
-			recipe->restTemp[stage]=TempFromStorage(temp);
-		}
-	}
-	// finish mash schedule. now boil & hop
-	byte tNum=readSetting(PS_NumberOfHops);
-	if(tNum > 10) tNum=0;
-	recipe->numberHops=tNum;
-	recipe->boilTime=readSetting(PS_BoilTime);
-	
-	byte i=0;
-	while(i < tNum)
-  	{
-    	byte time=readSetting(PS_BoilTime+1+i);
-		recipe->hops[i]=time;
-    	i++;
-  	}
-}
-
-void wiSetRecipe(AutomationRecipe *recipe)
-{
-	byte stage;
-	
-	for(stage=0;stage<8;stage++)
-	{
-		byte time=recipe->restTime[stage];
-		if(stage ==0) time=1;
-		else if(stage >=6 && time==0) time=1;
- 
-  		if(time !=0)
- 	 		updateSettingWord(PS_StageTemperatureAddr(stage),ToTempInStorage(recipe->restTemp[stage]));
-  	
-  		updateSetting(PS_StageTimeAddr(stage),time);
-	}
-  	// write number 
-  	updateSetting(PS_NumberOfHops,recipe->numberHops);
-	updateSetting(PS_BoilTime,recipe->boilTime);
-
-  	for(byte idx=0;idx < recipe->numberHops; idx++)
-  	{
-    	updateSetting(PS_BoilTime+1+idx,recipe->hops[idx]);
-  	}
-	commitSetting();
+	bmWeb.automationChanged();
 }
 
 void wiSettingChanged(int address,byte value)
 {
-	bmproxy.settingChanged(address,value);
+	bmWeb.settingChanged(address,value);
 }
 
 
@@ -153,7 +86,7 @@ void wiSetDeviceAddress(byte ip[], bool apmode)
 	if(	ip[0] != 0 && ip[1] != 0 && ip[2] != 0 && ip[3] != 0){
 		uiSetWirelessStatus(apmode? WiStateAccessPoint:WiStateConnected);
 		uiSetIp(ip);
-		if(bmproxy.stage == StageIdleScreen)
+		if(_currentStage == StageIdleScreen)
 			uiPrintIpAddress();
 
 	}else{ // clear
@@ -161,7 +94,7 @@ void wiSetDeviceAddress(byte ip[], bool apmode)
 		buzzPlaySound(SoundIdWarnning);
 
 		uiSetIp(ip);
-		if(bmproxy.stage == StageIdleScreen)		
+		if(_currentStage == StageIdleScreen)		
 			uiClearIpAddress();
 	}
 }
@@ -241,13 +174,50 @@ void wiThread()
 	{
 		gSensorNumber=scanSensors(MaximumNumberOfSensors,gSensorAddresses);
 		_wiSensorScanRequest =0;
-		bmproxy.scanSensorDone();
+		bmWeb.scanSensorDone();
 	}
 #endif
 }
 
 
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -139,6 +139,12 @@ inline void setAuxHeaterOut(byte v)
 }
 #endif
 
+#if SecondaryHeaterSupport == true
+inline void setSecondaryHeaterOut(byte v)
+{
+	digitalWrite (AuxHeatControlPin, v);
+}
+#endif
 
 void initIOPins(void)
 {

@@ -15,6 +15,7 @@
 
 #include "config.h"
 #include "pins.h"
+#include "automation.h"
 
 #define ESP8266 1
 #include "mystrlib.h"
@@ -43,8 +44,6 @@
 #define WirelessSupported true
 #define EnableSensorResolution true
 
-#define EnableButtonFeedback true
-
 
 #if SerialDebug == true
 #define DBG_PRINTF(...) DebugPort.printf(__VA_ARGS__)
@@ -56,6 +55,7 @@
 // *************************
 //*  global variables
 // *************************
+
 unsigned long gSystemStartTime; // in mili seconds
 unsigned long gCurrentTimeInMS; // in mili seconds
 unsigned long gCurrentTimeInSec; // in seconds
@@ -118,6 +118,7 @@ bool   gEnableSpargeWaterHeatingControl;
 
 #endif
 
+
 // *************************
 //*  function declaration
 // *************************
@@ -154,6 +155,9 @@ void manualModeEventHandler(byte);
 void autoModeSetup(void);
 void autoModeEventHandler(byte);
 
+void miscSettingSetup(void);
+void miscSettingEventHandler(byte);
+
 
 #if EnablePidAutoTune == true
 void autoTuneMenuSetup(void);
@@ -175,20 +179,22 @@ void spargeMenuEventHandler(byte);
 #define ConvertC2F(d) (((d)*1.8)+32)
 
 
-#if WirelessSupported == true
-
 //Stage
-#define StageDoughIn 	0
+#define StageDoughIn 	    0
 // 1 -6 rest, 
 // 7 mashout
-#define StageBoil 		8
+#define StageBoil 		    8
 #define StageCooling 		9
-#define StageWhirlpool  10
-#define StageDelayStart 11
-#define StageManualMode 100
-#define StageIdleScreen 101
-#define StageSetting 	102
-#define StagePIDAutoTune 	103
+#define StageWhirlpool     10
+
+#define StageHopStandChill 11
+#define StageHopStand      12
+
+#define StageDelayStart   99
+#define StageManualMode  100
+#define StageIdleScreen  101
+#define StageSetting 	 102
+#define StagePIDAutoTune 103
 
 //Event
 // Timeup usually means another stage or notification, ignore it
@@ -214,7 +220,6 @@ void btReportEvent(byte event);
 void btReportSettingTemperature(void);
 void btReportPwm(void);
 
-#endif
 // *************************
 //*  Screens
 // *************************
@@ -239,12 +244,10 @@ AUTO_SETTING_SCREEN = 4,
 
 MANUAL_MODE_SCREEN = 5,
 AUTO_MODE_SCREEN = 6,
+MISC_SETTING_SCREEN = 7,
 
 #if MaximumNumberOfSensors > 1
 SENSOR_SCREEN,
-#endif
-#if SpargeHeaterSupport == true
-SPARGE_SETTING_SCREEN,
 #endif
 END_OF_SCREEN
 } ScreenIdType;
@@ -277,6 +280,10 @@ const CScreen allScreens[]  =
 {	
 	&autoModeSetup,
 	&autoModeEventHandler,
+},
+{	
+	&miscSettingSetup,
+	&miscSettingEventHandler,
 }
 #if MaximumNumberOfSensors > 1
 ,{	
@@ -284,12 +291,7 @@ const CScreen allScreens[]  =
 	&sensorMenuEventHandler,
 }
 #endif
-#if SpargeHeaterSupport == true
-,{	
-	&spargeMenuSetup,
-	&spargeMenuEventHandler,
-}
-#endif
+
 };
 
 
@@ -450,7 +452,6 @@ void btnInitialize(void)
 
 #define BUTTON_DEBUG false
 
-#if WirelessSupported == true
 
 boolean _virtualButtonPressed=false;
 
@@ -459,24 +460,20 @@ void virtualButtonPress(byte mask,boolean longPressed)
        gButtonPressed = mask;
        gLongPressed = longPressed;
        _virtualButtonPressed=true;
-      #if BUTTON_DEBUG == true
-      Serial.println("virutal key");
-      #endif
+//      #if BUTTON_DEBUG == true
+//      Serial.println("virutal key");
+//      #endif
 }
-
-#endif
 
 
 
 boolean btnReadButtons(void)
 {
-#if WirelessSupported == true
       if(_virtualButtonPressed)
       {
       	_virtualButtonPressed = false;
         return true;
        }
-#endif
 
   	unsigned char buttons=0;
 	btnPrepareRead();
@@ -501,9 +498,10 @@ boolean btnReadButtons(void)
 	{
 		if(_testButtunStatus ==0) return false;
 		
-#if		EnableButtonFeedback == true
-		buzzMute();
-#endif
+		buzzMute(); // mute anything after button depressed. 
+		            // even if button feedback is off. the alert for 
+		            // temperature reached for doughing-in will be muted.
+
 		unsigned long duration=gCurrentTimeInMS - _buttonChangeTime;
  
   		#if BUTTON_DEBUG == true
@@ -567,10 +565,10 @@ boolean btnReadButtons(void)
 		{
 			unsigned long duration=gCurrentTimeInMS - _buttonChangeTime;
 
-#if		EnableButtonFeedback == true
-			if(duration > ButtonPressedDetectMinTime) buzzOn();
-			if(duration > ButtonLongPressedDetectMinTime) buzzMute();
-#endif
+            if(readSetting(PS_ButtonFeedback)){
+    			if(duration > ButtonPressedDetectMinTime) buzzOn();
+	    		if(duration > ButtonLongPressedDetectMinTime) buzzMute();
+	    	}
 			
 			if(duration > ButtonContinuousPressedDetectMinTime)
 			{
@@ -653,7 +651,7 @@ void temperatureUnitChange(bool useF)
 
 	//	gBoilStageTemperature loaded in heatLoadParameter
 	//	_pumpStopTemp loaded in pumpLoadParameter
-
+/*
 	if(useF){
 	 	float value=readSetting(PS_BoilTemp);
 	 	updateSetting(PS_BoilTemp,(byte)C2F(value));
@@ -678,6 +676,7 @@ void temperatureUnitChange(bool useF)
 	
 		gSettingTemperature=F2C(gSettingTemperature);
 	}
+*/
 }
 
 OneWire ds(SensorPin);
@@ -1051,18 +1050,10 @@ void tpReadTemperature(void)
 
 #endif // #if MaximumNumberOfSensors > 1
 
-void pumpLoadParameters(void);
-void heatLoadParameters(void);
 
-void loadBrewParameters(void)
-{
-	heatLoadParameters();
-	pumpLoadParameters();
-}
 // *************************
 //*  heating related function
 // *************************
-
 
 boolean _physicalHeattingOn;
 byte _heatWindowSize;
@@ -1108,6 +1099,97 @@ void startAutoTune(void)
 	_isRunningAutoTune = true;
 }
 
+
+#if SecondaryHeaterSupport == true
+// two way we can do it
+// individual status, => ON, Off, suspend x2
+//   possiblie combination
+//    1     2
+//   ON     ON   Both on
+//   ON     OFF  Primary
+//   OFF    ON   Secondary
+//   OFF    OFF  OFF
+//   SUS    SUS  Suspended
+//   other combinations are invalid
+//   Q: in suspended, UI(display) needs to know the "ON" status
+//   ON/OFF/SUSPEND flag with "elements" usage
+//   
+#define PrimaryHeaterMask  1
+#define SecondaryHeaterMask  2
+#define BothHeaterMask  3
+
+byte _gElementInUseMask;
+
+void setHeatingElementsInUse(byte elements)
+{
+    if(_gElementInUseMask == elements) return;
+    _gElementInUseMask = elements;
+    // change PID
+    byte kp, ki, kd;
+    if(_gElementInUseMask == PrimaryHeaterMask){
+        kp =readSetting(PS_kP);
+        ki=readSetting(PS_kI);
+        kd=readSetting(PS_kD);
+	}else if(_gElementInUseMask == PrimaryHeaterMask){
+        kp =readSetting(PS_kP_Secondary);
+        ki=readSetting(PS_kI_Secondary);
+        kd=readSetting(PS_kD_Secondary);
+	}else{
+        kp =readSetting(PS_kP_AllOn);
+        ki=readSetting(PS_kI_AllOn);
+        kd=readSetting(PS_kD_AllOn);
+	}
+	
+    thePID.SetTunings((double)kp-100.0, 
+					  (double)((ki-100.0) / 250.0),
+					  (double)kd-100.0);
+}
+
+#define HeatingStagePreMash 0
+#define HeatingStageMashing 1
+#define HeatingStageBoiling 2
+#define HeatingStagePostBoil 3
+
+
+void setHeatingElementForStage(byte stage)
+{
+    byte elements=readSetting(PS_PreMashHeating + stage);
+    setHeatingElementsInUse(elements);
+}
+
+
+void saveTunning(void)
+{
+	// update constant
+	double  kp = autoTune.GetKp();
+    double  ki = autoTune.GetKi();
+    double  kd = autoTune.GetKd();
+    thePID.SetTunings(kp,ki,kd);
+    
+    byte kpAddr,kiAddr,kdAddr;
+    if(_gElementInUseMask == PrimaryHeaterMask){
+        kpAddr = PS_kP;
+        kiAddr = PS_kI;
+        kdAddr = PS_kD;
+	}else if(_gElementInUseMask == PrimaryHeaterMask){
+        kpAddr= PS_kP_Secondary;
+        kiAddr= PS_kI_Secondary;
+        kdAddr= PS_kD_Secondary;
+	}else{
+        kpAddr = PS_kP_AllOn;
+        kiAddr = PS_kI_AllOn;
+        kdAddr = PS_kD_AllOn;
+	}
+
+
+    updateSetting(kpAddr,(byte)( kp + 100.0)); 
+	updateSetting(kiAddr,(byte)( ki * 250.0 +100));
+	//updateSetting(PS_kD,(byte)( kd + 100.0));
+	wiSettingChanged(kdAddr,(byte)( kd + 100.0));// notify setting change.
+	commitSetting();
+}
+
+#else
 void saveTunning(void)
 {
 	// update constant
@@ -1122,6 +1204,7 @@ void saveTunning(void)
 	wiSettingChanged(PS_kD,(byte)( kd + 100.0));// notify setting change.
 	commitSetting();
 }
+#endif
 
 #endif //#if EnablePidAutoTune == true 
 
@@ -1134,19 +1217,54 @@ void heatPhysicalOn(void)
 {
 	if(!_physicalHeattingOn)
 	{
-		setHeaterOut(HIGH);
 		_physicalHeattingOn=true;
+
+	    #if SecondaryHeaterSupport == true
+	    bool primary = _gElementInUseMask & PrimaryHeaterMask;
+	    bool secondary =_gElementInUseMask & SecondaryHeaterMask;
+	    if(primary) setHeaterOut(HIGH);
+	    if(secondary) setSecondaryHeaterOut(HIGH);
+
+		uiHeatingStatus(primary? HeatingStatus_On:HeatingStatus_Off,secondary? HeatingStatus_On:HeatingStatus_Off);
+		wiReportHeater(primary? HeatingStatus_On:HeatingStatus_Off,secondary? HeatingStatus_On:HeatingStatus_Off);
+	    
+	    #else
+		setHeaterOut(HIGH);		
+		uiHeatingStatus(HeatingStatus_On);
+		wiReportHeater(HeatingStatus_On);
+		#endif
+
 #if FakeHeating == true
 	lastTime = gCurrentTimeInMS;
 #endif
-		uiHeatingStatus(HeatingStatus_On);
-		wiReportHeater(HeatingStatus_On);
 
 	}
 }
 
 void heatPhysicalOff(void)
 {
+#if SecondaryHeaterSupport == true
+
+	if(_physicalHeattingOn)
+	{
+		setHeaterOut(LOW);
+		setSecondaryHeaterOut(LOW);
+		_physicalHeattingOn=false;
+	}
+	if(gIsHeatOn){
+
+	    bool primary = _gElementInUseMask & PrimaryHeaterMask;
+	    bool secondary =_gElementInUseMask & SecondaryHeaterMask;
+
+		uiHeatingStatus(primary? HeatingStatus_On_PROGRAM_OFF:HeatingStatus_Off,secondary? HeatingStatus_On_PROGRAM_OFF:HeatingStatus_Off);
+		wiReportHeater(primary? HeatingStatus_On_PROGRAM_OFF:HeatingStatus_Off,secondary? HeatingStatus_On_PROGRAM_OFF:HeatingStatus_Off);
+	}else{
+		uiHeatingStatus(HeatingStatus_Off,HeatingStatus_Off);
+		wiReportHeater(HeatingStatus_Off,HeatingStatus_Off);
+	}
+
+
+#else
 	if(_physicalHeattingOn)
 	{
 		setHeaterOut(LOW);
@@ -1159,6 +1277,7 @@ void heatPhysicalOff(void)
 		uiHeatingStatus(HeatingStatus_Off);
 		wiReportHeater(HeatingStatus_Off);
 	}
+#endif
 }
 
 
@@ -1209,9 +1328,8 @@ unsigned long _gTimeEnterIdle;
 //  M req On, S off, M req Off, S on.
 //  M req Off, M Off, (S On)
 //  
-void requestHeaterOn(bool on)
+void requestHeaterOn(void)
 {
-	if(on){
 		if(_gPowerState == PowerStateIdle || _gPowerState == PowerStateHeatPending 
 				 || _gPowerState == PowerStateSpargePending){
 			if(( millis() - _gTimeEnterIdle) > PowerSwitchTime){
@@ -1231,7 +1349,9 @@ void requestHeaterOn(bool on)
 			_gPowerState = PowerStateHeatPending;
 			_gTimeEnterIdle= millis();
 		}
-	}else{
+}
+void requestHeaterOff(void)
+{
 		// turn off Main Heating
 		heatPhysicalOff();
 		
@@ -1242,13 +1362,11 @@ void requestHeaterOn(bool on)
 		}else if( _gPowerState == PowerStateHeatPending){
 			 _gPowerState = PowerStateIdle;
 		}
-	}
 	//DBG_PRINTF("requestHeaterOn:%d, %d, %d\n",on,_gPowerState,_physicalHeattingOn);
 }
 
-void requestSpargeHeaterOn(bool on)
+void requestSpargeHeaterOn(void)
 {
-	if(on){
 		if(_gPowerState == PowerStateIdle || _gPowerState == PowerStateSpargePending){
 			if(( millis() - _gTimeEnterIdle) > PowerSwitchTime){
 			   // turn sparge heater on
@@ -1259,7 +1377,10 @@ void requestSpargeHeaterOn(bool on)
 				_gPowerState =PowerStateSpargePending;
 			}
 		}
-	}else{
+}
+		
+void requestSpargeHeaterOff(void)
+{
 		heaterSpargeOff();
 		if(_gPowerState == PowerStateSpargeHeating){
 			// turn off Sparge Heater.
@@ -1268,8 +1389,6 @@ void requestSpargeHeaterOn(bool on)
 		}else if (_gPowerState == PowerStateSpargePending){
 			_gPowerState = PowerStateIdle;
 		}
-	}
-	//DBG_PRINTF("requestSpargeHeaterOn:%d\n",_gPowerState);
 }
 
 
@@ -1280,10 +1399,10 @@ void spargeHeaterControl(void)
 	if(gEnableSpargeWaterTemperatureControl){
 	 	if(gSpargeWaterTemperature <= (gSpargeWaterSetPoint - gSpargeTemperatureDifference)){
  			if(!gIsPhysicalSpargeWaterHeating)
-	 			requestSpargeHeaterOn(true);
+	 			requestSpargeHeaterOn();
  		}else if(gSpargeWaterTemperature >= (gSpargeWaterSetPoint + gSpargeTemperatureDifference)){
 	 		if(gIsPhysicalSpargeWaterHeating)
-		 		requestSpargeHeaterOn(false);
+		 		requestSpargeHeaterOff();
  		}
  	}
  	else
@@ -1291,7 +1410,7 @@ void spargeHeaterControl(void)
  	{
  		// no temp. control, just output
  		if(!gIsPhysicalSpargeWaterHeating)
-	 		requestSpargeHeaterOn(true);
+	 		requestSpargeHeaterOn();
  	}
 }
 
@@ -1307,13 +1426,13 @@ void startHeatingSpargeWater(void)
 	gSpargeTemperatureDifference=SettingValueSpargeDifference(readSetting(PS_SpargeWaterTemperatureDifferenceAddress));
 #endif
 	gHeatSpargeWater=true;
-	requestSpargeHeaterOn(false); // to draw the icon
+	requestSpargeHeaterOff(); // to draw the icon
 }
 
 void stopHeatingSpargeWater(void)
 {
 	gHeatSpargeWater=false;
-	requestSpargeHeaterOn(false);
+	requestSpargeHeaterOff();
 }
 
 #endif //#if SpargeHeaterSupport == true
@@ -1368,7 +1487,7 @@ void heatOff(void)
 {
 	gIsHeatOn = false;
 	#if SpargeHeaterSupport
-	requestHeaterOn(false);
+	requestHeaterOff();
 	#else
 	heatPhysicalOff();
 	#endif
@@ -1387,7 +1506,7 @@ void heatOn(bool pidmode)
 	_windowStartTime=millis();
 
 	#if SpargeHeaterSupport
-	requestHeaterOn(false);
+	requestHeaterOff();
 	#else
 	heatPhysicalOff();
 	#endif
@@ -1398,7 +1517,7 @@ void heatProgramOff(void)
 	gIsHeatProgramOff=true;
 	
 	#if SpargeHeaterSupport
-	requestHeaterOn(false);
+	requestHeaterOff();
 	#else
 	heatPhysicalOff();
 	#endif
@@ -1419,7 +1538,7 @@ void heaterControl(void)
 	if(IS_TEMP_INVALID(gCurrentTemperature)) {
 		if(_physicalHeattingOn) {
 #if SpargeHeaterSupport
-			requestHeaterOn(false);
+			requestHeaterOff();
 #else
 			heatPhysicalOff();
 #endif
@@ -1427,28 +1546,6 @@ void heaterControl(void)
 		return;
 	}
 	
-#if FakeHeating == true
-#if MaximumNumberOfSensors > 1
-	if(_physicalHeattingOn){
-		for(byte i=0;i<gSensorNumber;i++)
-			gTemperatureReading[i] += (gCurrentTimeInMS - lastTime) * (0.00000002 + i*0.000000001);
-	}else{
-		for(byte i=0;i<gSensorNumber;i++)
-			gTemperatureReading[i] -= (gCurrentTimeInMS - lastTime) * (0.000000002+ i*0.0000000005);
-	}
-	gCurrentTemperature = gTemperatureReading[gPrimarySensorIndex];
-	gAuxTemperature = gTemperatureReading[gAuxSensorIndex];
-#else
-	if(_physicalHeattingOn){
-		gCurrentTemperature += (gCurrentTimeInMS - lastTime) * 0.0002;
-		lastTime = gCurrentTimeInMS;
-	}else{
-		gCurrentTemperature -= (gCurrentTimeInMS - lastTime) * 0.000005;
-		lastTime = gCurrentTimeInMS;
-	}
-#endif
-#endif	
-
  	pidInput = gCurrentTemperature;
 	pidSetpoint= gSettingTemperature;
    
@@ -1514,7 +1611,7 @@ void heaterControl(void)
   		if(!_physicalHeattingOn)
   		{
   			#if SpargeHeaterSupport
-			requestHeaterOn(true);
+			requestHeaterOn();
 	  		#else
    	 		heatPhysicalOn();
    	 		#endif
@@ -1526,7 +1623,7 @@ void heaterControl(void)
   		if(_physicalHeattingOn)
   		{
   			#if SpargeHeaterSupport
-			requestHeaterOn(false);
+			requestHeaterOff();
 	  		#else
   			heatPhysicalOff();
   			#endif
@@ -1536,6 +1633,31 @@ void heaterControl(void)
 
 void heatThread(void)
 {
+
+#if FakeHeating == true
+#if MaximumNumberOfSensors > 1
+	if(_physicalHeattingOn){
+		for(byte i=0;i<gSensorNumber;i++)
+			gTemperatureReading[i] += (gCurrentTimeInMS - lastTime) * (0.00000002 + i*0.000000001);
+	}else{
+		for(byte i=0;i<gSensorNumber;i++)
+			gTemperatureReading[i] -= (gCurrentTimeInMS - lastTime) * (0.000000002+ i*0.0000000007);
+	}
+	gCurrentTemperature = gTemperatureReading[gPrimarySensorIndex];
+	gAuxTemperature = gTemperatureReading[gAuxSensorIndex];
+#else
+	if(_physicalHeattingOn){
+    	if(gCurrentTemperature < gBoilStageTemperature) 
+    		gCurrentTemperature += (gCurrentTimeInMS - lastTime) * 0.0004;
+		lastTime = gCurrentTimeInMS;
+	}else{
+	    if(gCurrentTemperature > 30) 
+		    gCurrentTemperature -= (gCurrentTimeInMS - lastTime) * 0.000025;
+		lastTime = gCurrentTimeInMS;
+	}
+#endif
+#endif	
+
 	heaterControl();
 #if SpargeHeaterSupport
 	spargeHeaterControl();
@@ -1549,201 +1671,226 @@ void heatThread(void)
 #endif
 }
 
+void setSettingTemperature(float temp)
+{
+    gSettingTemperature=temp;
+    uiDisplaySettingTemperature(gSettingTemperature);
+    brewLogger.setPoint(gSettingTemperature);
+    wiReportSettingTemperature();
+}
 // *************************
 //*  pump related function
 // *************************
 
-boolean _pumpPhysicalOn;
-unsigned long _pumpLastSwitchOnTime;
-float _pumpStopTemp;
-//byte _sensorType;
-
-unsigned long _pumpRestTime;
-unsigned long _pumpCycleTime;
-boolean _isStageTempReached;
-boolean _isPumpRestChanged;
-boolean _pumpRestEnabled;
-
-#define SensorInside 0
-#define SensorOutside 1
-
-void pumpPhysicalOn(void)
+class RestableDevice
 {
-	if(_pumpPhysicalOn) return;
-	setPumpOut(HIGH);
-	_pumpPhysicalOn=true;
-	_pumpLastSwitchOnTime = gCurrentTimeInMS;
+    boolean _isDeviceOn;
+    boolean _physicalOn;
+    unsigned long _lastSwitchOnTime;
+    float _stopTemp;
 
-	uiPumpStatus(PumpStatus_On);
-	wiReportPump(PumpStatus_On);
-}
+    unsigned long _restTime;
+    unsigned long _cycleTime;
+    boolean _isRestStateChanged;
+    boolean _restEnabled;
 
-void pumpPhysicalOff(void)
-{
-	if(_pumpPhysicalOn)
-	{
-		setPumpOut(LOW);
-		_pumpPhysicalOn=false;
-	}
+    void virtual deviceOn(void)=0;
+    void virtual deviceOff(bool)=0;
+public:    
+    RestableDevice(void)
+    {
+	    _physicalOn=false;
+	    _isDeviceOn=false;
+	    _isRestStateChanged = false;
+	    _restEnabled=false;    
+    }
+    
+    void turnPhysicalOn(void)
+    {
+	    if(_physicalOn) return;
+    	deviceOn();
+	    _physicalOn=true;
+	    _lastSwitchOnTime = gCurrentTimeInMS;
+    }
+
+    void turnPhysicalOff(void)
+    {
+        deviceOff(_isDeviceOn);
+		_physicalOn=false;
+    }
+
+    void setCycle(unsigned long cycle, unsigned long rest)
+    {
+    	_restTime =rest;
+	    _cycleTime=cycle;
+    }
+    
+    void resetRest(void)
+    {
+	    _restEnabled=false;
+    	_isRestStateChanged = false;
+    }
+    
+    void setStopTemp(float temp)
+    {
+        _stopTemp = temp;
+    }
+
+    void off(void)
+    {
+	    if(!_isDeviceOn) return;
+	    _isDeviceOn=false;
+	    turnPhysicalOff();
+    }
+
+    void on(void)
+    {
+	    if(_isDeviceOn) return;
+	    _isDeviceOn=true;
+
+	    turnPhysicalOn();
+    }
+
+    void toggle(void)
+    {
+	    if(_isDeviceOn)
+		    off();
+	    else
+		    on();
+    }
+
+    bool isRestEnabled(void)
+    {
+	    return _restEnabled;
+    }
+    bool isOn(void)
+    {
+        return _isDeviceOn;
+    }
+
+    void setRestEnabled(boolean enable)
+    {
+	    _restEnabled=enable;
 	
-	if(gIsPumpOn){
-		uiPumpStatus(PumpStatus_On_PROGRAM_OFF);
-		wiReportPump(PumpStatus_On_PROGRAM_OFF);
-	}else{
-		uiPumpStatus(PumpStatus_Off);
-		wiReportPump(PumpStatus_Off);
-	}
-}
-
-void pumpInitialize(void)
-{
-	_pumpPhysicalOn=false;
-	gIsPumpOn=false;
-	_isPumpRestChanged = false;
-	_pumpRestEnabled=false;
-}
-
-void pumpLoadParameters(void)
-{
-	_pumpRestEnabled=false;
-	_pumpStopTemp = (float) readSetting(PS_TempPumpRest);
-//	_sensorType = readSetting(PS_SensorType);
-#if UsePaddleInsteadOfPump
-	_pumpRestTime =(unsigned long) readSetting(PS_PumpRest) *1000;
-	_pumpCycleTime=(unsigned long) readSetting(PS_PumpCycle) *1000;
-#else
-	_pumpRestTime =(unsigned long) readSetting(PS_PumpRest) *60 *1000;
-	_pumpCycleTime=(unsigned long) readSetting(PS_PumpCycle) *60 *1000;
-#endif
-	_isPumpRestChanged = false;
-#if 0	
-	Serial.print("pumpLoadParameters,cycletime=");
-	Serial.print(_pumpCycleTime);
-	Serial.print("resttime=");
-	Serial.println(_pumpRestTime);
-#endif
-}
-
-void pumpOff(void)
-{
-	if(!gIsPumpOn) return;
-	gIsPumpOn=false;
-	pumpPhysicalOff();
-}
-
-void pumpOn(void)
-{
-	if(gIsPumpOn) return;
-	gIsPumpOn=true;
-
-	pumpPhysicalOn();
-}
-
-#if MANUAL_PUMP_MASH == true
-void togglePump(void)
-{
-	if(gIsPumpOn)
-		pumpOff();
-	else
-		pumpOn();
-}
-#endif
-
-bool pumpRestIsEnabled(void)
-{
-	return _pumpRestEnabled;
-}
-
-void pumpRestSetEnabled(boolean enable)
-{
-	_pumpRestEnabled=enable;
-	
-	if(_pumpRestEnabled && _pumpPhysicalOn) // restart counting time
-		_pumpLastSwitchOnTime = gCurrentTimeInMS;
+    	if(_restEnabled && _physicalOn) // restart counting time
+	    	_lastSwitchOnTime = gCurrentTimeInMS;
 		
-	if(!_pumpRestEnabled && gIsPumpOn)
-	{
-        if(!_pumpPhysicalOn)
-        {
-			pumpPhysicalOn();
-		}
-	}
+    	if(!_restEnabled && _isDeviceOn)
+	    {
+            if(!_physicalOn)
+            {
+			    turnPhysicalOn();
+		    }
+	    }
+    }
+
+
+    boolean isRest(void)
+    {
+	    return ! _physicalOn;
+    }
+
+    boolean restEvent(void)
+    {
+	    if(_isRestStateChanged)
+	    {
+		    _isRestStateChanged = false;
+		    return true;
+	    }
+	    return false;
+    }
+
+    void run(void)
+    {
+	    if(!_isDeviceOn) return;
+	    // temperature control	
 	
-//	if (_pumpRestEnabled) Serial.println(F("Enable pump rest"));
-//	else Serial.println(F("disable pump rest"));
-}
-
-void pumpControl(boolean tempReached)
-{
-	_isStageTempReached =tempReached;
-}
-
-boolean isPumpRest(void)
-{
-	return ! _pumpPhysicalOn;
-}
-
-boolean pumpRestEvent(void)
-{
-	if(_isPumpRestChanged)
-	{
-		_isPumpRestChanged = false;
-		return true;
-	}
-	return false;
-}
-
-void pumpThread(void)
-{
-	if(!gIsPumpOn) return;
-	// temperature control	
+	    if(gCurrentTemperature >= _stopTemp)
+	    {
+      	    if(_physicalOn)
+      	    {
+			    turnPhysicalOff();
+        	    _isRestStateChanged = true;
+		    }
+		    return;
+  	    } 
+  	    else // of if(gCurrentTemperature >= _pumpStopTemp)
+  	    {
+  		    // if under pump stop temperature
+		    if(!_restEnabled)
+		    {
+      		    if(!_physicalOn) turnPhysicalOn();
+			    return;
+		    }
+         	if((gCurrentTimeInMS - _lastSwitchOnTime) < (unsigned long)_cycleTime) 
+          	{
+      	    	if(!_physicalOn)
+      		    {
+	      		    DBG_PRINTF("-End Pump Rest-");
+      			    turnPhysicalOn();
+        		    _isRestStateChanged = true;
+        	    }
+      	    } 
+      	    else 
+      	    {
+	  		    if(_restTime>0)
+	  		    {
+      		        // pump rest state, heat will be off!
+      			    if(_physicalOn)
+      			    {
+      				    DBG_PRINTF("-Pump Rest-");
+      				    turnPhysicalOff();
+        			    _isRestStateChanged = true;
+        		    }
+        	    }
+        	    if ((gCurrentTimeInMS - _lastSwitchOnTime) >= (_cycleTime + _restTime))
+        	    { 
+        		    _lastSwitchOnTime = gCurrentTimeInMS;
+        		    //Serial.println("on time start");
+        	    }
+      	    }	 
+        } // end of else //if if(gCurrentTemperature >= _pumpStopTemp)
 	
-	if(gCurrentTemperature >= _pumpStopTemp)
-	{
-      	if(_pumpPhysicalOn)
-      	{
-			pumpPhysicalOff();
-        	_isPumpRestChanged = true;
-		}
-		return;
-  	} 
-  	else // of if(gCurrentTemperature >= _pumpStopTemp)
-  	{
-  		// if under pump stop temperature
-		if(!_pumpRestEnabled)
-		{
-      		if(!_pumpPhysicalOn) pumpPhysicalOn();
-			return;
-		}
-      	if((gCurrentTimeInMS - _pumpLastSwitchOnTime) < (unsigned long)_pumpCycleTime) 
-      	{
-      		if(!_pumpPhysicalOn)
-      		{
-	      		DBG_PRINTF("-End Pump Rest-");
-      			pumpPhysicalOn();
-        		_isPumpRestChanged = true;
-        	}
-      	} 
-      	else 
-      	{
-	  		if(_pumpRestTime>0){
-      		// pump rest state, heat will be off!
-      			if(_pumpPhysicalOn)
-      			{
-      				DBG_PRINTF("-Pump Rest-");
-      				pumpPhysicalOff();
-        			_isPumpRestChanged = true;
-        		}
-        	}
-        	if ((gCurrentTimeInMS - _pumpLastSwitchOnTime) >= (_pumpCycleTime + _pumpRestTime))
-        	{ 
-        		_pumpLastSwitchOnTime = gCurrentTimeInMS;
-        		//Serial.println("on time start");
-        	}
-      	}	 
-    } // end of else //if if(gCurrentTemperature >= _pumpStopTemp)
-	
-}//pumpThread()
+    }//pumpThread()
+};
+
+class PumpControl: public RestableDevice
+{
+    public:
+    PumpControl(){}
+    
+    void virtual deviceOn(void)
+    {
+	    setPumpOut(HIGH);
+	    uiPumpStatus(PumpStatus_On);
+	    wiReportPump(PumpStatus_On);    
+    }
+    
+    void virtual deviceOff(bool)
+    {
+        setPumpOut(LOW);
+	    if(gIsPumpOn){
+		    uiPumpStatus(PumpStatus_On_PROGRAM_OFF);
+		    wiReportPump(PumpStatus_On_PROGRAM_OFF);
+	    }else{
+		    uiPumpStatus(PumpStatus_Off);
+		    wiReportPump(PumpStatus_Off);
+	    }        
+    }
+    void loadParameters(void)
+    {
+	    setStopTemp( (float) readSetting(PS_TempPumpRest));
+	    resetRest();
+
+    #if UsePaddleInsteadOfPump
+        setCycle((unsigned long) readSetting(PS_PumpCycle) *1000,(unsigned long) readSetting(PS_PumpRest) *1000);
+    #else
+        setCycle((unsigned long) readSetting(PS_PumpCycle) *60*1000,(unsigned long) readSetting(PS_PumpRest)*60 *1000);
+    #endif
+    }
+};
+
+PumpControl pump;
 
 // *************************
 //*  buzzer related function
@@ -1779,19 +1926,18 @@ void changeSettingValue(int address,byte value)
 // It is simple, but maybe overshooting?
 void changeAutomationTime(byte stage, byte time)
 {
-	updateSetting(PS_StageTimeAddr(stage),time);
+	automation.setStageTime(stage,time);
 }
 
-void changeAutomationTemperature(byte stage, int value)
+void changeAutomationTemperature(byte stage, float value)
 {
-	updateSettingWord(PS_StageTemperatureAddr(stage),value);
+	automation.setStageTemperature(stage, value);
 }
 
 void finishAutomationEdit(void)
 {
-#if WirelessSupported == true
+    automation.save();
 	wiRecipeChange();
-#endif
 }
 
 
@@ -1844,7 +1990,120 @@ void editItemChange(int change)
 	}	
 }
 
+// *************************
+//*  Generic Setting
+// *************************
 
+typedef struct _SettingItem{
+    const char* title;
+    void (*display)(int);
+    byte address;
+    byte max;
+    byte min;
+} SettingItem;
+
+class SettingEditor{
+
+protected:
+    byte _currentSettingAddress;
+    byte _currentSettingIndex;
+    const SettingItem *_SettingItems;
+
+    int (*_getValue)(int index);
+    void (*_setValue)(int index, int value);
+
+public:
+    SettingEditor(void){}
+
+    void setup(const SettingItem * items,int (*getter)(int index), void (*setter)(int index, int value))
+    {
+	    uiButtonLabel(ButtonLabel(Up_Down_x_Ok));
+	    _currentSettingIndex=0;
+	    _SettingItems=items;
+	    _getValue = getter;
+	    _setValue = setter;
+    }
+    void setup(const SettingItem * items)
+    {
+        setup(items,NULL,NULL);
+    }
+    
+    void nextItem(void)
+    {
+        _currentSettingIndex++;
+        displayItem();
+    }
+
+    void nextItem(byte max, byte min)
+    {
+        _currentSettingIndex++;
+
+	    SettingItem item;
+	    getItemDetail(item);
+        int value;        
+        if( item.address ==0 && _getValue != NULL) value=_getValue(_currentSettingIndex);
+	    else value=(int)readSetting(item.address);
+
+	    editItem(item.title,value,max,min,item.display);
+    }
+
+    void getItemDetail(SettingItem &item)
+    {
+ 	    const char* addr=(const char*) & _SettingItems[_currentSettingIndex];
+        
+        char *dst=(char*) &item;
+ 	    for (int i=0; i< sizeof(SettingItem); i++)
+        {
+            dst[i] =	pgm_read_byte_near(addr + i);
+        }
+        _currentSettingAddress = item.address;
+    }
+    void displayItem(void)
+    {
+	    SettingItem item;
+	    getItemDetail(item);
+
+        int value;        
+        if( item.address ==0 && _getValue != NULL) value=_getValue(_currentSettingIndex);
+	    else value=(int)readSetting(item.address);
+	    //editItem(str_t label, byte value, byte max, byte min,CDisplayFunc displayFunc)
+	    editItem(item.title,value,item.max,item.min,item.display);
+    }
+    
+    byte index(void){ return _currentSettingIndex; }
+    void setIndex(byte index) {_currentSettingIndex = index; }
+
+    bool buttonHandler(void)
+    {
+	    if(btnIsEnterPressed)
+	    {
+		    byte value=(byte)editItemValue();
+		    
+		    if( _currentSettingAddress ==0 && _setValue != NULL) _setValue(_currentSettingIndex,value);
+		    changeSettingValue(_currentSettingAddress,value);
+		
+            return true;
+	    }
+	    else if(btnIsUpPressed)
+	    {
+		    editItemChange(+1);
+	    }
+	    else if(btnIsDownPressed)
+	    {
+		    editItemChange(-1);
+	    }
+	    else if(btnIsUpContinuousPressed)
+	    {
+		    editItemChange(+4);
+	    }
+	    else if(btnIsDownContinuousPressed)
+	    {
+		    editItemChange(-4);
+	    }
+	    return false;
+    }
+};
+SettingEditor settingEditor;
 // *************************
 //*  PID & PWD settings
 // *************************
@@ -1883,7 +2142,6 @@ void displayTempDivide10(int data)
 }
 
 
-
 void displayPercentage(int data)
 {
 	uiDisplaySettingPercentage(data);
@@ -1899,173 +2157,6 @@ void displayOnOff(int value)
 	else uiSettingDisplayText(STR(On));
 }
 
-//**************************************************************
-//* PID PWM setting screen
-//**************************************************************
-byte _currentPidSetting;
-
-#if MaximumNumberOfSensors > 1
-byte _pidSettingAux;
-#endif
-
-// table implementation takes up a lot of memory.
-// change to hard-coded.
-#define PID_SETTING_KP 1
-#define PID_SETTING_KI 2
-#define PID_SETTING_KD 3
-#define PID_SETTING_SampleTime 4
-#define PID_SETTING_Window 5
-#define PID_SETTING_PWM 6
-#define PID_SETTING_Calibration 7
-#define PID_SETTING_PIDStart 8
-#define PID_SETTING_PIDDoughIn 9
-
-#define PID_SETTING_Resolution 10
-
-
-void settingPidEditSetting(void)
-{	
-	int value;
-#if MaximumNumberOfSensors > 1
-
-	if(_currentPidSetting==PID_SETTING_Calibration)
-		value=(int)readSetting(CalibrationAddressOf(_pidSettingAux));	
-	else
-#endif
-#if EnableSensorResolution	== true
-	if(_currentPidSetting!=PID_SETTING_Resolution)
-#endif
-		value=(int)readSetting(PS_AddrOfPidSetting(_currentPidSetting));
-
-	//Serial.printf("PID:%d val:%d\n",_currentPidSetting,value);
-	
-	//editItem(str_t label, byte value, byte max, byte min,CDisplayFunc displayFunc)
-	if(_currentPidSetting== PID_SETTING_KP)
-		editItem(STR(kP),value,200,0,& displayOffset100);
-	else if(_currentPidSetting== PID_SETTING_KI)
-		editItem(STR(kI),value, 255,0,& displayOffset100);
-	else if(_currentPidSetting== PID_SETTING_KD)
-		editItem(STR(kD),value,200,0,& displayOffset100);
-	else if(_currentPidSetting== PID_SETTING_SampleTime)
-		editItem(STR(SampleTime),value,3500/250,1500/250,& displayMultiply250);
-	else if(_currentPidSetting== PID_SETTING_Window)
-		editItem(STR(WindowSet_ms),value,7500/250,4000/250,& displayMultiply250);
-	else if(_currentPidSetting== PID_SETTING_PWM)
-		editItem(STR(Heat_in_Boil),value,100,0,& displayPercentage);
-	else if(_currentPidSetting== PID_SETTING_Calibration){
-		editItem(STR(Calibration),value,100,0,&displayTempShift50Divide10);
-#if MaximumNumberOfSensors > 1		
-		editItemTitleAppendNumber(_pidSettingAux+1);
-#endif
-	}else  if(_currentPidSetting== PID_SETTING_PIDStart){
-		editItem(STR(Start_PID_In),value,35,10,&displayTempDivide10);
-	}
-#if EnableSensorResolution	== true
-	else if(_currentPidSetting== PID_SETTING_PIDDoughIn){
-		editItem(STR(PID_Dough_In),value,1,0,&displayOnOff);
-	}else if(_currentPidSetting== PID_SETTING_Resolution){
-		value=ResolutionDecode(gSensorResolution) + 9;
-//		Serial.printf("res:%d,%d\n",value,gSensorResolution);
-		editItem(STR(SensorResolution),value,12,9,&displayResolution);
-	}
-#endif
-}
-
-void settingPidSetup(void)
-{
-	uiButtonLabel(ButtonLabel(Up_Down_x_Ok));
-	_currentPidSetting=1;
-#if MaximumNumberOfSensors > 1
-	_pidSettingAux =0;
-#endif
-
-	settingPidEditSetting();
-}
-
-void settingPidEventHandler(byte)
-{
-	if(btnIsEnterPressed)
-	{
-		byte value=(byte)editItemValue();
-		
-#if EnableSensorResolution	== true
-		if(_currentPidSetting == PID_SETTING_Resolution)
-		{
-			byte res= value -9;
-			
-			Serial.printf("Setres to %d\n",res);
-			
-			#if	MaximumNumberOfSensors > 1
-			for(byte i=0;i<gSensorNumber;i++)
-				tpSetSensorResolution(gSensorAddresses[i],res);
-			#else		
-			tpSetSensorResolution(NULL,res);
-			#endif
-			//uiClearSettingRow();
-			switchApplication(SETUP_SCREEN);
-			return;
-		}
-		else
-#endif
-		if(_currentPidSetting == PID_SETTING_Calibration)
-		{
-#if	MaximumNumberOfSensors > 1
-			changeSettingValue(CalibrationAddressOf(_pidSettingAux),value);				
-			gSensorCalibrations[_pidSettingAux] =((float) value -50)/10.0;
-			_pidSettingAux++;
-				
-			if (_pidSettingAux == gSensorNumber)
-			{
-				_currentPidSetting ++;
-			}
-
-#else
-			changeSettingValue(PS_AddrOfPidSetting(_currentPidSetting),value);
-			gSensorCalibration = ((float) value -50)/10.0;
-			_currentPidSetting ++;
-#endif
-		}else{
-			changeSettingValue(PS_AddrOfPidSetting(_currentPidSetting),value);
-			
-#if EnableSensorResolution	!= true
-			if (_currentPidSetting == PID_SETTING_PIDStart){
-				switchApplication(SETUP_SCREEN);
-				return;
-			}
-#endif
-#if MaximumNumberOfSensors > 1	
-			if(_currentPidSetting == PID_SETTING_PWM && gSensorNumber==0) 
-				_currentPidSetting ++;
-#endif
-			_currentPidSetting ++;
-
-		}
-		// not last item, (if it is last item, it won't run through here)
-		settingPidEditSetting();
-	}
-	else if(btnIsUpPressed)
-	{
-		editItemChange(+1);
-	}
-	else if(btnIsDownPressed)
-	{
-		editItemChange(-1);
-	}
-	else if(btnIsUpContinuousPressed)
-	{
-		editItemChange(+4);
-	}
-	else if(btnIsDownContinuousPressed)
-	{
-		editItemChange(-4);
-	}
-
-}
-
-// *************************
-//*  Unit Parameters settings
-// *************************
-byte _currentUnitSetting;
 
 void displayDegreeSymbol(int value)
 {
@@ -2092,11 +2183,13 @@ void displayTemperature(int value)
 	uiSettingDisplayNumber((float)value,0);
 }
 */
+/*
 void displayActivePassive(int value)
 {
 	if (value==0) uiSettingDisplayText(STR(Passive));
 	else uiSettingDisplayText(STR(Active));
-}
+}*/
+
 #if UsePaddleInsteadOfPump
 void displayTimeSec(int value)
 {
@@ -2126,7 +2219,7 @@ void displaySimpleTemperature(int value)
 	uiSettingShowTemperature((float)value,0);
 }
 
-#if NoWhirlpool != true
+//#if NoWhirlpool != true
 #define WhirlpoolHot 2
 #define WhirlpoolCold 1
 #define WhirlpoolOff 0
@@ -2137,136 +2230,189 @@ void displayHotColdOff(int value)
 	else if (value==WhirlpoolCold) uiSettingDisplayText(STR(Cold));
 	else uiSettingDisplayText(STR(Hot));
 }
+//#endif
+
+
+
+//**************************************************************
+//* PID PWM setting screen
+//**************************************************************
+const SettingItem pidSettingItems[] PROGMEM=
+{
+ #if SecondaryHeaterSupport == true
+/*0*/{STR(kP_1),          & displayOffset100,  PS_kP,200,0},
+/*1*/{STR(kI_1),          & displayOffset100,  PS_kI, 255,0},
+/*2*/{STR(kD_1),          & displayOffset100,  PS_kD, 200,0},
+/*3*/{STR(kP_2),          & displayOffset100,  PS_kP_Secondary,200,0},
+/*4*/{STR(kI_2),          & displayOffset100,  PS_kI_Secondary, 255,0},
+/*5*/{STR(kD_2),          & displayOffset100,  PS_kD_Secondary, 200,0},
+/*6*/{STR(kP_both),          & displayOffset100,  PS_kP_AllOn,200,0},
+/*7*/{STR(kI_both),          & displayOffset100,  PS_kI_AllOn, 255,0},
+/*8*/{STR(kD_both),          & displayOffset100,  PS_kD_AllOn, 200,0},
+#else
+/*0*/{STR(kP),          & displayOffset100,  PS_kP,200,0},
+/*1*/{STR(kI),          & displayOffset100,  PS_kI, 255,0},
+/*2*/{STR(kD),          & displayOffset100,  PS_kD, 200,0},
+#endif
+/*3,9*/{STR(SampleTime),  & displayMultiply250,PS_SampleTime,3500/250,1500/250},
+/*4,10*/{STR(WindowSet_ms),& displayMultiply250,PS_WindowSize,7500/250,4000/250},
+/*5,11*/{STR(Heat_in_Boil),& displayPercentage, PS_BoilHeat,100,0},
+/*6,12*/{STR(Start_PID_In),& displayTempDivide10,   PS_PID_Start,35,10},
+/*7,13*/{STR(SensorResolution),&displayResolution, NULL ,12,9,},
+#if MaximumNumberOfSensors > 1
+/*8,14*/{STR(Calibration), & displayTempShift50Divide10,NULL,100,0}
+#else
+/*8,14*/{STR(Calibration), & displayTempShift50Divide10,PS_Offset,100,0}
+#endif
+};
+
+#if SecondaryHeaterSupport == true
+#define SensorResolutionIndex 13
+#else
+#define SensorResolutionIndex 7
 #endif
 
-void settingUnitDisplayItem(void)
+byte _pidSettingAux;
+
+int pidGetValue(int index)
 {
-	int value=(int)readSetting(PS_AddrOfUnitSetting(_currentUnitSetting));
-	
-	//editItem(str_t label, byte value, byte max, byte min,CDisplayFunc displayFunc)
-	if(_currentUnitSetting==0)
-		editItem(STR(Set_Degree),value,1,0,&displayDegreeSymbol);
-	else if(_currentUnitSetting==1)
-		editItem(STR(No_Delay_Start),value,1,0,&displayYesNo);
-	else if(_currentUnitSetting==2){
-		int max= gIsUseFahrenheit? 221:105;
-	#if DEVELOP_SETTING_VALUE == true	
-		int min= gIsUseFahrenheit? 194:90;
-	#else
-		int min= gIsUseFahrenheit? 50:10;
-	#endif
-	
-		editItem(STR(Temp_Boil),value,max,min,&displaySimpleTemperature);
-	/*else if(_currentUnitSetting==3) 
-	// ********* skip, for internal usage always use C
- 		editItem(STR(Temp_Boil),value,105,90,&displaySimpleInteger);*/
-	}else if(_currentUnitSetting==4){
-		#if UsePaddleInsteadOfPump
-		editItem(STR(Pump_Cycle),value,30,5,&displayTimeSec);
-		#else
-		editItem(STR(Pump_Cycle),value,15,5,&displayTime);
-		#endif
-	}else if(_currentUnitSetting==5){
-		#if UsePaddleInsteadOfPump
-		editItem(STR(Pump_Rest),value,60,0,&displayTimeSec);
-		#else
-		editItem(STR(Pump_Rest),value,5,0,&displayTime);
-		#endif
-	}else if(_currentUnitSetting==6)
-		editItem(STR(Pump_PreMash),value,1,0,&displayOnOff);
-	else if(_currentUnitSetting==7)
-		editItem(STR(Pump_On_Mash),value,1,0,&displayOnOff);
-	else if(_currentUnitSetting==8)
-		editItem(STR(Pump_Mashout),value,1,0,&displayOnOff);
-	else if(_currentUnitSetting==9)
-		editItem(STR(Pump_On_Boil),value,1,0,&displayOnOff);
-	else if(_currentUnitSetting==10){
-		int max= gIsUseFahrenheit? 221:105;
-		int min= gIsUseFahrenheit? 176:80;
-		editItem(STR(Pump_Stop),value,max,min,&displaySimpleTemperature);
-	/*else if(_currentUnitSetting==11) // ignore
-	// ********* skip, for internal usage always use C
-		editItem(STR(Pump_Stop),value,105,80,&displaySimpleTemperature);*/
-	}else if(_currentUnitSetting==12)
-		editItem(STR(PID_Pipe),value,1,0,&displayActivePassive);
-	else if(_currentUnitSetting==13)
-		editItem(STR(Skip_Add),value,1,0,&displayYesNo);
-	else if(_currentUnitSetting==14)
-		editItem(STR(Skip_Remove),value,1,0,&displayYesNo);
-	else if(_currentUnitSetting==15)
-		editItem(STR(Skip_Iodine),value,1,0,&displayYesNo);
-	else if(_currentUnitSetting==16)
-		editItem(STR(IodineTime),value,90,0,&displayTimeOff);
-#if NoWhirlpool != true	
-	else if(_currentUnitSetting==17)
-		editItem(STR(Whirlpool),value,2,0,&displayHotColdOff);
+    if(index == SensorResolutionIndex)
+        return ResolutionDecode(gSensorResolution) + 9;
+#if	MaximumNumberOfSensors > 1
+    else
+        return (int)readSetting(CalibrationAddressOf(_pidSettingAux));
 #endif
 }
 
-// Initialization of the screen
+void pidSetValue(int index, int value)
+{
+    // only for sensor resolution
+    
+    byte res= value -9;
+    if(index == SensorResolutionIndex){
+#if	MaximumNumberOfSensors > 1
+    	for(byte i=0;i<gSensorNumber;i++)
+            tpSetSensorResolution(gSensorAddresses[i],res);
+#else		
+        tpSetSensorResolution(NULL,res);
+#endif
+    }
+#if	MaximumNumberOfSensors > 1
+    else{
+		changeSettingValue(CalibrationAddressOf(_pidSettingAux),value);				
+		gSensorCalibrations[_pidSettingAux] =((float) value -50)/10.0;
+    }
+#endif
+}
+
+void settingPidSetup(void)
+{
+	settingEditor.setup(pidSettingItems,& pidGetValue,& pidSetValue);
+	settingEditor.displayItem();
+}
+
+void settingPidEventHandler(byte)
+{
+	if(settingEditor.buttonHandler())
+	{
+	 #if MaximumNumberOfSensors > 1
+    	if(settingEditor.index() == (sizeof(pidSettingItems)/sizeof(SettingItem) -2)){
+            if (0 == gSensorNumber){
+	            switchApplication(SETUP_SCREEN);
+                return;
+            }
+            _pidSettingAux=0;
+            settingEditor.nextItem();        	
+    	    editItemTitleAppendNumber(_pidSettingAux+1);
+    	    return;
+        }else
+    #endif
+	    if(settingEditor.index() == (sizeof(pidSettingItems)/sizeof(SettingItem) -1)){
+	        // last
+	        #if MaximumNumberOfSensors > 1
+    		_pidSettingAux++;
+	        if(_pidSettingAux < gSensorNumber){
+    	        settingEditor.displayItem();
+    	        editItemTitleAppendNumber(_pidSettingAux+1);
+    	        return;
+	        }         
+	        #else
+	        gSensorCalibration= ((float)(readSetting(PS_Offset) - 50) / 10.0);
+            #endif
+
+	        switchApplication(SETUP_SCREEN);
+            return;
+
+	    }
+        settingEditor.nextItem();
+    }
+}
+
+// *************************
+//*  Unit Parameters settings
+// *************************
+const SettingItem unitSettingItems[] PROGMEM={
+/* 0 */{STR(Set_Degree),   &displayDegreeSymbol,       PS_TempUnit ,1,0}, 
+/* 1 */{STR(Temp_Boil),    &displaySimpleTemperature,  PS_BoilTemp,105,90},  // celius
+/*  *///{STR(Temp_Boil),    &displaySimpleTemperature,  PS_BoilTemp,221,194}, //fahrenheit
+#if UsePaddleInsteadOfPump
+/* 2 */{STR(Pump_Cycle),   &displayTimeSec,            PS_PumpCycle,30,5},
+/* 3 */{STR(Pump_Rest),    &displayTimeSec,            PS_PumpRest,60,0},
+#else
+/*2 */ {STR(Pump_Cycle),   &displayTime,               PS_PumpCycle,15,5},
+/* 3 */{STR(Pump_Rest),    &displayTime,               PS_PumpRest,5,0},
+#endif
+/* 4 */{STR(Pump_PreMash), &displayOnOff,              PS_PumpPreMash,1,0},
+/* 5 */{STR(Pump_On_Mash), &displayOnOff,              PS_PumpOnMash,1,0},
+/* 6 */{STR(Pump_Mashout), &displayOnOff,              PS_PumpOnMashOut,1,0},
+/* 7 */{STR(Pump_On_Boil), &displayOnOff,              PS_PumpOnBoil,1,0},
+/* 8 */{STR(Pump_Stop),    &displaySimpleTemperature,  PS_TempPumpRest,105,80},  // celius
+/*  *///{STR(Pump_Stop),    &displaySimpleTemperature,  PS_TempPumpRest,221,176}, // fahrenheit
+/* 9 */{STR(PID_Dough_In), &displayOnOff,              PS_PID_DoughIn,1,0},
+/* 10 */{STR(PID_MaltOut),  &displayOnOff,              PS_PidPipe, 1,0},		
+/* 11 */{STR(Skip_Add),     &displayYesNo,              PS_SkipAddMalt,1,0},
+/* 12 */{STR(Skip_Remove),  &displayYesNo,              PS_SkipRemoveMalt,1,0},
+/* 13 */{STR(Skip_Iodine),  &displayYesNo,              PS_SkipIodineTest,1,0},
+/* 14 */{STR(IodineTime),   &displayTimeOff,            PS_IodineTime,90,0},
+/* 15 */{STR(Whirlpool),    &displayHotColdOff,         PS_Whirlpool,2,0}};
+
 void settingUnitSetup(void)
 {
-	uiButtonLabel(ButtonLabel(Up_Down_x_Ok));
-	_currentUnitSetting=0;
-	settingUnitDisplayItem();
+	settingEditor.setup(unitSettingItems);
+	settingEditor.displayItem();
 }
 
 void settingUnitEventHandler(byte)
 {
-	if(btnIsEnterPressed)
+	if(settingEditor.buttonHandler())
 	{
-		byte value=(byte)editItemValue();
-		changeSettingValue(PS_AddrOfUnitSetting(_currentUnitSetting),value);
-		
-		if(_currentUnitSetting == 0 ) // degree setting
-		{
-			temperatureUnitChange((bool) value);
+	    int index = settingEditor.index();
+		if(index  >= (sizeof(unitSettingItems)/sizeof(SettingItem) -1)){
+	        switchApplication(SETUP_SCREEN);
+            return;
+	    }
+		if( index == 0 ){ // degree setting
+			temperatureUnitChange(readSetting(PS_TempUnit)  );
 		}
 		
-		//goto next item
-		_currentUnitSetting++;
-		
-		// use C only internally.
-		if(_currentUnitSetting== 11 || _currentUnitSetting== 3)
-			_currentUnitSetting ++;
-#if NoWhirlpool == true	
-		if(_currentUnitSetting== 17)
-#else
-		if(_currentUnitSetting== 18)
-#endif
-		{
-			//uiClearSettingRow();
-			switchApplication(SETUP_SCREEN);
-			return;
-		}
-		settingUnitDisplayItem();
-	}
-	else if(btnIsUpPressed)
-	{
-		editItemChange(+1);
-	}
-	else if(btnIsDownPressed)
-	{
-		editItemChange(-1);
-	}
-	else if(btnIsUpContinuousPressed)
-	{
-		editItemChange(+4);
-	}
-	else if(btnIsDownContinuousPressed)
-	{
-		editItemChange(-4);
-	}
+		if(gIsUseFahrenheit && ((index +1)== 1)){
+			settingEditor.nextItem(221,194);
+        }else if(gIsUseFahrenheit && ((index +1)== 8)){
+			settingEditor.nextItem(221,176);
+        }else
+            settingEditor.nextItem();	
+    }
 }
 
 // *************************
 //*  Automation settings
 // *************************
-
+#define ToTempForEditing(t) ((int)((t)*4))
+#define TempFromEditing(t)  ((float)(t)/4.0)
 
 void displayStageTemperature(int value)
 {
-	float temperature=TempFromStorage(value);
+	float temperature=TempFromEditing(value);
 	uiSettingShowTemperature(temperature,2);
 }
 
@@ -2279,11 +2425,12 @@ byte _editingStageAux;
 // for hop time
 //    it is number of hop
 //    
+byte _postBoilHopIndex;
 
 int _maxHopTime; // to make sure hop time is in order
 				  // will be set at BOIL time setting
 				  // and every hoptime
-byte _hopNumber;
+
 #define MAX_STAGE_TIME 140
 #define MIN_STAGE_TIME 1
 
@@ -2294,11 +2441,9 @@ void settingAutomationDisplayItem(void)
 	if(_editingStage <=7) // from MashIn,Phytase,Glucanase,Protease,bAmylase,aAmylase1,aAmylase2,MashOut
 	{
 		if(_editingStageAux==0){
-			value = readSettingWord(PS_StageTemperatureAddr(_editingStage));
-			// round to .25
-			value = ToTempInStorage(round025(TempFromStorage(value)));
+			value = ToTempForEditing(automation.stageTemperature(_editingStage));
 		}else{
-			value =readSetting(PS_StageTimeAddr(_editingStage));
+			value =automation.stageTime(_editingStage);
 			if (value==0) value=1;
 		}
 	}
@@ -2314,21 +2459,21 @@ void settingAutomationDisplayItem(void)
 		uiButtonLabel(ButtonLabel(Up_Down_x_Ok));
 	if(_editingStage ==0)
 	{
-		int max=(gIsUseFahrenheit)? ToTempInStorage(167):ToTempInStorage(75);
-		int min=(gIsUseFahrenheit)? ToTempInStorage(68):ToTempInStorage(20);
+		int max=(gIsUseFahrenheit)? ToTempForEditing(167):ToTempForEditing(75);
+		int min=(gIsUseFahrenheit)? ToTempForEditing(68):ToTempForEditing(20);
 		// Mash In:temp only
 		editItem(STR(Mash_In),value,max,min,&displayStageTemperature);
 	}
 
 	else if(_editingStage >0 && _editingStage < 7)
 	{
-		int max=(gIsUseFahrenheit)? ToTempInStorage(169):ToTempInStorage(76);
+		int max=(gIsUseFahrenheit)? ToTempForEditing(169):ToTempForEditing(76);
 		int minTemp;
 		
 		if(_editingStage==1){
-			minTemp=(gIsUseFahrenheit)? ToTempInStorage(77):ToTempInStorage(25);
+			minTemp=(gIsUseFahrenheit)? ToTempForEditing(77):ToTempForEditing(25);
 		}else{
-			minTemp=readSettingWord(PS_StageTemperatureAddr(_editingStage-1));
+			minTemp=ToTempForEditing(automation.stageTemperature(_editingStage-1)) +1;
 		}
 		
 		if (_editingStageAux == 0){
@@ -2343,8 +2488,8 @@ void settingAutomationDisplayItem(void)
 	{
 		// MashOut
 		if (_editingStageAux == 0){
-			int max=(gIsUseFahrenheit)? ToTempInStorage(176):ToTempInStorage(80);
-			int min=(gIsUseFahrenheit)? ToTempInStorage(167):ToTempInStorage(75);
+			int max=(gIsUseFahrenheit)? ToTempForEditing(176):ToTempForEditing(80);
+			int min=(gIsUseFahrenheit)? ToTempForEditing(167):ToTempForEditing(75);
 		
 			editItem(STR(Mash_out),value,max,min,&displayStageTemperature);
 		}
@@ -2354,21 +2499,21 @@ void settingAutomationDisplayItem(void)
 	else if(_editingStage ==8)
 	{
 		// 8. number of hops
-		value =readSetting(PS_NumberOfHops);
+		value =automation.numberOfHops();
 		// boiling, need to input 
 		editItem(STR(Number_Of_Hops),value,10,0,&displaySimpleInteger);
 	}
 	else if(_editingStage ==9)
 	{
 		// 9. boil time
-		value =readSetting(PS_BoilTime);
+		value =automation.boilTime();
 		// boiling, need to input 
 		editItem(STR(Boil),value,MAX_STAGE_TIME,MIN_STAGE_TIME,&displayTime);
 	}
-	else //if(_editingStage ==10)
+	else if(_editingStage ==10)
 	{
 		//10. hops
-		value=readSetting(PS_TimeOfHop(_editingStageAux));
+		value=automation.timeOfHop(_editingStageAux);
 		
 		if(value>_maxHopTime) value=_maxHopTime;
 		//create a number
@@ -2376,6 +2521,55 @@ void settingAutomationDisplayItem(void)
 		
 		editItem(STR(Hops_Number_x),value,_maxHopTime,0,&displayTime);
 		editItemTitleAppendNumber(_editingStageAux+1); // 
+	}
+	else if(_editingStage ==11) // hop session
+	{
+		//11. hopstand session number
+		value=automation.numberOfHopStandSession();
+		//DBG_PRINTF("numberOfHopStandSession:%d\n",value);
+		 
+		if(value>MAXIMUM_HSSESSION_NUMBER) value=0;
+		//DBG_PRINTF("numberOfHopStandSession:%d\n",value);
+		//create a number
+		// hop number starts from 1		
+		editItem(STR(HS_Session_Number),value,MAXIMUM_HSSESSION_NUMBER,0,&displaySimpleInteger);
+	}
+	else if(_editingStage ==12) // hop session start temperature
+	{
+        value =automation.sessionStartTemperature(_editingStageAux);
+
+		int min=(gIsUseFahrenheit)? ToTempForEditing(77):ToTempForEditing(25);
+		int max;
+		if (_editingStageAux == 0){
+		    max = (gIsUseFahrenheit)? ToTempForEditing(212):ToTempForEditing(100);
+		}else{
+		    max = ToTempForEditing(automation.sessionKeepTemperature(_editingStageAux -1)-1);
+		}
+		if(value > max || value < min) value = max;
+
+        editItem(STR(HS_Start),value,max,min,&displayStageTemperature);
+        editItemTitleAppendNumber(_editingStageAux +1);
+	}
+	else  if(_editingStage ==13) // hop session keep temperature
+	{
+        value =automation.sessionKeepTemperature(_editingStageAux);
+
+		int min=(gIsUseFahrenheit)? ToTempForEditing(77):ToTempForEditing(25);
+		int max=ToTempForEditing(automation.sessionStartTemperature(_editingStageAux));
+        if(value > max || value < min) value = max;
+        
+        editItem(STR(HS_Keep),value,max,min,&displayStageTemperature);
+        editItemTitleAppendNumber(_editingStageAux +1);
+	}
+	else  if(_editingStage ==14) //post hop time
+	{
+        value =automation.hopInSession(_editingStageAux,_postBoilHopIndex);
+
+		int max=(_postBoilHopIndex ==0)? 255:automation.hopInSession(_editingStageAux,_postBoilHopIndex-1);
+
+        editItem(STR(PBH_x),value,max,0,&displayTime);
+        editItemTitleAppendNumber(automation.postBoilHopIndex(_editingStageAux,_postBoilHopIndex));
+        uiButtonLabel(ButtonLabel(Up_Down_End_More));
 	}
 }
 
@@ -2401,7 +2595,7 @@ void settingAutoEventHandler(byte)
 		{
 			if(_editingStageAux ==0)
 			{
-				changeAutomationTemperature(_editingStage,value);
+				changeAutomationTemperature(_editingStage,TempFromEditing(value));
 			
 				if(_editingStage==0) // no time needed for Mash In
 					_editingStage++;
@@ -2418,20 +2612,19 @@ void settingAutoEventHandler(byte)
 		}
 		else if(_editingStage == 8)
 		{
-			updateSetting(PS_NumberOfHops,(byte)value);
+			automation.setNumberOfHops((uint8_t) value);
 			//number of hops
 			_editingStage++;
 		}
 		else if(_editingStage == 9)
 		{
-			updateSetting(PS_BoilTime,(byte)value);
-			
+			automation.setBoilTime((uint8_t) value);
 			// set the maxHopTime for the first hop
 			_maxHopTime=value;
 			// boiling time;
 			
 			_editingStageAux=0;
-			int hopsNum=readSetting(PS_NumberOfHops);
+			int hopsNum=automation.numberOfHops();
 			if(hopsNum){
 				_editingStage++;
 			
@@ -2443,23 +2636,22 @@ void settingAutoEventHandler(byte)
 				return;
 			}
 		}
-		else // if(_editingStage == 10)
+		else if(_editingStage == 10)
 		{
-			updateSetting(PS_TimeOfHop(_editingStageAux),(byte)value);
-			
+			automation.setTimeOfHop(_editingStageAux,(byte)value);
 			// update masxHoptime for next hop
 			_maxHopTime = value-1;
 			
-			int hopsNum=readSetting(PS_NumberOfHops);
+			int hopsNum=automation.numberOfHops();
 			
 			if(_editingStageAux == (hopsNum-1))
 			{
 				//finish
-				finishAutomationEdit();
+				//finishAutomationEdit();
 				
 				//uiClearSettingRow();
-				switchApplication(SETUP_SCREEN);
-				return;
+				//switchApplication(SETUP_SCREEN);
+				_editingStage ++;
 			}
 			else
 			{
@@ -2467,6 +2659,54 @@ void settingAutoEventHandler(byte)
 
 			}
 		}
+		else if(_editingStage == 11)
+		{
+		    automation.setNumberOfHopStandSession(value);
+		    if(value ==0){
+				finishAutomationEdit();
+				switchApplication(SETUP_SCREEN);
+				return;
+		        
+		    }else{
+    		    _editingStageAux =0;
+    		    _editingStage ++;
+		    }
+		}
+		else if(_editingStage == 12) //start
+		{
+		    automation.setSessionStartTemperature(_editingStageAux,TempFromEditing(value));
+		    _editingStage ++;
+		}
+		else if(_editingStage == 13) // keep
+		{
+		    automation.setSessionKeepTemperature(_editingStageAux,TempFromEditing(value));
+		    _editingStage ++;
+		    _postBoilHopIndex=0;
+		}
+		else if(_editingStage == 14) //post hop time
+		{
+		    automation.setHopInSession(_editingStageAux,_postBoilHopIndex,value);
+
+		    _postBoilHopIndex ++;
+
+		    if(automation.postBoilHopIndex(_editingStageAux,_postBoilHopIndex) > MAXIMUM_POST_BOIL_HOP_NUMBER
+		     || (_postBoilHopIndex >= MAXIMUM_HOP_IN_HSSESSION 
+		        && (_editingStageAux +1) == automation.numberOfHopStandSession())){
+		        // force to stop
+		        automation.setNumberOfHopStandSession(_editingStageAux +1);
+		        finishAutomationEdit();
+				switchApplication(SETUP_SCREEN);
+				return;
+		    }
+		    if(_postBoilHopIndex >= MAXIMUM_HOP_IN_HSSESSION){
+		        // next session
+		        automation.setNumberOfHopInSession(_editingStageAux,_postBoilHopIndex+1);
+    		    _editingStageAux ++;
+		        _postBoilHopIndex=0;
+		        _editingStage=12;
+		    }
+		}
+
 		//next item
 		settingAutomationDisplayItem();
 	}
@@ -2484,38 +2724,128 @@ void settingAutoEventHandler(byte)
 			_editingStageAux=0;
 			settingAutomationDisplayItem();
 		}
+		else if (_editingStage == 14)
+		{
+    		int value=editItemValue();
+		    automation.setHopInSession(_editingStageAux,_postBoilHopIndex,value);
+		    automation.setNumberOfHopInSession(_editingStageAux,_postBoilHopIndex+1);
+		    _editingStageAux ++;
+		    if(_editingStageAux == automation.numberOfHopStandSession()){
+		        // finish
+		        finishAutomationEdit();
+				switchApplication(SETUP_SCREEN);
+				return;
+		    }else{
+		        // next
+		        _postBoilHopIndex=0;
+		        _editingStage=12;
+		        settingAutomationDisplayItem();
+		    }		    
+		}
 	}
 	else if(btnIsUpPressed)
 	{
-		if(_editingStage <8 && _editingStageAux == 0)
-			editItemChange(+4);
-		else
 			editItemChange(+1);
 	}
 	else if(btnIsDownPressed)
 	{
-		if(_editingStage <8 && _editingStageAux == 0)
-			editItemChange(-4);
-		else
 			editItemChange(-1);
 	}
 	else if(btnIsUpContinuousPressed)
 	{
-		if(_editingStage <8 && _editingStageAux == 0)
-			editItemChange(+12);
-		else
 			editItemChange(+4);
 	}
 	else if(btnIsDownContinuousPressed)
 	{
-		if(_editingStage <8 && _editingStageAux == 0)
-			editItemChange(-12);
-		else
 			editItemChange(-4);
 	}
 }// end of void settingAutoEventHandler(byte)
 
+// *************************
+//*  misc settings
+// *************************
+void displayIntegerPlusOne(int data)
+{
+	uiSettingDisplayNumber((float)data+1,0);
+}
+#if SecondaryHeaterSupport == true
+void displayHeaterSelection(int data)
+{
+	if (data==1) uiSettingDisplayText(STR(PrimaryHeater));
+	else if (data==2) uiSettingDisplayText(STR(SecondaryHeater)); 
+	else uiSettingDisplayText(STR(BothHeater));    
+}
+#endif
 
+const SettingItem miscSettingItems[] PROGMEM=
+{
+/*0*/{STR(No_Delay_Start),&displayYesNo, PS_NoDelayStart ,1,0},
+/*1*/{STR(Button_Buzz), &displayYesNo, PS_ButtonFeedback,1,0},
+/*2*/{STR(PumpPrime), &displaySimpleInteger, PS_PumpPrimeCount,10,0},
+/*3*/{STR(PrimeOn), &displayMultiply250, PS_PumpPrimeOnTime,40,1},
+/*4*/{STR(PrimeOff), &displayMultiply250, PS_PumpPrimeOffTime,40,0}
+#if SpargeHeaterSupport == true
+/*5*/,{STR(Sparge_Heater),&displayYesNo,PS_SpargeWaterEnableAddress,1,0,}
+#if MaximumNumberOfSensors >1
+/*6*/,{STR(Temp_Ctrl),    &displayYesNo,PS_SpargeWaterTemperatureControlAddress,1,0},
+/*7*/{STR(Sparge_Sensor), &displayIntegerPlusOne,PS_SpargeWaterSensorIndexAddress,0,1,},
+/*8*/{STR(Sparge_Temp),   &displaySimpleTemperature,PS_SpargeWaterTemperatureAddress,80,75,},
+/*9*/{STR(Temp_Diff),    &displayTempDivide10,PS_SpargeWaterTemperatureDifferenceAddress,20,5}
+#endif
+#endif
+#if SecondaryHeaterSupport == true
+/**/,{STR(HeaterPreMash),    &displayHeaterSelection,PS_PreMashHeating,3,1},
+/**/{STR(HeaterMashing),    &displayHeaterSelection,PS_MashingHeating,3,1},
+/**/{STR(HeaterBoiling),    &displayHeaterSelection,PS_BoilingHeating,3,1},
+/**/{STR(HeaterPostBoil),   &displayHeaterSelection,PS_PostBoilHeating,3,1}
+#endif
+};
+
+#define  SpargeTemperatureControlIndex 6
+#define  SpargeSensorIndex 7
+#define  SpargeTemperatureIndex 8
+
+void miscSettingSetup(void)
+{
+	settingEditor.setup(miscSettingItems);
+	settingEditor.displayItem();
+}
+
+void miscSettingEventHandler(byte)
+{
+	if(settingEditor.buttonHandler())
+	{
+	    int index=settingEditor.index();
+	    
+#if SpargeHeaterSupport == true
+#if MaximumNumberOfSensors >1
+        if(index == 5){
+            if(!readSetting(PS_SpargeWaterEnableAddress)){
+                // disable. sparge heating control. skip the following 5 items
+                index += 5;
+                settingEditor.setIndex(index);
+            }
+        }
+#endif
+#endif
+	    if(index >=(sizeof(miscSettingItems)/sizeof(SettingItem) -1)){
+	        switchApplication(SETUP_SCREEN);
+            return;
+	    }
+#if SpargeHeaterSupport == true
+#if MaximumNumberOfSensors >1
+	    if( (index +1 ) == SpargeTemperatureControlIndex)
+    	    settingEditor.nextItem((gSensorNumber>1)? 1:0,0);
+	    else  if((index +1 ) == SpargeSensorIndex)
+	        settingEditor.nextItem(gSensorNumber,1);
+	    else  if( gIsUseFahrenheit && ((index +1 ) == SpargeTemperatureIndex))
+            settingEditor.nextItem(176,167);
+        else
+#endif
+#endif
+            settingEditor.nextItem();
+    }
+}
 // *************************
 //*  Sensor setup
 // *************************
@@ -2617,9 +2947,9 @@ void sensorMenuItem(void)
 
 		}else  if(_sensorSettingIndex ==(SensorForCooling+1)){  
 			if(_sensorSettingAux==0)
-				uiSettingTitle(STR(Sensor_Cooling));
+				uiSettingTitle(STR(Sensor_PostBoil));
 			else
-				uiSettingTitle(STR(AuxSensor_Cooling));
+				uiSettingTitle(STR(AuxSensor_PostBoil));
 		}else if(_sensorSettingIndex ==(SensorForManual+1)){
 			if(_sensorSettingAux==0)
 				uiSettingTitle(STR(Sensor_Manual));
@@ -2654,9 +2984,9 @@ void saveSensor(byte idx,byte address[])
 //		byte readback=readSetting(addr+i);
 //		if(readback != address[i]) Serial.printf("Error: write failed?");
 	}
-	char pbuf[20];
-	printSensorAddress(pbuf,address);
-	Serial.printf("Save sensor %d 0x%s to %d\n",idx,pbuf,addr);	
+//	char pbuf[20];
+//	printSensorAddress(pbuf,address);
+//	Serial.printf("Save sensor %d 0x%s to %d\n",idx,pbuf,addr);	
 }
 
 
@@ -2744,141 +3074,23 @@ void sensorMenuEventHandler(byte)
 }
 #endif //MaximumNumberOfSensors
 
-#if SpargeHeaterSupport == true
-#define  _spargeSettingIndex _editingStage
-
-#define SpargeEnableIndex 0
-#define SpargeEnableTemperatureControlIndex 1
-#define SpargeSensorSelectIndex 2
-#define SpargeTemperatureIndex 3
-#define SpargeTempDiffIndex 4
-
-
-void spargeMenuItem(void)
-{
-	byte value;
-	if(_spargeSettingIndex == SpargeEnableIndex){
-		value =readSetting(PS_SpargeWaterEnableAddress);
-		editItem(STR(Enable),value,1,0,&displayYesNo);
-		uiButtonLabel(ButtonLabel(Up_Down_x_Ok));
-	}
-	#if MaximumNumberOfSensors >1
-	else if(_spargeSettingIndex == SpargeEnableTemperatureControlIndex){
-		value =readSetting(PS_SpargeWaterTemperatureControlAddress);
-		// if only one sensor available. no temperature control is possible.
-		editItem(STR(Temp_Ctrl),value,(gSensorNumber>1)? 1:0,0,&displayYesNo);
-	}else  if(_spargeSettingIndex == SpargeSensorSelectIndex){
-
-		value =readSetting(PS_SpargeWaterSensorIndexAddress) +1;
-		editItem(STR(Sparge_Sensor),value,gSensorNumber,1,&displaySimpleInteger);
-
-	}else  if(_spargeSettingIndex == SpargeTemperatureIndex){
-
-		value =readSetting(PS_SpargeWaterTemperatureAddress);
-		
-		int max=(gIsUseFahrenheit)? ToTempInStorage(176):ToTempInStorage(80);
-		int min=(gIsUseFahrenheit)? ToTempInStorage(167):ToTempInStorage(75);
-
-		editItem(STR(Sparge_Temp),value,max,min,&displaySimpleTemperature);
-
-	}else  if(_spargeSettingIndex == SpargeTempDiffIndex){
-
-		value =readSetting(PS_SpargeWaterTemperatureDifferenceAddress);
-		
-		editItem(STR(Temp_Diff),value,20,5,&displayTempDivide10);
-
-	}
-	#endif
-}
-
-void spargeMenuSetup(void)
-{
-	_spargeSettingIndex=0;
-	spargeMenuItem();
-}
-
-void spargeMenuEventHandler(byte)
-{
-	byte value=(byte)editItemValue();
-	
-	if(btnIsEnterPressed)
-	{	
-		if(_spargeSettingIndex == SpargeEnableIndex){
-			changeSettingValue(PS_SpargeWaterEnableAddress,value);
-			
-			#if MaximumNumberOfSensors >1
-			if(!value){ // no enable
-			#endif
-				switchApplication(SETUP_SCREEN);
-				commitSetting();
-				return;
-			#if MaximumNumberOfSensors >1
-			}
-			#endif
-		}	
-#if MaximumNumberOfSensors >1
-		else if(_spargeSettingIndex == SpargeEnableTemperatureControlIndex){
-		
-			changeSettingValue(PS_SpargeWaterTemperatureControlAddress,value);
-			if(!value){
-				// no temp control. finished
-				switchApplication(SETUP_SCREEN);
-				commitSetting();
-				return;
-			}
-		}else  if(_spargeSettingIndex == SpargeSensorSelectIndex){
-
-			changeSettingValue(PS_SpargeWaterSensorIndexAddress,value -1);
-
-		}else  if(_spargeSettingIndex == SpargeTemperatureIndex){
-
-			changeSettingValue(PS_SpargeWaterTemperatureAddress,value);
-
-		}else  if(_spargeSettingIndex == SpargeTempDiffIndex){
-
-			changeSettingValue(PS_SpargeWaterTemperatureDifferenceAddress,value);
-			switchApplication(SETUP_SCREEN);
-			commitSetting();
-		}
-
-		_spargeSettingIndex++;
-		spargeMenuItem();
-#endif //#if MaximumNumberOfSensors >1
-	}
-	else if(btnIsUpPressed)
-	{
-		editItemChange(+1);
-	}
-	else if(btnIsDownPressed)
-	{
-		editItemChange(-1);
-	}
-}
-#endif //#if SpargeHeaterSupport == true
 // *************************
 //*  Level 1 Menu (settings)
 // *************************
 
-str_t const level1Menu[]={STR(PID_PWM),STR(Unit_Parameters),STR(Set_Automation)
+str_t const level1Menu[]={STR(PID_PWM),STR(Unit_Parameters),STR(Set_Automation),
+STR(Misc_Setting)
 #if MaximumNumberOfSensors > 1
 ,STR(Sensor_Setting)
 #endif
-#if SpargeHeaterSupport == true
-,STR(Sparge_Heater)
-#endif
-
 };
 const ScreenIdType level1Screens[]={
 	PID_SETTING_SCREEN,
 	UNIT_SETTING_SCREEN,
-	AUTO_SETTING_SCREEN
-
+	AUTO_SETTING_SCREEN,
+    MISC_SETTING_SCREEN
 #if MaximumNumberOfSensors > 1
 	,SENSOR_SCREEN
-#endif
-
-#if SpargeHeaterSupport == true
-	,SPARGE_SETTING_SCREEN
 #endif
 };
 
@@ -2902,9 +3114,7 @@ void menuSetup(void)
 //	_currentLevelOne=0; "remember" last menu position
 	menuDisplayList(_currentLevelOne);
 	
-	#if WirelessSupported == true
 	wiReportCurrentStage(StageSetting);
-	#endif
 }
 
 void menuEventHandler(byte event)
@@ -2960,10 +3170,9 @@ void togglePwmInput(void)
 			uiShowPwmLabel();
 			uiShowPwmValue(gBoilHeatOutput);
 			gIsEnterPwm=true;
-			#if WirelessSupported
+
 			wiReportPwm();
 			wiTogglePwm();
-			#endif
 		}
 	}
 	else
@@ -2974,9 +3183,8 @@ void togglePwmInput(void)
 			// turn off
 			uiClearPwmDisplay();
 			gIsEnterPwm = false;
-			#if WirelessSupported
+
 			wiTogglePwm();
-			#endif
 		}
 	}
 }
@@ -2989,20 +3197,12 @@ void setAdjustTemperature(float max, float min)
 
 void adjustSp(float adjust)
 {
-	gSettingTemperature += adjust;
+	float temp = gSettingTemperature + adjust;
 	
-	if(gSettingTemperature > _maxAdjustTemp) gSettingTemperature=_maxAdjustTemp;
-	if(gSettingTemperature < _minAdjustTemp) gSettingTemperature=_minAdjustTemp;
+	if(temp > _maxAdjustTemp) temp=_maxAdjustTemp;
+	if(temp < _minAdjustTemp) temp=_minAdjustTemp;
 	
-	uiDisplaySettingTemperature(gSettingTemperature);
-	brewLogger.setPoint(gSettingTemperature);
-
-	// if adjust above delta
-		
-	#if WirelessSupported == true
-	wiReportSettingTemperature();
-	#endif
-
+	setSettingTemperature(temp);
 }
 void adjustPwm(int adjust)
 {
@@ -3016,9 +3216,7 @@ void adjustPwm(int adjust)
 	
 	uiShowPwmValue(gBoilHeatOutput);
 	DBG_PRINTF("adjustPwm\n");	
-	#if WirelessSupported == true
 	wiReportPwm();
-	#endif
 }
 
 boolean processAdjustButtons(void)
@@ -3057,11 +3255,29 @@ boolean processAdjustButtons(void)
 	}
 	return true; // handled
 }
+void heatLoadParameters(void);
 
+void loadBrewParameters(void)
+{
+	heatLoadParameters();
+	pump.loadParameters();
+}
 // ***************************************************************************
 //*  Manual Mode Screen
 //*
 // ***************************************************************************
+
+#if SecondaryHeaterSupport == true
+void toggleHeater(byte heater)
+{
+    byte result= _gElementInUseMask ^ heater;
+    // off all, and turn on again.
+    // 
+    heatOff();
+    setHeatingElementsInUse(result);
+    if(result) heatOn(true);
+}
+#endif
 
 #define DEFAULT_MANUL_MODE_TEMPERATURE (gIsUseFahrenheit)? 95:35
 //states variables
@@ -3091,9 +3307,7 @@ void manualModeSetup(void)
 	gIsEnterPwm=false;
 	
 	gSettingTemperature = DEFAULT_MANUL_MODE_TEMPERATURE;
-	#if WirelessSupported == true
 	wiReportSettingTemperature();
-	#endif
 
 	#if MaximumNumberOfSensors > 1
 	setSensorForStage(SensorForManual);
@@ -3108,10 +3322,11 @@ void manualModeEnterManualMode(void)
 	uiClearSubTitleRow();
 	uiButtonLabel(ButtonLabel(Up_Down_Heat_Pmp));
 	
-	// Setpoint temperature
-	uiDisplaySettingTemperature(gSettingTemperature);
 	// displace current temperature
 	uiTempDisplaySetPosition(TemperatureManualModePosition);
+	// Setpoint temperature
+	uiDisplaySettingTemperature(gSettingTemperature);
+
 	// display counting time
 	uiRunningTimeSetPosition(RunningTimeNormalPosition);
 	uiRunningTimeShowInitial(0);	
@@ -3136,10 +3351,8 @@ void manualModeEnterManualMode(void)
 	else
 		setAdjustTemperature(110.0,20.0);
 	
-	#if WirelessSupported == true
 	wiReportCurrentStage(StageManualMode);
 	wiReportSettingTemperature();
-	#endif
 	
 }
 
@@ -3147,8 +3360,8 @@ void finishAutoTuneBackToManual(void)
 {
 	_state = MSManualMode;
 	
-	gSettingTemperature =gIsUseFahrenheit? 95:35;
-	uiDisplaySettingTemperature(gSettingTemperature);
+	float temp =gIsUseFahrenheit? 95:35;
+	setSettingTemperature(temp);
 	
 	uiRunningTimeShowInitial(0);
 	
@@ -3156,15 +3369,11 @@ void finishAutoTuneBackToManual(void)
 	uiButtonLabel(ButtonLabel(Up_Down_Heat_Pmp));
 	
 	if(gIsHeatOn) heatOff();
-	if(gIsPumpOn) pumpOff();
+	pump.off();
 	
 	brewLogger.stage(StageManualMode);
-	brewLogger.setPoint(gSettingTemperature);
 
-	#if WirelessSupported == true
 	wiReportCurrentStage(StageManualMode);
-	wiReportSettingTemperature();
-	#endif
 }
 
 void manualModeEventHandler(byte event)
@@ -3226,8 +3435,7 @@ void manualModeEventHandler(byte event)
 
 			uiTitle(STR(PID_AUTOTUNE));
 			uiButtonLabel(ButtonLabel(x_x_Exit_Pmp));
-			gSettingTemperature = gCurrentTemperature;
-			uiDisplaySettingTemperature(gSettingTemperature);
+			setSettingTemperature(gCurrentTemperature);
 
 			uiRunningTimeShowInitial(0);
 			uiRunningTimeStart();
@@ -3236,12 +3444,8 @@ void manualModeEventHandler(byte event)
 			heatOn(true);
 
 			brewLogger.stage(StagePIDAutoTune);
-			brewLogger.setPoint(gSettingTemperature);
 			
-			#if WirelessSupported == true
 			wiReportCurrentStage(StagePIDAutoTune);
-			wiReportSettingTemperature();
-			#endif
 		}
 	}
 	else if(_state == MSRunningAutoTune)
@@ -3257,8 +3461,7 @@ void manualModeEventHandler(byte event)
 			else if(btnIsEnterPressed)
 			{
 				// Pump
-				if(gIsPumpOn) pumpOff();
-				else pumpOn();
+				pump.toggle();
 			}
 		}
 		if(!_isRunningAutoTune)
@@ -3300,29 +3503,38 @@ void manualModeEventHandler(byte event)
 					uiButtonLabel(ButtonLabel(Tune_PID_No_Yes));
 					_state = MSAskAutoTune;
 					if(gIsHeatOn) heatOff();
-					if(gIsPumpOn) pumpOff();
+					pump.off();
 				}
 				else
 #endif
 				{
+                    #if SecondaryHeaterSupport == true
+                    toggleHeater(PrimaryHeaterMask);
+                    #else
 					//turn heating on/off
 					if(gIsHeatOn) heatOff();
 					else heatOn(true);
+				    #endif
 				}
 			}
 			else if(btnIsEnterPressed)
 			{
 				if(btnIsEnterLongPressed)
 				{
-					pumpRestSetEnabled(!pumpRestIsEnabled());
+					pump.setRestEnabled(!pump.isRestEnabled());
 				}
 				else
 				{
 					// turn pump on/off
-					if(gIsPumpOn) pumpOff();
-					else pumpOn();
+					pump.toggle();
 				}
 			}
+            #if SecondaryHeaterSupport == true
+			else if(isExactButtonsPressed(ButtonUpMask | ButtonStartMask))
+			{
+			    toggleHeater(SecondaryHeaterMask);
+            }
+            #endif
 			#if SpargeHeaterSupport
 			else if(isExactButtonsPressed(ButtonDownMask | ButtonStartMask))
 			{
@@ -3419,9 +3631,7 @@ void manualModeEventHandler(byte event)
 					uiRunningTimeStart();
 
 					brewLogger.event(RemoteEventTemperatureReached);
-					#if WirelessSupported == true
 					wiReportEvent(RemoteEventTemperatureReached);
-					#endif
 				}
 			}
 			// Temperate Reached state				
@@ -3477,6 +3687,8 @@ void manualModeEventHandler(byte event)
 #define AS_Finished       17
 
 #define AS_AskSpargeWaterAdded 18
+#define AS_HopStandChilling       19
+#define AS_HopStand            20
 
 #define HOP_ALTERTING_TIME 10
 #define ADVANCE_BEEP_TIME 5
@@ -3539,7 +3751,7 @@ void autoModeEnterDoughIn(void)
 	setEventMask(TemperatureEventMask /*| ButtonPressedEventMask */);
 	
 	//load temperature value	
-	gSettingTemperature = TempFromStorage(readSettingWord(PS_StageTemperatureAddr(0)));
+	float doughinTemp = automation.stageTemperature(0); 
 
 	// setup screen
 	uiClearTitle();
@@ -3549,9 +3761,10 @@ void autoModeEnterDoughIn(void)
 	uiAutoModeStage(0); // 0 is Mash-In
 	
 	// displace temperature
-	uiDisplaySettingTemperature(gSettingTemperature);
-
 	uiTempDisplaySetPosition(TemperatureAutoModePosition);
+
+	setSettingTemperature(doughinTemp);
+
 
 	#if MANUAL_PUMP_MASH == true
 	uiButtonLabel(ButtonLabel(Up_Down_Pause_Pmp));
@@ -3560,14 +3773,17 @@ void autoModeEnterDoughIn(void)
 	#endif
 	// start pump, if request,
 	
-	if(readSetting(PS_PumpPreMash)) pumpOn();
-	else pumpOff();
+	if(readSetting(PS_PumpPreMash)) pump.on();
+	else pump.off();
 
 #if MaximumNumberOfSensors > 1
 	setSensorForStage(SensorForPreMash);
 #endif
 	
 	// start heat
+#if SecondaryHeaterSupport
+	setHeatingElementForStage(HeatingStagePreMash);
+#endif
 	heatOn(true);	
 	if(gIsUseFahrenheit)
 		setAdjustTemperature(167,77);
@@ -3591,7 +3807,6 @@ void autoModeEnterDoughIn(void)
 	#endif
 	
 	brewLogger.stage(StageDoughIn);
-	brewLogger.setPoint(gSettingTemperature);
 	
 	#if MaximumNumberOfSensors > 1
 		brewLogger.temperatures(gTemperatureReading);
@@ -3599,9 +3814,7 @@ void autoModeEnterDoughIn(void)
 		brewLogger.temperature(gCurrentTemperature);
 	#endif
 
-	#if WirelessSupported == true
 	wiReportCurrentStage(StageDoughIn);
-	#endif
 }
 
 
@@ -3659,7 +3872,7 @@ void autoModeNextMashingStep(bool resume)
 		// go direct to mashout
 		_mashingStep = 7;
 	}
-	time = readSetting(PS_StageTimeAddr(_mashingStep));
+	time = automation.stageTime(_mashingStep);
 	if(time==0) time=1;
 
 	// 	if(_mashingStep > 7), mashout time will always more than 1
@@ -3671,9 +3884,13 @@ void autoModeNextMashingStep(bool resume)
 	
 	uiRunningTimeSetPosition(RunningTimeNormalPosition);
 	uiRunningTimeShowInitial(time * 60);
-			
-	gSettingTemperature = TempFromStorage(readSettingWord(PS_StageTemperatureAddr(_mashingStep)));	
-	uiDisplaySettingTemperature(gSettingTemperature);
+
+	if(gIsUseFahrenheit)
+		setAdjustTemperature(176.0,68.0);
+	else
+		setAdjustTemperature(80.0,20.0);
+					
+	setSettingTemperature( automation.stageTemperature(_mashingStep)); 
 	
 	#if	MANUAL_PUMP_MASH == true
 	uiButtonLabel(ButtonLabel(Up_Down_PmPus_STP));
@@ -3682,11 +3899,11 @@ void autoModeNextMashingStep(bool resume)
 	#endif
 	_mashingTemperatureReached=false;
 
-	if(isPumpRest())
-	{
+	//if(pump.isRest())
+	//{
 		heatOn(true);
-	}
-	pumpRestSetEnabled(false);
+	//}
+	pump.setRestEnabled(false);
 	
 #if	MANUAL_PUMP_MASH == true
 	if(!gManualPump)
@@ -3695,8 +3912,8 @@ void autoModeNextMashingStep(bool resume)
 	if(_mashingStep <=6)
 	{
 		// pump is off at the time AddMalt
-		if(readSetting(PS_PumpOnMash)) pumpOn();
-		else pumpOff();
+		if(readSetting(PS_PumpOnMash)) pump.on();
+		else pump.off();
 #if MaximumNumberOfSensors > 1
 	setSensorForStage(SensorForMash);
 #endif
@@ -3704,8 +3921,8 @@ void autoModeNextMashingStep(bool resume)
 	}
 	else if(_mashingStep ==7)
 	{
-		if(readSetting(PS_PumpOnMashOut)) pumpOn();
-		else pumpOff();
+		if(readSetting(PS_PumpOnMashOut)) pump.on();
+		else pump.off();
 #if MaximumNumberOfSensors > 1
 	setSensorForStage(SensorForMash);
 #endif
@@ -3717,11 +3934,8 @@ void autoModeNextMashingStep(bool resume)
 
 	if(!resume) {
 		brewLogger.stage(_mashingStep);
-		brewLogger.setPoint(gSettingTemperature);
 	}
-	#if WirelessSupported == true
 	wiReportCurrentStage(_mashingStep);
-	#endif
 	
 #if EnableExtendedMashStep
 	autoModeResetMashExtension();
@@ -3732,7 +3946,7 @@ void autoModeGetMashStepNumber(void)
 {	
 	byte idx=1;
 	byte time;
-	while(idx < 7 && (time = readSetting(PS_StageTimeAddr(idx))) != 0)
+	while(idx < 7 && (time = automation.stageTime(idx)) != 0)
 	{
 		idx++;
 	}
@@ -3747,14 +3961,16 @@ void autoModeEnterMashing(void)
 	_askingSkipMashingStage = false;
 	_mashingStep = 0; // 0 is mash in , real mashing starts from 1, this number will be increased in 
 					  // autoModeNextMashingStep() later.
-	heatOn(true);
 
 #if	MANUAL_PUMP_MASH == true
 	gManualPump=false;
 #endif
+#if SecondaryHeaterSupport
+    setHeatingElementForStage(HeatingStageMashing);
+#endif
+	heatOn(true);
 
 	autoModeGetMashStepNumber();
-
 	autoModeNextMashingStep(false);
 }
 
@@ -3763,7 +3979,7 @@ void autoModeEnterIodineTest(void)
 	_state = AS_IodineTest;
 	
 	uiPreparePasueScreen(STR(IODINE_TEST));
-	uiButtonLabel(ButtonLabel(x_x_Ok_x));
+	uiButtonLabel(ButtonLabel(x_x_Mashout_Extend));
 
 	byte iodineTime=readSetting(PS_IodineTime);
 	if(iodineTime)
@@ -3782,14 +3998,42 @@ void autoModeEnterIodineTest(void)
 		buzzPlaySoundRepeat(SoundIdUserInteractiveNeeded);
 	}
 	
-	#if WirelessSupported == true
 	wiReportEvent(RemoteEventIodineTest);
-	#endif
 	
+}
+
+void autoModeIodineTestToMashExtension(void)
+{   
+    // back to last mashing step.
+    _state = AS_Mashing;
+	buzzMute();
+    tmPauseTimer();
+    uiClearScreen();
+    uiAutoModeTitle();
+
+	uiAutoModeMashTitle(_mashingStep,_numberMashingStep);
+    uiTempDisplaySetPosition(TemperatureAutoModePosition);
+	uiRunningTimeSetPosition(RunningTimeNormalPosition);
+	uiRunningTimeShowInitial(0);
+	if(gIsUseFahrenheit)
+		setAdjustTemperature(176.0,68.0);
+	else
+		setAdjustTemperature(80.0,20.0);
+					
+	setSettingTemperature( automation.stageTemperature(_mashingStep)); 
+
+	#if	MANUAL_PUMP_MASH == true
+	uiButtonLabel(ButtonLabel(Up_Down_PmPus_STP));
+	#else
+	uiButtonLabel(ButtonLabel(Up_Down_Pause_STP));
+	#endif
+    autoModeEnterMashingExtension();
+    _mashingStageExtendEnable = false;
 }
 
 void autoModeIodineTestToMashout(void)
 {
+    tmPauseTimer();
 	uiRunningTimeStop();
 	buzzMute();
 	// restore Screen
@@ -3809,7 +4053,7 @@ void autoModeIodineTestToMashout(void)
 void autoModeEnterAskRemoveMalt(void)
 {
 	_state = AS_AskMaltRemove;
-	pumpOff();
+	pump.off();
 	
 	uiRunningTimeStop();
 	//uiClearPrompt();
@@ -3824,9 +4068,7 @@ void autoModeEnterAskRemoveMalt(void)
 	if(! readSetting(PS_PidPipe)) 
 		heatProgramOff(); // heat off, programming
 
-	#if WirelessSupported == true
 	wiReportEvent(RemoteEventRemoveMalt);
-	#endif
 }
 
 //******************************
@@ -3843,9 +4085,9 @@ void autoModePause(unsigned long time)
 	gIsPaused=true;
 	// stop Heating & pump
 	_savedHeating = gIsHeatOn;
-	_savedPump = gIsPumpOn;
+	_savedPump = pump.isOn();
 	heatOff();
-	pumpOff();
+	pump.off();
 	// just wait for user button
 	
 	uiPreparePasueScreen(STR(In_Pause));
@@ -3855,9 +4097,7 @@ void autoModePause(unsigned long time)
 	
 	uiRunningTimeShowInitial(_savedTime/1000);
 	brewLogger.event(RemoteEventPause);
-	#if WirelessSupported == true
 	wiReportEvent(RemoteEventPause);
-	#endif
 }
 
 void autoModeExitPause(void)
@@ -3895,7 +4135,7 @@ void autoModeExitPause(void)
 	{
 		if(_state != AS_DoughIn)
 		{
-			byte time = readSetting(PS_StageTimeAddr(_mashingStep));
+			byte time = automation.stageTime(_mashingStep);
 			uiRunningTimeShowInitial(time * 60);
 		}
 	}
@@ -3924,12 +4164,10 @@ void autoModeExitPause(void)
 #endif		
 	// restore heating and pump
 	if(_savedHeating) heatOn(true);
-	if(_savedPump) pumpOn();
+	if(_savedPump) pump.on();
 
 	brewLogger.event(RemoteEventResume);	
-	#if WirelessSupported == true
 	wiReportEvent(RemoteEventResume);
-	#endif
 }
 void autoModeEnterBoiling(void);
 void autoModeMashingStageFinished(void)
@@ -3937,10 +4175,13 @@ void autoModeMashingStageFinished(void)
 	//[TODO:] make sure step 6 , beta 2 is non-skippable.
 	if(_mashingStep < 7) // step 7 = mashout
 	{
-		if(_mashingStep == 6
-			&& readSetting(PS_SkipIodineTest) ==0)
+    	DBG_PRINTF("autoModeMashingStageFinished:%d @%d iodine skip%d, extended:%d\n",_mashingStep,_numberMashingStep,readSetting(PS_SkipIodineTest),_mashingStageExtending);
+		if((_mashingStep == _numberMashingStep)
+			&& readSetting(PS_SkipIodineTest) ==0
+			&& ! _mashingStageExtending)
 		{
 			// before MashOut(7) and not Skip Iodine Test
+			DBG_PRINTF("autoModeMashingStageFinished autoModeEnterIodineTest\n" );
 			autoModeEnterIodineTest();
 		}
 		else
@@ -3981,22 +4222,20 @@ void autoModeEnterBoiling(void)
 	_isBoilTimerPaused=false;
 	gBoilStageTemperature=readSetting(PS_BoilTemp);
 	//gSettingTemperature =110;//
-	gSettingTemperature = gBoilStageTemperature;
-	
-	uiDisplaySettingTemperature(gSettingTemperature);
+	setSettingTemperature ( gBoilStageTemperature);
+
 	// display time
-	byte boilTime=readSetting(PS_BoilTime);
+	byte boilTime=automation.boilTime();
 
 	brewLogger.stage(StageBoil);
-	brewLogger.setPoint(gSettingTemperature);
 
 	uiRunningTimeShowInitial(boilTime * 60);
 	
 	uiAutoModeStage(BoilingStage);
 	uiButtonLabel(ButtonLabel(Up_Down_x_Pmp));
 	
-	if(readSetting(PS_PumpOnBoil)) pumpOn();
-	else pumpOff();
+	if(readSetting(PS_PumpOnBoil)) pump.on();
+	else pump.off();
 
 #if MaximumNumberOfSensors > 1
 	setSensorForStage(SensorForBoil);
@@ -4008,10 +4247,11 @@ void autoModeEnterBoiling(void)
 		setAdjustTemperature(110.0,80.0);
 			
 	gIsEnterPwm =false;
+#if SecondaryHeaterSupport
+	setHeatingElementForStage(HeatingStageBoiling);
+#endif
 	heatOn(false); // NO need of PID, just full power until boiling
-	#if WirelessSupported == true
 	wiReportCurrentStage(StageBoil);	
-	#endif
 }
 
 
@@ -4022,7 +4262,7 @@ void autoModeEnterBoiling(void)
 
 void autoModeShowHopAdding(void)
 {
-	uiAutoModeShowHopNumber(readSetting(PS_NumberOfHops) - _numHopToBeAdded +1);
+	uiAutoModeShowHopNumber(automation.numberOfHops() - _numHopToBeAdded +1);
 }
 
 //#define AUX_TIMER_HOP 1
@@ -4042,9 +4282,7 @@ void autoModeAddHopNotice(void)
 			_numHopToBeAdded --;
 			buzzPlaySound(SoundIdAddHop);
 			
-			#if WirelessSupported == true
 			wiReportEvent(RemoteEventAddHop);
-			#endif			
 }
 
 unsigned long _remainingBoilTime;
@@ -4065,10 +4303,10 @@ void autoModeReStartBoilingTimer(void)
 			
 	if(_numHopToBeAdded > 0)
 	{
-		byte idx=readSetting(PS_NumberOfHops) - _numHopToBeAdded;
+		byte idx=automation.numberOfHops() - _numHopToBeAdded;
 	
-		unsigned long nextHopTime=(unsigned long)readSetting(PS_TimeOfHop(idx))
-									* 60 * 1000;
+		unsigned long nextHopTime=(unsigned long)automation.timeOfHop(idx) * 60 * 1000;
+		
 		unsigned long nextHopTimeout=_remainingBoilTime - nextHopTime;
 		if(nextHopTimeout == 0)
 		{
@@ -4088,11 +4326,11 @@ void autoModeStartBoilingTimer(void)
 	// [IMPORTANT!] cast to (unsigned long) is needed
 	// NO hop adding. just start last before 
 
-	byte boilTime=readSetting(PS_BoilTime);
+	byte boilTime=automation.boilTime();
 
 	_remainingBoilTime= (unsigned long)boilTime * 60 *1000;
 	
-	_numHopToBeAdded =  readSetting(PS_NumberOfHops);
+	_numHopToBeAdded =  automation.numberOfHops();
 
 	autoModeReStartBoilingTimer();
 }
@@ -4103,14 +4341,14 @@ void autoModeStartNextHopTimer(void)
 	// it is done at hop timer expires :_numHopToBeAdded--;
 	// this function is called after Screen is restored.(restore timer expires)
 	
-	byte lastHopIdx=readSetting(PS_NumberOfHops) - _numHopToBeAdded -1;
+	byte lastHopIdx=automation.numberOfHops() - _numHopToBeAdded -1;
 
 	
 	if(_numHopToBeAdded > 0) // there are next timer
 	{
-		byte lastHopTime=readSetting(PS_TimeOfHop(lastHopIdx));
+		byte lastHopTime=automation.timeOfHop(lastHopIdx);
 		
-		byte nextHopTime= readSetting(PS_TimeOfHop(lastHopIdx+1));
+		byte nextHopTime= automation.timeOfHop(lastHopIdx+1);
 		
 		tmSetAuxTimeoutAfter(((unsigned long)(lastHopTime - nextHopTime) * 60 
 								-HOP_ALTERTING_TIME)* 1000);
@@ -4170,12 +4408,10 @@ bool _stageConfirm;
 
 bool _coolingTempReached;
 
-void autoModeCoolingAsk(const char* msg)
+void autoModeCoolingAsk(const char* msg,byte stage)
 {
 	
-	#if WirelessSupported == true
-	wiReportCurrentStage(StageCooling);	
-	#endif	
+	wiReportCurrentStage(stage);	
 	
 	_stageConfirm=false;
 
@@ -4192,17 +4428,19 @@ void autoModeCoolingAsk(const char* msg)
 
 void autoModeEnterCooling(unsigned long elapsed)
 {
-	
+	// state setting and brewlogger is handled outside.
+	// this function is used after "confirmation"
 	uiClearPrompt();
 	uiClearSubTitleRow();
 	
 	uiAutoModeTitle();
 	uiAutoModeStage(CoolingStage);
-	gSettingTemperature =gIsUseFahrenheit? 68.0:20.0;
+	float temp =gIsUseFahrenheit? 68.0:20.0;
 	_coolingTempReached=false;
 	// temperature at automode
 	uiTempDisplaySetPosition(TemperatureAutoModePosition);
-	uiDisplaySettingTemperature(gSettingTemperature);
+
+	setSettingTemperature(temp);
 	
 	uiRunningTimeShowInitial(elapsed);
 	uiRunningTimeStartFrom(elapsed);
@@ -4226,7 +4464,7 @@ void autoModeEnterCooling(unsigned long elapsed)
 
 void autoModeBrewEnd(void)
 {
-	pumpOff();
+	pump.off();
 	
 	uiTempDisplayHide(); 
 	uiRunningTimeStop();
@@ -4242,13 +4480,11 @@ void autoModeBrewEnd(void)
 
 	brewLogger.endSession();
 	
-	#if WirelessSupported == true
 	wiReportEvent(RemoteEventBrewFinished);
-	#endif
 }
 
 
-#if NoWhirlpool != true
+//#if NoWhirlpool != true
 #define MAX_WHIRLPOOL_TIME 10
 #define MIN_WHIRLPOOL_TIME 1
 
@@ -4269,7 +4505,7 @@ void autoModeWhirlpoolInputTime(void)
 	uiButtonLabel(ButtonLabel(Up_Down_Quit_Ok));	
 }
 
-void autoModeWhirlpool(byte elapsed)
+void autoModeWhirlpool(unsigned long elapsed)
 {
 	uiClearSubTitleRow();
 	uiClearPrompt();
@@ -4287,25 +4523,23 @@ void autoModeWhirlpool(byte elapsed)
 	uiButtonLabel(ButtonLabel(x_x_x_Pmp));
 	
 	_pumpRunning = true;
-	pumpOn();
+	pump.on();
 	tmSetTimeoutAfter((unsigned long)time *1000);
 	uiRunningTimeStartCountDown(time);
 
-	#if WirelessSupported == true
-	wiReportCurrentStage(StageWhirlpool);	
-	#endif
+	//wiReportCurrentStage(StageWhirlpool);	
 	
 }
 
 void autoModeWhirlpoolFinish(void)
 {
-	pumpOff();
+	pump.off();
 
 	// if cool whirlpool, got to whirlpool, or go to end
 	if(readSetting(PS_Whirlpool) == WhirlpoolHot)
 	{
 		_state = AS_Cooling;
-		autoModeCoolingAsk(STR(START_COOLING));
+		autoModeCoolingAsk(STR(START_COOLING),StageCooling);
 	}
 	else
 	{
@@ -4313,22 +4547,24 @@ void autoModeWhirlpoolFinish(void)
 	}
 
 }
-#endif
+//#endif
 
 void autoModeCoolingFinish(void)
 {
-#if NoWhirlpool != true
+//#if NoWhirlpool != true
 	if(readSetting(PS_Whirlpool) == WhirlpoolCold)
 	{
 		_state = AS_Whirlpool;
-		autoModeCoolingAsk(STR(WHIRLPOOL));
+		autoModeCoolingAsk(STR(WHIRLPOOL),StageWhirlpool);
 	}
 	else
-#endif
+//#endif
 	{
 		autoModeBrewEnd();
 	}
 }
+
+
 #if UsePaddleInsteadOfPump
 
 void autoModeStartWithoutPumpPrimming(void)
@@ -4358,23 +4594,233 @@ void autoModeEnterPumpPriming(void)
 	uiNoMenu();
 	uiSubTitle(STR(Pump_Prime));
 	// start pump & timer
-	pumpOn();
+	pump.on();
 	_primePumpCount=0;
-	tmSetTimeoutAfter(1000); // 1sec
+	tmSetTimeoutAfter((uint32_t)readSetting(PS_PumpPrimeOnTime) * 250); // 1sec
 }
 #endif
+
+
+void autoModeCoolingOrWhirlpool(void)
+{
+    //#if NoWhirlpool != true
+	if(readSetting(PS_Whirlpool) == WhirlpoolHot)
+	{
+	    _state = AS_Whirlpool;
+		autoModeCoolingAsk(STR(WHIRLPOOL),StageWhirlpool);
+	}
+	else
+	{
+	    _state = AS_Cooling;
+		autoModeCoolingAsk(STR(START_COOLING),StageCooling);
+	}
+	//#else
+	//_state = AS_Cooling;
+	//autoModeCoolingAsk(STR(START_COOLING),StageCooling);					
+	//#endif
+}
+
+//************************************
+// HopStand
+//
+#define  _hopStandSession _mashingStep
+uint8_t  _hopStandSessionHopIndex;
+
+void autoModeEnterHopStandChilling(void)
+{
+    heatOff();
+    //set temperature as "start" temperature.
+    float start=automation.sessionStartTemperature(_hopStandSession);
+    setSettingTemperature(start);
+    float max=(_hopStandSession)? (automation.sessionKeepTemperature(_hopStandSession-1)-1):gBoilStageTemperature;
+    setAdjustTemperature(max,automation.sessionKeepTemperature(_hopStandSession));
+    // display chilling
+	uiAutoModeTitle();
+	uiAutoModeStage(HopStandChillingStage);
+	
+	brewLogger.stage(StageHopStandChill);
+	wiReportCurrentStage(StageHopStandChill);
+	// notify for interaction.
+	uiButtonLabel(ButtonLabel(x_x_Ok_x));
+	buzzPlaySoundRepeat(SoundIdWaitUserInteraction);
+	_stageConfirm=false;
+	uiRunningTimeShowInitial(0);
+	uiRunningTimeStart();
+}
+
+
+void autoModeShowPostBoilHop(void)
+{
+    uint8_t hopIdx=automation.postBoilHopIndex(_hopStandSession,_hopStandSessionHopIndex);        
+	uiAutoModeShowPostBoilHopNumber(hopIdx);
+    buzzPlaySoundRepeat(SoundIdAddHop);
+	wiReportEvent(RemoteEventAddHop);
+    // NOTE: the hop time should not be ZERO.
+    recoveryTimer=true;
+    tmSetAuxTimeoutAfter(HOP_ALTERTING_TIME * 1000);
+}
+
+void autoModeStartHopStandHopTimer(void)
+{
+    //
+    uint32_t remainingTime=tmGetRemainingTime();
+    // remainingTime should not be zero.
+    if(!remainingTime) return;
+
+    int idx;
+    uint32_t hopTime;
+    for(idx=0;idx< automation.numberOfHopInSession(_hopStandSession);idx++){
+        hopTime=(uint32_t)automation.hopInSession(_hopStandSession,idx) * 60000;
+        if( remainingTime > hopTime) break;
+    }
+    _hopStandSessionHopIndex = idx;
+    if(idx >= automation.numberOfHopInSession(_hopStandSession)){
+        DBG_PRINTF("autoModeStartHopStandHopTimer, no more hop\n");
+    }else{
+        uint32_t hstime=  remainingTime - hopTime;
+        DBG_PRINTF("autoModeStartHopStandHopTimer, %d,%d, time:%d\n",_hopStandSession,_hopStandSessionHopIndex,hstime);
+        recoveryTimer=false;
+        tmSetAuxTimeoutAfter(hstime);
+    }
+}
+
+void autoModeEnterHopStand(uint32_t elapsed=0)
+{
+    heatOn(true);
+    pump.off();
+    //set temperature as "start" temperature.
+    float temp=automation.sessionKeepTemperature(_hopStandSession);
+    setSettingTemperature(temp);
+
+    float min;
+    if(_hopStandSession == (automation.numberOfHopStandSession() -1)){
+        // last one
+        min=(gIsUseFahrenheit)? 68:20;
+    }else{
+        min = automation.sessionStartTemperature(_hopStandSession +1)+1;
+    }
+    float max=(_hopStandSession)? (automation.sessionKeepTemperature(_hopStandSession-1)-1):gBoilStageTemperature;
+    setAdjustTemperature(max,min);
+    // display Hopstand
+	uiButtonLabel(ButtonLabel(Up_Down_Skip_Pmp));
+	wiReportCurrentStage(StageHopStand);
+	
+	uiAutoModeTitle();
+    // 
+    if(elapsed > 0){
+    	uiAutoModeStage(StageHopStand);
+    	// derive the correct time elapse.
+    	uint32_t hsTotal=(uint32_t)automation.hopInSession(_hopStandSession,0);
+    	uint32_t hsLeft = hsTotal - elapsed; // time left
+
+        uiRunningTimeShowInitial(hsLeft * 60);
+        uiRunningTimeStartCountDown(hsLeft * 60);
+        tmSetTimeoutAfter(hsLeft * 60 * 1000);
+        // the main timer should start first.
+        
+        autoModeStartHopStandHopTimer();
+    	
+    }else{
+        // display adding hop first hop
+        
+         // display time
+        uint32_t hstimeSecond=(uint32_t)automation.hopInSession(_hopStandSession,0) * 60;
+        uiRunningTimeShowInitial(hstimeSecond);
+        uiRunningTimeStartCountDown(hstimeSecond);
+        // start timer
+        tmSetTimeoutAfter(hstimeSecond * 1000);
+        // the main timer should start first.
+
+        // prompt for hop adding 
+        autoModeShowPostBoilHop();
+    }
+}
+
+void autoModeEndHopStandSession(void)
+{
+    DBG_PRINTF("autoModeEndHopStandSession, %d,%d\n",_hopStandSession,_hopStandSessionHopIndex);
+    tmPauseTimer();
+
+    _hopStandSession ++;
+    _hopStandSessionHopIndex=0;
+    if(_hopStandSession >= automation.numberOfHopStandSession()){
+        // end of hopstand
+        DBG_PRINTF("HopStand Finished.\n");
+        heatOff();
+        pump.off();
+        autoModeCoolingOrWhirlpool();
+    }else{
+        // next hopstand, enter chilling        
+        _state = AS_HopStandChilling;
+        brewLogger.stage(StageHopStandChill);
+        autoModeEnterHopStandChilling();
+    }
+}
+
+void autoModeHopStandTimeout(void)
+{
+    // end of session
+    autoModeEndHopStandSession();
+}
+
+void autoModeAuxTimeout(void)
+{
+    if(recoveryTimer){
+        uiAutoModeStage(HopStandStage);
+        buzzMute();
+        autoModeStartHopStandHopTimer();
+    }else{ // hop time
+        // show hop if any
+//        _hopStandSessionHopIndex ++;
+//        if(_hopStandSessionHopIndex < automation.numberOfHopInSession(_hopStandSession)){
+            autoModeShowPostBoilHop();
+//        }
+    }
+}
+
+void autoModeStartHopStand(void)
+{
+	uiClearSubTitleRow();
+	uiClearPrompt();
+
+    _hopStandSession=0;
+    _hopStandSessionHopIndex=0;
+    // in case of knock off, (stating temp == boil temp, or current temperature)
+    // skip chilling stage, go direct to hopstand
+    float start=automation.sessionStartTemperature(0);
+
+    if(start >= gBoilStageTemperature || start >= gCurrentTemperature){
+        _state = AS_HopStand;
+        brewLogger.stage(StageHopStand);
+        autoModeEnterHopStand();
+    }else{
+        _state = AS_HopStandChilling;
+         brewLogger.stage(StageHopStandChill);
+        autoModeEnterHopStandChilling();
+    }
+}
+
 //************************************
 // for recovery
 //
-
+byte hopStandSessionByTime(uint32_t elapsed)
+{
+    int i;
+	int time=0;
+	for(i=0;i<automation.numberOfHopStandSession();i++){
+	    time += automation.hopInSession(i,0);
+	    if(elapsed < time) break;
+    }
+    return i;
+}
 
 void autoModeResumeProcess(void)
 {
 	// get stage
 	byte stage;
-	byte elapsed;
+	uint32_t elapsed;
 	brewLogger.resumeSession(&stage,&elapsed);
-	DBG_PRINTF("resume elapsed:%d\n",elapsed);
+	DBG_PRINTF("resume state:%d, elapsed:%d\n",stage, elapsed);
 
 	setEventMask(TemperatureEventMask | ButtonPressedEventMask | TimeoutEventMask | PumpRestEventMask);
 
@@ -4388,17 +4834,15 @@ void autoModeResumeProcess(void)
 	// less then stage time. temperature reached
 	//
 	loadBrewParameters();
-	heatOn(true); // default to PID mode, if in boil stage, PID mode will be changed in
-					// autoModeEnterBoiling()
 
-	if (stage == 8) // boiling
+	if (stage == StageBoil) // boiling
 	{
 		autoModeEnterBoiling();
 		// if 0xfFF, assume not 
 		if(elapsed != INVALID_RECOVERY_TIME)
 		{
-			byte boilTime=readSetting(PS_BoilTime);
-			byte time = boilTime - elapsed;
+			byte boilTime=automation.boilTime();
+			byte time = boilTime - (byte)elapsed;
 
 				// findout whihc hop is current 
 
@@ -4407,12 +4851,10 @@ void autoModeResumeProcess(void)
 				uiRunningTimeStartCountDown(sec);
 				tmSetTimeoutAfter(sec *1000);
 
-				#if WirelessSupported == true
 				//wiReportEvent(RemoteEventTemperatureReached);
-				#endif
 				
 				// start hop & boiling out timer
-				byte hopnum =  readSetting(PS_NumberOfHops);	
+				byte hopnum =  automation.numberOfHops();	
 				_numHopToBeAdded=hopnum;
 				if(hopnum > 0)
 				{
@@ -4420,7 +4862,7 @@ void autoModeResumeProcess(void)
 					byte nextHopTime;
 					for(i=0;i<hopnum;i++)
 					{
-						nextHopTime=readSetting(PS_TimeOfHop(i));
+						nextHopTime=automation.timeOfHop(i);
 						if(nextHopTime > time) _numHopToBeAdded--;
 						else break;
 					}
@@ -4430,22 +4872,21 @@ void autoModeResumeProcess(void)
 						recoveryTimer = false;
 						tmSetAuxTimeoutAfter((unsigned long)hopTimer * 60 * 1000);
 					}
-				}				
-
+				}
 		}
 	}
-	else if (stage == 9) // cooling
+	else if (stage == StageCooling) // cooling
 	{
 	    heatOff();
 	    if(elapsed != INVALID_RECOVERY_TIME)
-        	autoModeEnterCooling(elapsed*60);
+        	autoModeEnterCooling((uint32_t)elapsed*60);
         else
             autoModeEnterCooling(0);
             
     	_state = AS_Cooling;
     	_stageConfirm= (elapsed !=0);
 	}
-	else if (stage == 10) // Whirlpool
+	else if (stage == StageWhirlpool) // Whirlpool
 	{
     	heatOff();
     	if(elapsed != INVALID_RECOVERY_TIME)
@@ -4454,14 +4895,44 @@ void autoModeResumeProcess(void)
     	    autoModeWhirlpool(0);
 	    _state = AS_Whirlpool;
 	}
-	else if (stage == 0) // Daugh-in
+	else if (stage == StageHopStandChill) // HopStandChill
 	{
+	    // need to 'recover' which session it is
+	    _hopStandSessionHopIndex=0;
+	    if(elapsed == INVALID_RECOVERY_TIME){
+	        _hopStandSession=0;
+	    }else{
+	        _hopStandSession=hopStandSessionByTime(elapsed);
+        }
+         _state = AS_HopStandChilling;
+        autoModeEnterHopStandChilling();
+	}
+	else if (stage == StageHopStand) // StageHopStand
+	{
+        _hopStandSession=hopStandSessionByTime(elapsed);
+        
+        int elapsedPre=0;
+        
+    	for(int i=0;i<_hopStandSession;i++){
+	        elapsedPre += automation.hopInSession(i,0);
+        }
+        DBG_PRINTF("Resume: elapsed:%d, elaspsedPre:%d\n",elapsed,elapsedPre);
+        _state = AS_HopStand;
+        autoModeEnterHopStand(elapsed - elapsedPre);
+	}
+	else if (stage == StageDoughIn) // Daugh-in
+	{
+		heatOn(true);
 		autoModeEnterDoughIn();
 	}
-	else
+	else if (stage <  StageBoil)
 	{
 		// everything else is in MASHING state
 		// just enter mashing step ... 
+#if SecondaryHeaterSupport
+		setHeatingElementForStage(HeatingStageMashing);
+#endif
+		heatOn(true);
 		_state = AS_Mashing;
 		_askingSkipMashingStage = false;
 
@@ -4473,7 +4944,7 @@ void autoModeResumeProcess(void)
 		// adjust timer if necessary
 		if(elapsed != INVALID_RECOVERY_TIME)
 		{
-				byte stagetime = readSetting(PS_StageTimeAddr(_mashingStep));
+				byte stagetime = automation.stageTime(_mashingStep);
 				byte time = stagetime - elapsed;
 				_mashingTemperatureReached = true;
 				unsigned long seconds=(unsigned long)time * 60;
@@ -4481,11 +4952,9 @@ void autoModeResumeProcess(void)
 				tmSetTimeoutAfter( seconds *1000);
 				tmSetAuxTimeoutAfter((seconds-ADVANCE_BEEP_TIME) *1000);
 				uiRunningTimeStartCountDown(seconds);	
-				pumpRestSetEnabled(true);
+				pump.setRestEnabled(true);
 								
-				#if WirelessSupported == true
 				//wiReportEvent(RemoteEventTemperatureReached);
-				#endif
 		}
 
 	}
@@ -4607,19 +5076,19 @@ void autoModeEventHandler(byte event)
 	{
 		if(event == TimeoutEventMask)
 		{
-			if(gIsPumpOn)
+			if(pump.isOn())
 			{
-				pumpOff();
-				tmSetTimeoutAfter(350);
+				pump.off();
+				tmSetTimeoutAfter((uint32_t)readSetting(PS_PumpPrimeOffTime) * 250);
 			}
 			else
 			{
 				_primePumpCount++;
 
-				if(_primePumpCount < 5)
+				if(_primePumpCount < readSetting(PS_PumpPrimeCount))
 				{
-					pumpOn();
-					tmSetTimeoutAfter(1000 + _primePumpCount * 250);
+					pump.on();
+					tmSetTimeoutAfter((uint32_t)readSetting(PS_PumpPrimeOnTime) * 250);
 				}
 				else
 				{
@@ -4691,9 +5160,7 @@ void autoModeEventHandler(byte event)
 			uiRunningTimeStartCountDown(_delayTime * 15 * 60);
 			setEventMask(TimeoutEventMask | ButtonPressedEventMask );
 			
-			#if WirelessSupported == true
 			wiReportCurrentStage(StageDelayStart);
-			#endif
 		}
 		else if(btnIsEnterPressed)
 		{
@@ -4757,9 +5224,7 @@ void autoModeEventHandler(byte event)
 				buzzPlaySoundRepeat(SoundIdWaitUserInteraction);
 
 				brewLogger.event(RemoteEventTemperatureReached);
-				#if WirelessSupported == true
 				wiReportEvent(RemoteEventTemperatureReached);
-				#endif
 
 			}
 		}//TemperatureEventMask
@@ -4773,7 +5238,7 @@ void autoModeEventHandler(byte event)
 #if MANUAL_PUMP_MASH == true
 			else if(btnIsEnterPressed)
 			{
-				togglePump();
+				pump.toggle();
 			}
 #endif
 			else
@@ -4797,11 +5262,6 @@ void autoModeEventHandler(byte event)
 		{
 			buzzMute();
 			if(readSetting(PS_PID_DoughIn)){
-				// change temperature to first rest
-				/*
-				gSettingTemperature = TempFromStorage(readSettingWord(PS_StageTemperatureAddr(1)));	
-				uiDisplaySettingTemperature(gSettingTemperature);
-			    */
 			}else{
 				heatOff(); // turn off heat. during "dough-in"
 			}
@@ -4814,7 +5274,7 @@ void autoModeEventHandler(byte event)
 			}
 			else
 			{
-				pumpOff();
+				pump.off();
 				// ask Add Malt
 				//uiClearPrompt();
 				uiPrompt(STR(Add_Malt));
@@ -4825,9 +5285,7 @@ void autoModeEventHandler(byte event)
 				
 				_state = AS_AskAddMalt;
 				
-				#if WirelessSupported == true
 				wiReportEvent(RemoteEventAddMalt);
-				#endif
 
 			}
 		}
@@ -4850,11 +5308,7 @@ void autoModeEventHandler(byte event)
 		}
 		else if(btnIsEnterPressed)
 		{
-    		//{ADD_MALT_MOD
-			// heater & pump might started, so use back to main
-			//backToMain();
-			togglePump();
-			//}ADD_MALT_MOD
+			pump.toggle();
 		}
 	} // AS_AskAddMalt
 	else if(AutoStateIs(AS_Mashing))
@@ -4924,7 +5378,7 @@ void autoModeEventHandler(byte event)
 				}
 				else
 				{
-					togglePump();
+					pump.toggle();
 					gManualPump = true;
 				}
 			#endif			
@@ -4970,7 +5424,7 @@ void autoModeEventHandler(byte event)
 		else if(event == PumpRestEventMask)
 		{
 			//
-			if(isPumpRest())
+			if(pump.isRest())
 			{
 				// into rest
 				//no special manual uiButtonLabel(ButtonLabel(_Pump_Rest_));
@@ -5050,7 +5504,7 @@ void autoModeEventHandler(byte event)
 						brewLogger.event(RemoteEventTemperatureReached);
 
 						_mashingTemperatureReached = true;
-						unsigned long seconds=(unsigned long)readSetting(PS_StageTimeAddr(_mashingStep)) * 60;
+						unsigned long seconds=(unsigned long)automation.stageTime(_mashingStep) * 60;
 				
 						tmSetTimeoutAfter( seconds *1000);
 						tmSetAuxTimeoutAfter((seconds-ADVANCE_BEEP_TIME) *1000);
@@ -5059,11 +5513,9 @@ void autoModeEventHandler(byte event)
 					
 						buzzPlaySound(SoundIdTemperatureReached);
 					
-						pumpRestSetEnabled(true);
+						pump.setRestEnabled(true);
 						
-						#if WirelessSupported == true
 						wiReportEvent(RemoteEventTemperatureReached);
-						#endif
 
 					}
 				}
@@ -5073,12 +5525,19 @@ void autoModeEventHandler(byte event)
 	else if(AutoStateIs(AS_IodineTest))
 	{
 		// timeout or user press ok
-		if(event ==ButtonPressedEventMask
-			&& btnIsStartPressed)
-		{
-			uiClearPrompt();
-			// back to next mashing step: Mashout
-			autoModeIodineTestToMashout();
+		if(event ==ButtonPressedEventMask)
+		{	
+		    if(btnIsStartPressed)
+		    {
+			    uiClearPrompt();
+			    // back to next mashing step: Mashout
+			    autoModeIodineTestToMashout();
+			}
+			else  if(btnIsEnterPressed)
+			{
+			    // extend mash
+			    autoModeIodineTestToMashExtension();
+			}
 		}
 		else if(event ==TimeoutEventMask)
 		{
@@ -5113,8 +5572,7 @@ void autoModeEventHandler(byte event)
 				if (btnIsEnterPressed)
 				{
 					// pump control
-					if(gIsPumpOn) pumpOff();
-					else pumpOn();
+					pump.toggle();
 				}
 				else if(btnIsStartPressed)
 				{
@@ -5150,30 +5608,21 @@ void autoModeEventHandler(byte event)
 
 					// next stage
 					heatOff(); // heat OFF
-					pumpOff();
+					// switch to post boil for next starts.
+#if SecondaryHeaterSupport
+					setHeatingElementForStage(HeatingStagePostBoil);
+#endif
+					pump.off();
 					
 					brewLogger.event(RemoteEventBoilFinished);
-					
-					#if WirelessSupported == true
 					wiReportEvent(RemoteEventBoilFinished);
-					#endif
+
 					buzzPlaySoundRepeat(SoundIdWaitUserInteraction);
-										
-					#if NoWhirlpool != true
-					if(readSetting(PS_Whirlpool) == WhirlpoolHot)
-					{
-						_state = AS_Whirlpool;
-						autoModeCoolingAsk(STR(WHIRLPOOL));
-					}
-					else
-					{
-						_state = AS_Cooling;
-						autoModeCoolingAsk(STR(START_COOLING));
-					}
-					#else
-						_state = AS_Cooling;
-						autoModeCoolingAsk(STR(START_COOLING));					
-					#endif
+
+					if(automation.numberOfHopStandSession() ==0)
+    					autoModeCoolingOrWhirlpool();
+    				else
+    				    autoModeStartHopStand();
 			}
 
 //#endif
@@ -5192,22 +5641,84 @@ void autoModeEventHandler(byte event)
 					//buzz temperature reach first
 					// because later "add hop" buzz may interrupt
 					// it
+					wiReportEvent(RemoteEventTemperatureReached);
 					buzzPlaySound(SoundIdBoil);
 					// start counting down
-					byte boilTime=readSetting(PS_BoilTime);
+					byte boilTime=automation.boilTime();
 					uiRunningTimeStartCountDown((unsigned long)boilTime *60);
 					// start hop & boiling out timer
 					autoModeStartBoilingTimer();				
-
-					#if WirelessSupported == true
-					wiReportEvent(RemoteEventTemperatureReached);
-					#endif
 
 					uiButtonLabel(ButtonLabel(Up_Down_Pause_Pmp));
 				}
 			}
 		}
 	} //AS_Boiling
+	else if(AutoStateIs(AS_HopStandChilling))
+	{
+	    if(event == ButtonPressedEventMask){
+	        if(!_stageConfirm){
+	            if (btnIsStartPressed){
+	                _stageConfirm=true;
+	                buzzMute();
+	                uiButtonLabel(ButtonLabel(Up_Down_Skip_Pmp));
+	            }
+	            return;
+	        }
+	        // else stageConfirm
+			if (btnIsEnterPressed)
+			{
+				// pump control
+				pump.toggle();
+			}
+			else if (btnIsStartPressed)
+			{
+				// skip
+    		    if(btnIsStartLongPressed) {
+    		        _state = AS_HopStand;
+    		        brewLogger.stage(StageHopStand);
+		            autoModeEnterHopStand();
+		        }
+			}
+			else
+			{
+				processAdjustButtons();
+			}
+		}else if(event == TemperatureEventMask) {
+		    if(gCurrentTemperature <= gSettingTemperature){
+    		    _state = AS_HopStand;
+    		     brewLogger.stage(StageHopStand);
+		        autoModeEnterHopStand();
+		    }
+		}
+	} //AS_HopStandChilling
+	else if(AutoStateIs(AS_HopStand))
+	{
+	    if(event == ButtonPressedEventMask){
+			if (btnIsEnterPressed)
+			{
+				// pump control
+				pump.toggle();
+			}
+			else if (btnIsStartPressed)
+			{
+				// Skip
+    		    if(btnIsStartLongPressed) {
+    				 autoModeEndHopStandSession();
+    		    }
+			}
+			else
+			{
+				processAdjustButtons();
+			}	        
+        }else if(event == TimeoutEventMask) {
+        	if(IsAuxTimeout){
+            	autoModeAuxTimeout();
+			}else{
+			    autoModeHopStandTimeout();
+			}
+        }
+	} //AS_HopStand
 	else if(AutoStateIs(AS_Cooling))
 	{
 		if(_stageConfirm)
@@ -5217,8 +5728,7 @@ void autoModeEventHandler(byte event)
 				if (btnIsEnterPressed)
 				{
 					// pump control
-					if(gIsPumpOn) pumpOff();
-					else pumpOn();
+					pump.toggle();
 				}
 				else if (btnIsStartPressed)
 				{
@@ -5267,7 +5777,7 @@ void autoModeEventHandler(byte event)
 			}
 		} // end of else of if(_stageConfirm)
 	} //AS_Cooling
-#if NoWhirlpool != true
+//#if NoWhirlpool != true
 	else if(AutoStateIs(AS_Whirlpool))
 	{
 		if(_stageConfirm)
@@ -5328,7 +5838,7 @@ void autoModeEventHandler(byte event)
 						{
 							// stop pump ,and stop & reset time
 							_pumpRunning = false;
-							pumpOff();
+							pump.off();
 							uiRunningTimeShowInitial(_whirlpoolTime * 60);
 							tmPauseTimer();
 							
@@ -5337,7 +5847,7 @@ void autoModeEventHandler(byte event)
 						else
 						{
 							_pumpRunning = true;
-							pumpOn();
+							pump.on();
 							uiRunningTimeStartCountDown(_whirlpoolTime * 60);
 							tmSetTimeoutAfter((unsigned long)_whirlpoolTime*60*1000);
 							
@@ -5377,7 +5887,7 @@ void autoModeEventHandler(byte event)
 		} // of else // if(_stageConfirm)
 
 	}//AS_Whirlpool
-#endif
+//#endif
 	else if(AutoStateIs(AS_Finished))
 	{
 		if(event == TimeoutEventMask)
@@ -5400,10 +5910,8 @@ void mainSetup(void)
 	uiButtonLabel(ButtonLabel(Manual_Auto_Setup));
     uiTempDisplaySetPosition(TemperatureMainScreenPosition);
 
-    #if WirelessSupported == true
     uiPrintIpAddress();
     wiReportCurrentStage(StageIdleScreen);
-    #endif
     
     #if MaximumNumberOfSensors > 1
     setSensorForStage(SensorForIdle);
@@ -5463,7 +5971,7 @@ void backToMain(void)
 #if SpargeHeaterSupport == true	
 	stopHeatingSpargeWater();
 #endif
-	pumpOff();
+	pump.off();
 	buzzMute();
 
 	uiRunningTimeBlink(false); // stop blink if any. additional time print will be done
@@ -5510,6 +6018,7 @@ void startBrewManiac()
 void brewmaniac_setup() {
 
 	EepromInit();
+	automation.load();
 	// ESP8266
   	Wire.begin(I2C_SDA,I2C_SCL);
 
@@ -5524,14 +6033,12 @@ void brewmaniac_setup() {
 	uiInitialize();
 	
 	heatInitialize();
-	pumpInitialize();
+	//pumpInitialize();
 		
 	
 	uiPrintInitialScreen();
 	
-#if WirelessSupported == true
 	wiInitialize();
-#endif
 
 
 }
@@ -5571,7 +6078,7 @@ void brewmaniac_loop() {
 		}
 	}
 	
-	if(pumpRestEvent())
+	if(pump.restEvent())
 	{
 		if(_currentEventMask & PumpRestEventMask)
 			(*currentScreen->eventHandler)(PumpRestEventMask);
@@ -5589,15 +6096,62 @@ void brewmaniac_loop() {
 	//	
 	// threads
 	heatThread();
-	pumpThread();
+	pump.run();
 	buzzThread();
 
-#if WirelessSupported == true	
 	wiThread();
-#endif	
 	// handler state machine
 
 }// end of loop();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
