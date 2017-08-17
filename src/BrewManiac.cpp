@@ -1201,7 +1201,7 @@ void saveTunning(void)
 
     updateSetting(PS_kP,(byte)( kp + 100.0));
 	updateSetting(PS_kI,(byte)( ki * 250.0 +100));
-	//updateSetting(PS_kD,(byte)( kd + 100.0));
+	updateSetting(PS_kD,(byte)( kd + 100.0));
 	wiSettingChanged(PS_kD,(byte)( kd + 100.0));// notify setting change.
 	commitSetting();
 }
