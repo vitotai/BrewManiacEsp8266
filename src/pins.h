@@ -22,7 +22,7 @@
 #define PUMP_USE_EXT false
 #define BUZZER_USE_EXT false
 
-#define PUMP_INVERTED_LOGIC false
+#define PUMP_INVERTED_LOGIC true
 
 #define PCF8574_ADDRESS 0x20
 

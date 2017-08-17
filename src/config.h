@@ -42,14 +42,10 @@
 
 #define UsePaddleInsteadOfPump false
 #define SecondaryHeaterSupport false
-#define SpargeHeaterSupport true
+#define SpargeHeaterSupport false
 
 
 #define LCD_USE_SSD1306 false
-
-#if SupportDistilling
-#define PwmHeatingSupport true
-#endif
 /**************************************************************************************/
 /*  BrewManiac Related settings                                                       */
 /**************************************************************************************/
@@ -82,12 +78,7 @@
 
 #define MinimumTemperatureReadGap 500
 
-// Idle,Manual,PreMash,Mashing,Boiling,PostBoil,Distill
-#if SupportDistilling
-#define NumberSensorStage 7
-#else
 #define NumberSensorStage 6
-#endif
 
 //debug setting
 //#define FakeHeating false

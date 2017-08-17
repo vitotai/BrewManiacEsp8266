@@ -79,30 +79,26 @@
 #define PS_kP_AllOn      58  // 	kP
 #define PS_kI_AllOn      59  //	kI
 #define PS_kD_AllOn      60  //     kD
-// space 
 
 
-#define PS_Distill_Base      64  //     7 fields
-// 64 ~ 70
-
-//[94-98,99-103] Sensor index for stages, total 6  +1 stages
-// Idle, Manual, PreMash, Mashing, Boiling, Cooling, DISTILL
-#define PS_SensorUseBase    72
+//[94-98,99-103] Sensor index for stages, total 6 stages
+// Idle, Manual, PreMash, Mashing, Boiling, Cooling
+#define PS_SensorUseBase    100
 #define PS_SensorUseAddressOf(i)    (PS_SensorUseBase+(i))
 
-#define PS_SensorAuxBase    80
+#define PS_SensorAuxBase    106
 #define PS_AuxSensorAddressOf(i)    (PS_SensorAuxBase+(i))
-// 80-86
 
-//[90- 129] [104-143] sensor addresses
+//[104-143] sensor addresses
 #define PS_SensorAddressBase    112
 #define PS_SensorAddressOf(i) ((i)*8 + PS_SensorAddressBase)
 
-//[130-135] multi-sensor calibration
-#define PS_SensorCalibrationAddressBase    130
+//[144-148] multi-sensor calibration
+#define PS_SensorCalibrationAddressBase    152
 #define CalibrationAddressOf(i) ((i) + PS_SensorCalibrationAddressBase)
 
-#define EEPROM_SIZE 140
+//[148-] Sparge water heater
+
 
 const unsigned char  DEFAULT_EEPROM[] PROGMEM={
 0, //#define PS_UseGas   0  //	space
@@ -160,8 +156,7 @@ const unsigned char  DEFAULT_EEPROM[] PROGMEM={
 200,//#define PS_kP_AllOn      58  // 	kP
 200,//#define PS_kI_AllOn      59  //	kI
 200,//#define PS_kD_AllOn      60  //     kD
-0,0,0, // 
-50,70,100,55,83,90,100 //PS_Distill_Base
+0
 };
 #include "SpiffsEeprom.h"
 
@@ -193,7 +188,7 @@ word updateSettingWord(int addr,word value)
 
 void EepromInit(void)
 {
-	SpiEEPROM.begin(EEPROM_SIZE);
+	SpiEEPROM.begin(256);
 
 	if(!(SpiEEPROM.read(29)=='M'
 	 		&& SpiEEPROM.read(30)=='E'
