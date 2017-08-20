@@ -2,6 +2,7 @@
 #include <pgmspace.h>
 #include <EEPROM.h>
 #include <FS.h>
+#include <ESP8266WiFi.h>
 #include "BrewManiacWeb.h"
 #include "automation.h"
 
@@ -420,6 +421,7 @@ void BrewManiacWeb::getCurrentStatus(String& json,bool initial)
 	json += ",\"timer\":";
 	json += String(uiGetDisplayTime());
 	json += ",\"stemp\":" + String(gSettingTemperature);
+	json += ",\"rssi\":" + String(WiFi.RSSI());
 	json += "}";
 }
 

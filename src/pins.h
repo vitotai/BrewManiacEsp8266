@@ -23,8 +23,9 @@
 #define BUZZER_USE_EXT false
 
 #define PUMP_INVERTED_LOGIC true
-
-#define PCF8574_ADDRESS 0x20
+// with all address pins grounded, PCF8574 is 0x20 while pCF8574A is 0x38
+//#define PCF8574_ADDRESS 0x20
+#define PCF8574_ADDRESS 0x38
 
 //Using ESP8266 PINs as input seems to be a good idea
 
