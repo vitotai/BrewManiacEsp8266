@@ -52,7 +52,7 @@
 
 // manual control over pump during mash
 // !!! NOT really options.
-#define SwapSerial false
+//#define SwapSerial false
 // changes the UART pins to use GPIO13 and GPIO15 as RX and TX.
 //- See more at: http://www.esp8266.com/viewtopic.php?f=23&t=6394#sthash.5cMDbhuW.dpuf
 #ifdef DebugOutput
@@ -142,7 +142,7 @@
 /*  version information     														  */
 /**************************************************************************************/
 
-#define BME8266_VERSION "0.3.1"
+#define BME8266_VERSION "0.3.2"
 
 #if MaximumNumberOfSensors >  1
 	#if LCD_USE_SSD1306 == true

@@ -845,9 +845,15 @@ void uiShowPwmValue(byte pwm)
 	buffer[3]='\0';
 	uiLcdPrint(8,2,buffer);
 #else
-	buffer[0]=(pwm==100)? '1':' ';
-	buffer[1]=(pwm/10)? ('0' +(pwm/10)):' ';
-	buffer[2]=	'0' + (pwm%10);
+	if(pwm>=100){
+		buffer[0]='1';
+		buffer[1]='0';
+		buffer[2]='0';		
+	}else{
+		buffer[0]=' ';
+		buffer[1]=(pwm/10)? ('0' +(pwm/10)):' ';
+		buffer[2]=	'0' + (pwm%10);
+	}
 	buffer[3]='\0';
 
 	uiLcdPrint(5,2,buffer);
