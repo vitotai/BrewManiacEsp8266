@@ -414,6 +414,10 @@ void BrewManiacWeb::getCurrentStatus(String& json,bool initial)
 	json += String((gIsTemperatureReached)? 1:0);
 	json += ",\"pwmon\":";
 	json += String((gIsEnterPwm)? 1:0);
+
+	if(gIsEnterPwm){
+		json += ",\"pwm\":" + String(_pwm);	
+	}
 	json += ",\"paused\":";
 	json += String((!uiIsTimerRunning())? 1:0);
 	json +=",\"counting\":";

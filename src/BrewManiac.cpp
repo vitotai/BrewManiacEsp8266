@@ -175,6 +175,12 @@ void spargeMenuSetup(void);
 void spargeMenuEventHandler(byte);
 #endif
 
+#if SupportDistilling
+void distillRecipeSetup(void);
+void distillRecipeEventHandler(byte);
+void distillingSetup(void);
+void distillingEventHandler(byte);
+#endif
 
 #define ConvertF2C(d) (((d)-32)/1.8)
 #define ConvertC2F(d) (((d)*1.8)+32)
@@ -196,6 +202,13 @@ void spargeMenuEventHandler(byte);
 #define StageIdleScreen  101
 #define StageSetting 	 102
 #define StagePIDAutoTune 103
+
+#if SupportDistilling
+#define StageDistillingPreHeat 110
+#define StageDistillingHead 111
+#define StageDistillingHeart 112
+#define StageDistillingTail 113
+#endif
 
 //Event
 // Timeup usually means another stage or notification, ignore it
@@ -250,6 +263,10 @@ MISC_SETTING_SCREEN = 7,
 #if MaximumNumberOfSensors > 1
 SENSOR_SCREEN,
 #endif
+#if SupportDistilling
+	DISTILL_SETTING_SCREEN,
+	DISTILLING_MODE_SCREEN,
+#endif
 END_OF_SCREEN
 } ScreenIdType;
 
@@ -292,7 +309,16 @@ const CScreen allScreens[]  =
 	&sensorMenuEventHandler,
 }
 #endif
-
+#if SupportDistilling
+,{
+	&distillRecipeSetup,
+	&distillRecipeEventHandler,
+},
+{
+	&distillingSetup,
+	&distillingEventHandler,
+}
+#endif
 };
 
 
@@ -895,7 +921,13 @@ float  _readTemperature(byte *addr)
 #define SensorForMash 3
 #define SensorForBoil 4
 #define SensorForCooling 5
+
+#if SupportDistilling
+#define SensorForDistilling 6
+#define NumberOfSensorStage 7
+#else
 #define NumberOfSensorStage 6
+#endif
 
 
 void setSensorForStage(byte s)
@@ -1494,13 +1526,31 @@ void heatOff(void)
 	#endif
 }
 
-boolean _isPIDMode;
+#if PwmHeatingSupport
+typedef enum _HeatingMode{
+	HeatingModePID,
+	HeatingModeBoil,
+	HeatingModePWM
+} HeatingMode;
 
-void heatOn(bool pidmode)
+HeatingMode _heatingMode;
+
+#else
+boolean _isPIDMode;
+#endif
+
+#if PwmHeatingSupport
+void heatOn(HeatingMode mode=HeatingModePID)
 {
+	_heatingMode=mode;
+
+#else
+void heatOn(bool pidmode=true)
+{
+	_isPIDMode=pidmode;
+#endif
 	gIsHeatOn = true;
 	gIsHeatProgramOff=false;
-	_isPIDMode=pidmode;
 
 	// should run through heating algorithm first
 	// so that the correct symbol can be shown
@@ -1550,7 +1600,11 @@ void heaterControl(void)
  	pidInput = gCurrentTemperature;
 	pidSetpoint= gSettingTemperature;
 
+#if PwmHeatingSupport
+	if(_heatingMode == HeatingModePID)
+#else
   	if (_isPIDMode) //PID mode
+#endif
   	{
   	 #if EnablePidAutoTune == true
 		if(_isRunningAutoTune)
@@ -1575,14 +1629,23 @@ void heaterControl(void)
       			pidOutput = 255;      // was 5, ignore PID and go full speed -mdw  // set the output to full on
     		}
     	}
-  	}// end of _isPIDMode
+  	}// end of PID mode
   	else
+#if PwmHeatingSupport
+	if(_heatingMode == HeatingModeBoil)
+#endif
   	{
 	  	pidOutput = 255;  // NOT PID mode. just turn on full power.
   	}
 
   	// In boiling stage, the output value is reassigned.
-
+#if PwmHeatingSupport
+	if(_heatingMode == HeatingModePWM){
+		pidOutput = gBoilHeatOutput * 255.0 / 100.0;
+		//DebugPort.printf("gIsHeatProgramOff=%d, gBoilHeatOutput=%d pidOutput=",gIsHeatProgramOff,gBoilHeatOutput);
+		//DebugPort.println(pidOutput);
+	} else
+#endif
 	if (pidInput >= pidSetpoint && pidInput >= gBoilStageTemperature)
 		pidOutput = gBoilHeatOutput * 255.0 / 100.0;
 
@@ -2009,6 +2072,9 @@ protected:
     byte _currentSettingAddress;
     byte _currentSettingIndex;
     const SettingItem *_SettingItems;
+ 	
+	SettingItem _item;
+	int _itemValue;
 
     int (*_getValue)(int index);
     void (*_setValue)(int index, int value);
@@ -2029,6 +2095,20 @@ public:
         setup(items,NULL,NULL);
     }
 
+    void getItemDetail(void)
+    {
+ 	    const char* addr=(const char*) & _SettingItems[_currentSettingIndex];
+
+        char *dst=(char*) &_item;
+ 	    for (int i=0; i< sizeof(SettingItem); i++)
+        {
+            dst[i] =	pgm_read_byte_near(addr + i);
+        }
+        if( _item.address ==0 && _getValue != NULL) _itemValue=_getValue(_currentSettingIndex);
+	    else _itemValue=(int)readSetting(_item.address);
+
+    }
+
     void nextItem(void)
     {
         _currentSettingIndex++;
@@ -2038,37 +2118,22 @@ public:
     void nextItem(byte max, byte min)
     {
         _currentSettingIndex++;
-
-	    SettingItem item;
-	    getItemDetail(item);
-        int value;
-        if( item.address ==0 && _getValue != NULL) value=_getValue(_currentSettingIndex);
-	    else value=(int)readSetting(item.address);
-
-	    editItem(item.title,value,max,min,item.display);
+	    getItemDetail();
+	    editItem(_item.title,_itemValue,max,min,_item.display);
     }
 
-    void getItemDetail(SettingItem &item)
-    {
- 	    const char* addr=(const char*) & _SettingItems[_currentSettingIndex];
-
-        char *dst=(char*) &item;
- 	    for (int i=0; i< sizeof(SettingItem); i++)
-        {
-            dst[i] =	pgm_read_byte_near(addr + i);
-        }
-        _currentSettingAddress = item.address;
-    }
     void displayItem(void)
     {
-	    SettingItem item;
-	    getItemDetail(item);
-
-        int value;
-        if( item.address ==0 && _getValue != NULL) value=_getValue(_currentSettingIndex);
-	    else value=(int)readSetting(item.address);
+	    getItemDetail();
 	    //editItem(str_t label, byte value, byte max, byte min,CDisplayFunc displayFunc)
-	    editItem(item.title,value,item.max,item.min,item.display);
+	    editItem(_item.title,_itemValue,_item.max,_item.min,_item.display);
+    }
+
+    void displayItem(byte max, byte min)
+    {
+	    getItemDetail();
+	    //editItem(str_t label, byte value, byte max, byte min,CDisplayFunc displayFunc)
+	    editItem(_item.title,_itemValue,max,min,_item.display);
     }
 
     byte index(void){ return _currentSettingIndex; }
@@ -2233,8 +2298,118 @@ void displayHotColdOff(int value)
 }
 //#endif
 
+//**************************************************************
+//* Distill
+//**************************************************************
+#if SupportDistilling
 
+#define DistillHeadPwm 0
+#define DistillHeartPwm 1
+#define DistillTailPwm 2
+#define DistillHeadTemp 0
+#define DistillHeartTemp 1
+#define DistillTailTemp 2
+#define DistillEndTemp 3
 
+class DistillRecipe{
+	uint8_t _pwms[3];
+	uint8_t _temps[4];
+	bool _loaded;
+public:
+	DistillRecipe(){ _loaded=false;}
+	void load(){
+		if(_loaded) return;
+		int addr=PS_Distill_Base;
+		for(int i=0; i< 3; i++){
+			_pwms[i]=readSetting(addr);
+			addr ++;
+		}
+		for(int i=0; i< 4; i++){
+			_temps[i]=readSetting(addr);
+			addr ++;
+		}
+		_loaded=true;
+	}
+	
+	void save(){
+		int addr=PS_Distill_Base;
+		for(int i=0; i< 3; i++){
+			updateSetting(addr,_pwms[i]);
+			addr ++;
+		}
+		for(int i=0; i< 4; i++){
+			updateSetting(addr,_temps[i]);
+			addr ++;
+		}		
+	}
+
+	uint8_t pwmOf(uint8_t index){ return _pwms[index]; }
+	void   setPwmOf(uint8_t index, uint8_t value){ _pwms[index]=value; }
+	uint8_t tempOf(uint8_t index){ return _temps[index]; }
+	void   setTempOf(uint8_t index, uint8_t value){ _temps[index]=value; }
+
+} distillRecipe;
+
+const SettingItem distillRecipeItems[] PROGMEM=
+{
+/*0*/{STR(StartTemp),          & displaySimpleTemperature,  0,100,35},
+/*1*/{STR(HeadPwm),          & displayPercentage,  0, 100,0},
+/*2*/{STR(HeartTemp),          & displaySimpleTemperature,  0, 100,35},
+/*3*/{STR(HeartPwm),          & displayPercentage,  0, 100,0},
+/*4*/{STR(TailTemp),          & displaySimpleTemperature,  0, 100,35},
+/*5*/{STR(TailPwm),          & displayPercentage,  0, 100,0},
+/*6*/{STR(EndTemp),          & displaySimpleTemperature,  0, 100,35}
+};
+
+int distillGetValue(int index)
+{
+    if(index == 0) return distillRecipe.tempOf(DistillHeadTemp);
+    else if(index == 1) return distillRecipe.pwmOf(DistillHeadPwm);
+    else if(index == 2) return distillRecipe.tempOf(DistillHeartTemp);
+    else if(index == 3) return distillRecipe.pwmOf(DistillHeartPwm);
+    else if(index == 4) return distillRecipe.tempOf(DistillTailTemp);
+    else if(index == 5) return distillRecipe.pwmOf(DistillTailPwm);
+    else if(index == 6) return distillRecipe.tempOf(DistillEndTemp);
+}
+
+void distillSetValue(int index, int value)
+{
+    if(index == 0) return distillRecipe.setTempOf(DistillHeadTemp,(uint8_t)value);
+    else if(index == 1) return distillRecipe.setPwmOf(DistillHeadPwm,(uint8_t)value);
+    else if(index == 2) return distillRecipe.setTempOf(DistillHeartTemp,(uint8_t)value);
+    else if(index == 3) return distillRecipe.setPwmOf(DistillHeartPwm,(uint8_t)value);
+    else if(index == 4) return distillRecipe.setTempOf(DistillTailTemp,(uint8_t)value);
+    else if(index == 5) return distillRecipe.setPwmOf(DistillTailPwm,(uint8_t)value);
+    else if(index == 6) return distillRecipe.setTempOf(DistillEndTemp,(uint8_t)value);
+}
+
+void distillRecipeSetup(void)
+{
+	distillRecipe.load();
+	settingEditor.setup(distillRecipeItems,& distillGetValue,& distillSetValue);
+	if(gIsUseFahrenheit)
+		settingEditor.displayItem(221,100);
+	else
+		settingEditor.displayItem();
+}
+
+void distillRecipeEventHandler(byte)
+{
+	if(settingEditor.buttonHandler()){
+	    int index = settingEditor.index();
+		if(index  >= (sizeof(distillRecipeItems)/sizeof(SettingItem) -1)){
+			distillRecipe.save();
+	        switchApplication(SETUP_SCREEN);
+            return;
+	    }
+		if(gIsUseFahrenheit && ((index +1) & 1)==0){ // %2 == 0, temperature
+			settingEditor.nextItem(221,100);
+        }else
+            settingEditor.nextItem();
+
+	}
+}
+#endif //#if SupportDistilling
 //**************************************************************
 //* PID PWM setting screen
 //**************************************************************
@@ -2957,6 +3132,14 @@ void sensorMenuItem(void)
 			else
 				uiSettingTitle(STR(AuxSensor_Manual));
 		}
+#if SupportDistilling
+		else if(_sensorSettingIndex ==(SensorForDistilling+1)){
+			if(_sensorSettingAux==0)
+				uiSettingTitle(STR(Sensor_Distill));
+			else
+				uiSettingTitle(STR(AuxSensor_Distill));
+		}
+#endif
 		int s=firstAvailable();
 		_sensorSelection=(s>=0)? s:0;
 		uiSettingDisplayNumber((float)_sensorSelection+1,0);
@@ -3084,6 +3267,9 @@ STR(Misc_Setting)
 #if MaximumNumberOfSensors > 1
 ,STR(Sensor_Setting)
 #endif
+#if SupportDistilling
+,STR(Distill_Recipe)
+#endif
 };
 const ScreenIdType level1Screens[]={
 	PID_SETTING_SCREEN,
@@ -3092,6 +3278,9 @@ const ScreenIdType level1Screens[]={
     MISC_SETTING_SCREEN
 #if MaximumNumberOfSensors > 1
 	,SENSOR_SCREEN
+#endif
+#if SupportDistilling
+	,DISTILL_SETTING_SCREEN
 #endif
 };
 
@@ -3276,7 +3465,7 @@ void toggleHeater(byte heater)
     //
     heatOff();
     setHeatingElementsInUse(result);
-    if(result) heatOn(true);
+    if(result) heatOn();
 }
 #endif
 
@@ -3442,7 +3631,7 @@ void manualModeEventHandler(byte event)
 			uiRunningTimeStart();
 
 			startAutoTune();
-			heatOn(true);
+			heatOn();
 
 			brewLogger.stage(StagePIDAutoTune);
 
@@ -3514,7 +3703,7 @@ void manualModeEventHandler(byte event)
                     #else
 					//turn heating on/off
 					if(gIsHeatOn) heatOff();
-					else heatOn(true);
+					else heatOn();
 				    #endif
 				}
 			}
@@ -3566,22 +3755,31 @@ void manualModeEventHandler(byte event)
 			}
 			else if(isCountDownTimeBlinking)
 			{
+				bool update=false;
+				long value=(long)manualModeChangeCountDownTime;
 				if(btnIsUpPressed)
 				{
-					if(manualModeChangeCountDownTime< 140)
-					{
-						manualModeChangeCountDownTime ++;
-						uiRunningTimeShowInitial(manualModeChangeCountDownTime * 60);
-					}
+					value +=1;
 				}
 				else if(btnIsDownPressed)
 				{
-					if(manualModeChangeCountDownTime> 0)
-					{
-					 	manualModeChangeCountDownTime --;
-					 	uiRunningTimeShowInitial(manualModeChangeCountDownTime * 60);
-					}
+					value -= 1;
+				}			
+				else if(btnIsUpContinuousPressed)
+				{
+					value += 5;
 				}
+				else if(btnIsDownContinuousPressed)
+				{
+					value -= 5;
+				}
+				if(update)
+				{
+					if(value < 0) value=0;
+					else if(value > 600) value=600;
+					manualModeChangeCountDownTime = value;
+					uiRunningTimeShowInitial(manualModeChangeCountDownTime * 60);
+				}			
 			}
 			#endif
 			else
@@ -3785,7 +3983,7 @@ void autoModeEnterDoughIn(void)
 #if SecondaryHeaterSupport
 	setHeatingElementForStage(HeatingStagePreMash);
 #endif
-	heatOn(true);
+	heatOn();
 	if(gIsUseFahrenheit)
 		setAdjustTemperature(167,77);
 	else
@@ -3902,7 +4100,7 @@ void autoModeNextMashingStep(bool resume)
 
 	//if(pump.isRest())
 	//{
-		heatOn(true);
+		heatOn();
 	//}
 	pump.setRestEnabled(false);
 
@@ -3969,7 +4167,7 @@ void autoModeEnterMashing(void)
 #if SecondaryHeaterSupport
     setHeatingElementForStage(HeatingStageMashing);
 #endif
-	heatOn(true);
+	heatOn();
 
 	autoModeGetMashStepNumber();
 	autoModeNextMashingStep(false);
@@ -4164,7 +4362,7 @@ void autoModeExitPause(void)
 		uiButtonLabel(ButtonLabel(Up_Down_Pause_STP));
 #endif
 	// restore heating and pump
-	if(_savedHeating) heatOn(true);
+	if(_savedHeating) heatOn();
 	if(_savedPump) pump.on();
 
 	brewLogger.event(RemoteEventResume);
@@ -4251,7 +4449,11 @@ void autoModeEnterBoiling(void)
 #if SecondaryHeaterSupport
 	setHeatingElementForStage(HeatingStageBoiling);
 #endif
+#if PwmHeatingSupport
+	heatOn(HeatingModeBoil);
+#else
 	heatOn(false); // NO need of PID, just full power until boiling
+#endif
 	wiReportCurrentStage(StageBoil);
 }
 
@@ -4687,7 +4889,7 @@ void autoModeStartHopStandHopTimer(void)
 
 void autoModeEnterHopStand(uint32_t elapsed=0)
 {
-    heatOn(true);
+    heatOn();
     pump.off();
     //set temperature as "start" temperature.
     float temp=automation.sessionKeepTemperature(_hopStandSession);
@@ -4923,7 +5125,7 @@ void autoModeResumeProcess(void)
 	}
 	else if (stage == StageDoughIn) // Daugh-in
 	{
-		heatOn(true);
+		heatOn();
 		autoModeEnterDoughIn();
 	}
 	else if (stage <  StageBoil)
@@ -4933,7 +5135,7 @@ void autoModeResumeProcess(void)
 #if SecondaryHeaterSupport
 		setHeatingElementForStage(HeatingStageMashing);
 #endif
-		heatOn(true);
+		heatOn();
 		_state = AS_Mashing;
 		_askingSkipMashingStage = false;
 
@@ -5449,7 +5651,7 @@ void autoModeEventHandler(byte event)
 				#endif
 
 				#if !UsePaddleInsteadOfPump
-				heatOn(true);
+				heatOn();
 				buzzPlaySound(PumpRestEndSoundId);
 				#endif
 
@@ -5900,6 +6102,257 @@ void autoModeEventHandler(byte event)
 
 
 // *************************
+//* Distilling
+// *************************
+#if SupportDistilling
+typedef enum _DistillingState{
+	DistillingStateConfirmation,
+	DistillingStateBeforeHead,
+	DistillingStateHeadConfirmation,
+	DistillingStateHead,
+	DistillingStateHeart,
+	DistillingStateTail,
+	DistillingStateEnd
+} DistillingState;
+
+class DistillingAutomation{
+	DistillingState _state;
+public:
+	DistillingAutomation(){}
+
+	void setup(void){
+		_state = DistillingStateConfirmation;
+		// display confirmation temperature
+		// 
+		uiTitle(STR(Distilling));
+		uiPrompt(STR(StartDistilling));
+		uiButtonLabel(ButtonLabel(Continue_Yes_No));
+	}
+
+	
+	void enterDistilling(void){
+		_state = DistillingStateBeforeHead;
+		// setup distilling mode screen
+		distillRecipe.load();
+		
+		setEventMask(TemperatureEventMask /*| ButtonPressedEventMask */);
+
+		//load temperature value
+		// setup screen
+		uiClearTitle();
+		uiDistillingModeTitle();
+		uiClearSubTitleRow();
+		uiClearPrompt();
+
+		uiDistillingModeStage(DistillStageStart); // 0 is Start
+		uiRunningTimeSetPosition(RunningTimeNormalPosition);
+		uiRunningTimeStart();
+		// displace temperature
+		uiTempDisplaySetPosition(TemperatureAutoModePosition);
+		setSettingTemperature((float)distillRecipe.tempOf(DistillHeadTemp));
+
+		uiButtonLabel(ButtonLabel(Up_Down_x_Pmp));
+
+#if MaximumNumberOfSensors > 1
+		setSensorForStage(SensorForDistilling);
+#endif		
+
+		heatLoadParameters();
+
+		heatOn(HeatingModePWM);
+		gIsEnterPwm=true;
+		uiShowPwmLabel();
+
+		changePwmValue(100);
+		
+		#if MaximumNumberOfSensors > 1
+		brewLogger.startSession(gSensorNumber,TemperatureChartPeriod,gIsUseFahrenheit,false);
+		#else
+		brewLogger.startSession(1,TemperatureChartPeriod,gIsUseFahrenheit,false);
+		#endif
+
+		brewLogger.stage(StageDistillingPreHeat);
+		wiReportCurrentStage(StageDistillingPreHeat);
+	}
+
+	void eventHanlderConfirmation(byte event){
+		if(btnIsStartPressed){
+			enterDistilling();
+		}else{
+			// back to main
+			backToMain();
+		}
+	}
+
+	void distillFinished(void)
+	{
+		heatOff();
+		pump.off();
+		// buzz and display to end
+
+		uiTempDisplayHide();
+		uiRunningTimeStop();
+
+		uiClearScreen();
+
+		uiPrompt(STR(Distill_finished));
+
+		buzzPlaySoundRepeat(SoundIdBrewEnd);
+		setEventMask(TimeoutEventMask);
+		tmSetTimeoutAfter(BREW_END_STAY_DURATION * 1000);
+
+		brewLogger.endSession();
+
+		wiReportEvent(RemoteEventBrewFinished);
+	}
+
+	void eventHanlderEnd(byte event){
+		if(event == TimeoutEventMask){
+			buzzMute();
+			backToMain();
+		}
+	}
+	
+	void changePwmValue(uint8_t pwm){
+		gBoilHeatOutput = pwm;
+		uiShowPwmValue(gBoilHeatOutput);
+		wiReportPwm();
+	}
+
+	bool handleAdjustPwm(void){
+			if(btnIsUpPressed)
+			{
+				adjustPwm(+1);
+			}
+			else if(btnIsDownPressed)
+			{
+				adjustPwm(-1);
+			}
+			else if(btnIsUpContinuousPressed)
+			{
+				adjustPwm(+2);
+			}
+			else if(btnIsDownContinuousPressed)
+			{
+				adjustPwm(-2);
+			}
+			else return false;
+		return true;
+	}
+
+	void eventHanlderBeforeHead(byte event){
+		if(event == ButtonPressedEventMask){
+			handleAdjustPwm();
+		} else if(event == TemperatureEventMask){
+			if(gCurrentTemperature >= gSettingTemperature ){
+				// stop heating
+				heatProgramOff();
+				// prompt for start head
+				uiRunningTimeStop();
+//				uiRunningTimeHide();
+				uiClearPrompt();
+				uiPrompt(STR(TurnOnCoolWater));
+				uiButtonLabel(ButtonLabel(x_x_x_Ok));
+				_state = DistillingStateHeadConfirmation;
+
+				buzzPlaySoundRepeat(SoundIdConfirmUser);
+			}
+		} // TemperatureEventMask
+	}
+
+	void eventHanlderHeadConfirmation(byte event){
+		if(event == ButtonPressedEventMask){
+			if(btnIsEnterPressed){
+				buzzMute();
+				_state = DistillingStateHead;
+				uiClearPrompt();
+				uiDistillingModeStage(DistillStageHead); 
+				uiRunningTimeStart();
+				uiButtonLabel(ButtonLabel(Up_Down_x_Pmp));
+				uiShowPwmLabel();
+
+				heatOn(HeatingModePWM);
+				changePwmValue(distillRecipe.pwmOf(DistillHeadPwm));
+				setSettingTemperature((float)distillRecipe.tempOf(DistillHeartTemp));
+
+				brewLogger.stage(StageDistillingHead);
+				wiReportCurrentStage(StageDistillingHead);
+
+			}
+		} // TemperatureEventMask
+	}
+
+	void eventHanlderHead(byte event){
+		if(event == ButtonPressedEventMask){
+			handleAdjustPwm();
+		} else if(event == TemperatureEventMask){
+			if(gCurrentTemperature >= gSettingTemperature ){
+				_state = DistillingStateHeart;
+				uiDistillingModeStage(DistillStageHeart); 
+				changePwmValue(distillRecipe.pwmOf(DistillHeartPwm));
+				setSettingTemperature((float)distillRecipe.tempOf(DistillTailTemp));
+				
+				brewLogger.stage(StageDistillingHeart);
+				wiReportCurrentStage(StageDistillingHeart);
+
+				buzzPlaySound(SoundIdTemperatureReached);
+			}
+		} // TemperatureEventMask
+	}
+
+	void eventHanlderHeart(byte event){
+		if(event == ButtonPressedEventMask){
+			handleAdjustPwm();
+		} else if(event == TemperatureEventMask){
+			if(gCurrentTemperature >= gSettingTemperature ){
+				_state = DistillingStateTail;
+				uiDistillingModeStage(DistillStageTail); 
+				changePwmValue(distillRecipe.pwmOf(DistillTailPwm));
+				setSettingTemperature(distillRecipe.tempOf(DistillEndTemp));
+
+				brewLogger.stage(StageDistillingTail);
+				wiReportCurrentStage(StageDistillingTail);
+				buzzPlaySound(SoundIdTemperatureReached);
+			}
+		} // TemperatureEventMask
+	}
+
+	void eventHanlderTail(byte event){
+		if(event == ButtonPressedEventMask){
+			handleAdjustPwm();
+		} else if(event == TemperatureEventMask){
+			if(gCurrentTemperature >= gSettingTemperature ){
+				_state = DistillingStateEnd;
+				distillFinished();					
+			}
+		} // TemperatureEventMask
+	}
+
+
+	void eventHanlder(byte event){
+		if(_state == DistillingStateConfirmation)  eventHanlderConfirmation(event);
+		else if(_state == DistillingStateBeforeHead) eventHanlderBeforeHead(event);
+		else if(_state == DistillingStateHeadConfirmation) eventHanlderHeadConfirmation(event);
+		else if(_state == DistillingStateHead) eventHanlderHead(event);
+		else if(_state == DistillingStateHeart) eventHanlderHeart(event);
+		else if(_state == DistillingStateTail) eventHanlderTail(event);
+		else if(_state == DistillingStateEnd) eventHanlderEnd(event);
+	}
+} distiller;
+
+
+void distillingSetup(void)
+{
+	distiller.setup();
+}
+
+void distillingEventHandler(byte event)
+{
+	distiller.eventHanlder(event);
+}
+#endif
+
+// *************************
 //*  Main Screen
 // *************************
 
@@ -5939,7 +6392,12 @@ void mainEventHandler(byte event)
   	{
       	switchApplication(AUTO_MODE_SCREEN);
   	}
-
+#if SupportDistilling
+  	else if(btnIsUpPressed)
+  	{
+      	switchApplication(DISTILLING_MODE_SCREEN);
+  	}
+#endif
 }
 
 // *************************

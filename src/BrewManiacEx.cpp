@@ -685,6 +685,9 @@ void getVersionInfo(String& json)
 {
 	json += String("{\"firmware\":{\"v\":\"") + String(BME8266_VERSION);
 	json += String("\",\"sensors\":") + String(MaximumNumberOfSensors);
+	#if SupportDistilling
+	json += String(",\"distill\":1}}");	
+	#endif
 	#if UsePaddleInsteadOfPump
 	json += String(",\"paddle\":1}}");
 	#else

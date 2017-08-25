@@ -9,8 +9,8 @@
  BrewManiac by Vito Tai is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
 ***********************************************************************/
 
-#ifndef STRING_H
-#define STRING_H
+#ifndef RESOURCES_H
+#define RESOURCES_H
 
 #define StringConst(v,c) const char C_##v []  PROGMEM = c
 #define STR(v) C_##v
@@ -97,7 +97,11 @@ DefineButtonLabel( Up_Down_Next_x,    "UP   DWN   >>  ---",3);
 DefineButtonLabel( Up_Down_Done_x,    "UP   DWN  Done ---",4);
 
 DefineButtonLabel( No_Yes,            "            No Yes",5);
+#if SupportDistilling
+DefineButtonLabel( Manual_Auto_Setup, "DST MAN AUTO SETUP",6);
+#else
 DefineButtonLabel( Manual_Auto_Setup, "--- MAN AUTO SETUP",6);
+#endif
 
 #if UsePaddleInsteadOfPump
 DefineButtonLabel( _Pump_Rest_,       " -  Stir  Rest  - ",7);
@@ -346,4 +350,30 @@ StringConst(Sensor_Manual, "Manual Primary");
 StringConst(AuxSensor_Manual,   "Manual Aux");
 
 #endif // MaximumNumberOfSensors > 1
+
+#if SupportDistilling
+StringConst(Sensor_Distill, "Distill Primary");
+StringConst(AuxSensor_Distill,   "Distill Aux");
+
+StringConst(StartTemp,   "Head Temp");
+StringConst(HeadPwm,   "Head PWM");
+StringConst(HeartTemp,   "Heart Temp");
+StringConst(HeartPwm,   "Heart PWM");
+StringConst(TailTemp,   "Tail Temp");
+StringConst(TailPwm,   "Tail PWM");
+StringConst(EndTemp,   "End Temp");
+
+StringConst(Distill_Recipe,"Distill Recipe");
+StringConst(StartDistilling,"Start Distilling?");
+StringConst(Distilling,"Distilling");
+StringConst(TurnOnCoolWater,"Start Cooling");
+StringConst(Distill_finished,"Distilling Finished");
+
+StringConst(DistillTitle,"Distill-");
+StringConst(Start,"Preheat");
+StringConst(Head,"Head");
+StringConst(Heart,"Heart");
+StringConst(Tail,"Tail");
 #endif
+
+#endif //RESOURCES_H

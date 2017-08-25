@@ -833,7 +833,7 @@ void uiShowPwmValue(byte pwm)
 	char buffer[8];
 	// make it simple, should optimize later
 #if	MaximumNumberOfSensors > 1
-	if(pwm==100){
+	if(pwm>=100){
 		buffer[0]='H';
 		buffer[1]='H';
 		buffer[2]='H';
@@ -848,12 +848,11 @@ void uiShowPwmValue(byte pwm)
 	if(pwm>=100){
 		buffer[0]='1';
 		buffer[1]='0';
-		buffer[2]='0';		
 	}else{
 		buffer[0]=' ';
 		buffer[1]=(pwm/10)? ('0' +(pwm/10)):' ';
-		buffer[2]=	'0' + (pwm%10);
 	}
+	buffer[2]=	'0' + (pwm%10);
 	buffer[3]='\0';
 
 	uiLcdPrint(5,2,buffer);
@@ -967,5 +966,30 @@ void uiInitialize(void)
 	uiRunningTimeStop();
 	uiLcdInitialize();
 }
+
+
+
+#if SupportDistilling
+void uiDistillingModeTitle(void)
+{
+	uiLcdPrint_P(1,0,STR(DistillTitle));
+}
+#define DistillStageStart 0
+#define DistillStageHead 1
+#define DistillStageHeart 2
+#define DistillStageTail 3
+
+void uiDistillingModeStage(byte idx)
+{
+	const char* str;
+	if(idx ==DistillStageStart) str = STR( Start);
+	else if(idx ==DistillStageHead)  str=STR( Head);
+	else if(idx ==DistillStageHeart)  str=STR( Heart);
+	else if(idx ==DistillStageTail)  str=STR( Tail);
+
+	uiLcdClear(10,0,9);
+	uiLcdPrint_P(10,0,str);
+}
+#endif //#if SupportDistilling
 
 #endif
