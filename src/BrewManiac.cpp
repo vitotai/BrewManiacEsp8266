@@ -39,6 +39,8 @@
 #define PowerSwitchTime 10 // 50Hz
 
 #if EnablePidAutoTune == true
+#undef LIBRARY_VERSION
+// to elminate warning
 #include <PID_AutoTune_v0.h>
 #endif
 
@@ -1738,7 +1740,7 @@ void heatThread(void)
 void setSettingTemperature(float temp)
 {
     gSettingTemperature=temp;
-    uiDisplaySettingTemperature(gSettingTemperature);
+    uiSetSettingTemperature(gSettingTemperature);
     brewLogger.setPoint(gSettingTemperature);
     wiReportSettingTemperature();
 }
@@ -2434,9 +2436,9 @@ const SettingItem pidSettingItems[] PROGMEM=
 /*4,10*/{STR(WindowSet_ms),& displayMultiply250,PS_WindowSize,7500/250,4000/250},
 /*5,11*/{STR(Heat_in_Boil),& displayPercentage, PS_BoilHeat,100,0},
 /*6,12*/{STR(Start_PID_In),& displayTempDivide10,   PS_PID_Start,35,10},
-/*7,13*/{STR(SensorResolution),&displayResolution, NULL ,12,9,},
+/*7,13*/{STR(SensorResolution),&displayResolution, 0 ,12,9,},
 #if MaximumNumberOfSensors > 1
-/*8,14*/{STR(Calibration), & displayTempShift50Divide10,NULL,100,0}
+/*8,14*/{STR(Calibration), & displayTempShift50Divide10,0,100,0}
 #else
 /*8,14*/{STR(Calibration), & displayTempShift50Divide10,PS_Offset,100,0}
 #endif
@@ -3515,7 +3517,7 @@ void manualModeEnterManualMode(void)
 	// displace current temperature
 	uiTempDisplaySetPosition(TemperatureManualModePosition);
 	// Setpoint temperature
-	uiDisplaySettingTemperature(gSettingTemperature);
+	uiSetSettingTemperature(gSettingTemperature);
 
 	// display counting time
 	uiRunningTimeSetPosition(RunningTimeNormalPosition);
@@ -3759,19 +3761,19 @@ void manualModeEventHandler(byte event)
 				long value=(long)manualModeChangeCountDownTime;
 				if(btnIsUpPressed)
 				{
-					value +=1;
+					value +=1; update=true;
 				}
 				else if(btnIsDownPressed)
 				{
-					value -= 1;
+					value -= 1; update=true;
 				}			
 				else if(btnIsUpContinuousPressed)
 				{
-					value += 5;
+					value += 5; update=true;
 				}
 				else if(btnIsDownContinuousPressed)
 				{
-					value -= 5;
+					value -= 5; update=true;
 				}
 				if(update)
 				{
@@ -4325,7 +4327,7 @@ void autoModeExitPause(void)
 	// temperateure position
 	uiTempDisplaySetPosition(TemperatureAutoModePosition);
 	// set temperature point
-	uiDisplaySettingTemperature(gSettingTemperature);
+	uiSetSettingTemperature(gSettingTemperature);
 
 	// counting time
 	uiRunningTimeSetPosition(RunningTimeNormalPosition);
@@ -4720,7 +4722,7 @@ void autoModeWhirlpool(unsigned long elapsed)
 
 	// temperature at automode
 	uiTempDisplaySetPosition(TemperatureAutoModePosition);
-	uiDisplaySettingTemperature(gSettingTemperature);
+	uiSetSettingTemperature(gSettingTemperature);
 	unsigned long time= (unsigned long)(_whirlpoolTime - elapsed) * 60;
 	uiRunningTimeShowInitial( time);
 	uiButtonLabel(ButtonLabel(x_x_x_Pmp));
@@ -5030,7 +5032,7 @@ void autoModeResumeProcess(void)
 	uiClearScreen();
 
 	uiAutoModeTitle();
-	//uiDisplaySettingTemperature(gSettingTemperature); will be set later in each entering procedure
+	//uiSetSettingTemperature(gSettingTemperature); will be set later in each entering procedure
 	uiTempDisplaySetPosition(TemperatureAutoModePosition);
 	uiRunningTimeSetPosition(RunningTimeNormalPosition);
 	// time may be 0xFF, invalid, => not just enter
@@ -6112,13 +6114,15 @@ typedef enum _DistillingState{
 	DistillingStateHead,
 	DistillingStateHeart,
 	DistillingStateTail,
-	DistillingStateEnd
+	DistillingStateEnd,
+	DistillingStateManual	
 } DistillingState;
 
-class DistillingAutomation{
+class DistillingController{
 	DistillingState _state;
+	bool _blinkingSettingTemperature;
 public:
-	DistillingAutomation(){}
+	DistillingController(){}
 
 	void setup(void){
 		_state = DistillingStateConfirmation;
@@ -6126,11 +6130,221 @@ public:
 		// 
 		uiTitle(STR(Distilling));
 		uiPrompt(STR(StartDistilling));
-		uiButtonLabel(ButtonLabel(Continue_Yes_No));
+		uiButtonLabel(ButtonLabel(DistillConfirm));
+	}
+	void eventHanlder(byte event){
+		if(_state == DistillingStateConfirmation)  eventHanlderConfirmation(event);
+		else if(_state == DistillingStateBeforeHead) eventHanlderBeforeHead(event);
+		else if(_state == DistillingStateHeadConfirmation) eventHanlderHeadConfirmation(event);
+		else if(_state == DistillingStateHead) eventHanlderHead(event);
+		else if(_state == DistillingStateHeart) eventHanlderHeart(event);
+		else if(_state == DistillingStateTail) eventHanlderTail(event);
+		else if(_state == DistillingStateEnd) eventHanlderEnd(event);
+		else if(_state == DistillingStateManual) eventHanlderManualDistilling(event);
 	}
 
+protected:
+	#if SecondaryHeaterSupport == true
+	void toggleHeaterPwm(byte heater)
+	{
+		byte result= _gElementInUseMask ^ heater;
+		// off all, and turn on again.
+		heatOff();
+		setHeatingElementsInUse(result);
+		if(result) heatOn(HeatingModePWM);
+	}
+	#endif
+
+	void enterManualDistilling(void){
+		_state = DistillingStateManual;
+		#if MaximumNumberOfSensors > 1
+		setSensorForStage(SensorForDistilling);
+		#endif
+		heatLoadParameters();
+		uiClearScreen();
+		uiTitle(STR(Manual_Distill));		
+		uiButtonLabel(ButtonLabel(Up_Down_Heat_Pmp));
+		uiTempDisplaySetPosition(TemperatureManualModePosition);
+		uiShowPwmLabel();
+		uiShowPwmValue(gBoilHeatOutput);
+		gIsEnterPwm=true;
+		gSettingTemperature = DEFAULT_MANUL_MODE_TEMPERATURE;
+		wiReportSettingTemperature();
+		uiSetSettingTemperature(gSettingTemperature);
+		// display counting time
+		uiRunningTimeSetPosition(RunningTimeNormalPosition);
+		uiRunningTimeShowInitial(0);
+		isCountDownTimeBlinking=false;
+		_blinkingSettingTemperature = false;
+
+		setAdjustTemperature(gIsUseFahrenheit? 220:110, gIsUseFahrenheit? 68:20);
+
+		if(gCurrentTemperature >=gSettingTemperature)
+		{
+			//temp reached
+			gIsTemperatureReached=true;
+			uiRunningTimeStart();
+		}
+		else
+		{
+			gIsTemperatureReached=false;
+			// wait to reach temperature setting
+		}
+		setEventMask(TemperatureEventMask | ButtonPressedEventMask | TimeoutEventMask);
+		if(gIsUseFahrenheit)
+			setAdjustTemperature(230.0,68.0);
+		else
+			setAdjustTemperature(110.0,20.0);
 	
-	void enterDistilling(void){
+		wiReportCurrentStage(StageManualMode);
+	}
+
+	void eventHanlderManualDistilling(byte event){
+		if(event == ButtonPressedEventMask)
+		{
+			if(btnIsStartPressed)
+			{
+				if(btnIsStartLongPressed){
+					_blinkingSettingTemperature = ! _blinkingSettingTemperature;
+					uiSettingTemperatureBlinking(_blinkingSettingTemperature);
+				}else{
+					#if SecondaryHeaterSupport == true
+					toggleHeaterPwm(PrimaryHeaterMask);
+					#else
+						//turn heating on/off
+					if(gIsHeatOn) heatOff();
+					else heatOn(HeatingModePWM);
+					#endif
+				}
+			}
+			else if(btnIsEnterPressed)
+			{
+				if(btnIsEnterLongPressed)
+				{
+					pump.setRestEnabled(!pump.isRestEnabled());
+				}
+				else
+				{
+						// turn pump on/off
+					pump.toggle();
+				}
+			}
+			#if SecondaryHeaterSupport == true
+			else if(isExactButtonsPressed(ButtonUpMask | ButtonStartMask))
+			{
+				toggleHeaterPwm(SecondaryHeaterMask);
+			}
+			#endif
+			else if(isExactButtonsPressed(ButtonEnterMask | ButtonStartMask))
+			{
+				isCountDownTimeBlinking = ! isCountDownTimeBlinking;
+				if(isCountDownTimeBlinking)
+				{
+					uiRunningTimeShowInitial(0);
+					manualModeChangeCountDownTime=0;
+					tmPauseTimer();
+					gIsTemperatureReached=true; // force to ignore temperature
+				}
+				else
+				{
+						// end of input. if zero, make it normal mode
+						// else make it count down mode
+					isManualModeCountDownMode=(manualModeChangeCountDownTime > 0);
+					gIsTemperatureReached=false;
+				}
+				uiRunningTimeBlink(isCountDownTimeBlinking);
+	
+			}
+			else if(isCountDownTimeBlinking)
+			{
+				bool update=false;
+				long value=(long)manualModeChangeCountDownTime;
+				if(btnIsUpPressed)
+				{
+					value +=1; update=true;
+				}
+				else if(btnIsDownPressed)
+				{
+					value -= 1; update=true;
+				}			
+				else if(btnIsUpContinuousPressed)
+				{
+					value += 5; update=true;
+				}
+				else if(btnIsDownContinuousPressed)
+				{
+					value -= 5; update=true;
+				}
+				if(update)
+				{
+					if(value < 0) value=0;
+					else if(value > 600) value=600;
+					manualModeChangeCountDownTime = value;
+					uiRunningTimeShowInitial(manualModeChangeCountDownTime * 60);
+				}
+			}
+			else if(_blinkingSettingTemperature)
+			{
+				bool update=false;
+				long value=(long)manualModeChangeCountDownTime;
+				if(btnIsUpPressed)
+				{
+					adjustSp(1);
+				}
+				else if(btnIsDownPressed)
+				{
+					adjustSp(-1);
+				}			
+				else if(btnIsUpContinuousPressed)
+				{
+					adjustSp(4);
+				}
+				else if(btnIsDownContinuousPressed)
+				{
+					adjustSp(-4);
+				}				
+			}
+			else
+			{
+				handleAdjustPwm();
+			}
+		}
+		else if(event == TemperatureEventMask)
+		{
+			// Handle temperature change or other states
+			if (! gIsTemperatureReached)
+			{
+				if(gCurrentTemperature >= gSettingTemperature)
+				{
+						// beep & start counting time
+	
+					buzzPlaySound(SoundIdTemperatureReached);
+	
+					gIsTemperatureReached=true;
+	
+					if(isManualModeCountDownMode)
+					{
+						uiRunningTimeStartCountDown(manualModeChangeCountDownTime*60);
+						tmSetTimeoutAfter(manualModeChangeCountDownTime*60 * 1000);
+					}
+					else
+						uiRunningTimeStart();
+	
+					brewLogger.event(RemoteEventTemperatureReached);
+					wiReportEvent(RemoteEventTemperatureReached);
+				}
+			}
+				// Temperate Reached state	
+		} // end of temperature handling
+		else if(event == TimeoutEventMask)
+		{
+			buzzPlaySound(SoundIdCountDown);
+			isManualModeCountDownMode=false;
+			uiRunningTimeStart();
+		}
+	}
+
+	void enterAutomaticDistilling(void){
 		_state = DistillingStateBeforeHead;
 		// setup distilling mode screen
 		distillRecipe.load();
@@ -6177,14 +6391,16 @@ public:
 
 	void eventHanlderConfirmation(byte event){
 		if(btnIsStartPressed){
-			enterDistilling();
-		}else{
+			enterAutomaticDistilling();
+		}else if(btnIsDownPressed){
+			enterManualDistilling();			
+		}else if(btnIsEnterPressed){
 			// back to main
 			backToMain();
 		}
 	}
 
-	void distillFinished(void)
+	void automaticDistillFinished(void)
 	{
 		heatOff();
 		pump.off();
@@ -6323,21 +6539,12 @@ public:
 		} else if(event == TemperatureEventMask){
 			if(gCurrentTemperature >= gSettingTemperature ){
 				_state = DistillingStateEnd;
-				distillFinished();					
+				automaticDistillFinished();					
 			}
 		} // TemperatureEventMask
 	}
 
 
-	void eventHanlder(byte event){
-		if(_state == DistillingStateConfirmation)  eventHanlderConfirmation(event);
-		else if(_state == DistillingStateBeforeHead) eventHanlderBeforeHead(event);
-		else if(_state == DistillingStateHeadConfirmation) eventHanlderHeadConfirmation(event);
-		else if(_state == DistillingStateHead) eventHanlderHead(event);
-		else if(_state == DistillingStateHeart) eventHanlderHeart(event);
-		else if(_state == DistillingStateTail) eventHanlderTail(event);
-		else if(_state == DistillingStateEnd) eventHanlderEnd(event);
-	}
 } distiller;
 
 
@@ -6550,7 +6757,7 @@ void brewmaniac_loop() {
 	#endif
 
 	//update Time & temperature
-	uiDisplayTemperatureAndRunningTime();
+	uiLoop();
 
 	//
 	// threads

@@ -16,7 +16,7 @@ class HttpFileDownloader
  	String _filename;
  	uint8_t *_buff;
 public:
-	HttpFileDownloader(void):_errorMsg(NULL){}
+	HttpFileDownloader(void):_errorMsg(""){}
 	void begin(String url,String filename){_finished=false; _url=url; _filename=filename;}
 	void download(void);
 	bool isFinished(void){return _finished;}

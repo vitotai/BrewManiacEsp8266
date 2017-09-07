@@ -18,7 +18,7 @@
 #define DefineButtonLabel(N,S,v) const byte BtnLabelId_##N=v; const char BtnLabel_##N[] PROGMEM = S
 #define ButtonLabel(N) BtnLabelId_##N,BtnLabel_##N
 
-#define _makeVERSION_INFORMATION(a) "BrewManiacEx "a
+#define _makeVERSION_INFORMATION(a) "BrewManiacEx " a
 #define _makeVERSION_indirect(v) _makeVERSION_INFORMATION(v)
 #define VERSION_INFORMATION  _makeVERSION_indirect(BME8266_VERSION)
 
@@ -183,8 +183,8 @@ DefineButtonLabel( Up_Down_Skip_Pmp,   "UP* *DWN Skip Stir",36);
 #else
 DefineButtonLabel( Up_Down_Skip_Pmp,   "UP* *DWN Skip  Pmp",36);
 #endif
-
-DefineButtonLabel( x_x_Mashout_Extend,   "        M.Out  Ext",37);
+DefineButtonLabel( x_x_Mashout_Extend,  "        M.Out  Ext",37);
+DefineButtonLabel( DistillConfirm,  "    MAN AUTO CANCL",38);
 // end of menu
 
 StringConst( SensorResolution ,"Sensor Res.");
@@ -352,6 +352,7 @@ StringConst(AuxSensor_Manual,   "Manual Aux");
 #endif // MaximumNumberOfSensors > 1
 
 #if SupportDistilling
+StringConst(Manual_Distill,"Manual Distill");
 StringConst(Sensor_Distill, "Distill Primary");
 StringConst(AuxSensor_Distill,   "Distill Aux");
 

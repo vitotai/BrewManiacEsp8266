@@ -793,8 +793,27 @@ void uiButtonLabel(const byte labelId,const char* text)
 	wiSendButtonLabel(labelId);
 }
 
-void uiDisplaySettingTemperature(float settemp)
+#if SupportDistilling
+void uiPrintSettingTemperature(float settemp);
+float _currentSettingTemperature;
+
+void uiSetSettingTemperature(float settemp)
 {
+	_currentSettingTemperature=settemp;
+	uiPrintSettingTemperature(settemp);
+}
+
+void uiHideSettingTemperature(void)
+{
+	uiLcdClear(12,1,6);
+}
+
+void uiPrintSettingTemperature(float settemp)
+#else
+void uiSetSettingTemperature(float settemp)
+#endif
+{
+	
 	char buffer[20];
 	float displayTemp;
 	displayTemp = settemp;
@@ -959,15 +978,66 @@ void uiAutoModeFinishScreen(void)
 	uiShowTextAtRow_P(2,STR(Finished),CenterAligned,0);
 }
 
+#if SupportDistilling
+bool _uiSettingTemperatureBlinking;
+bool _uiSettingTemperatureHidden;
+unsigned long _settingTempBlinkTime;
+#define SettingTempteratureBlinkHideCycle 350
+#define SettingTempteratureBlinkShowCycle 650
+void uiSettingTemperatureBlinking(bool blink)
+{
+	_uiSettingTemperatureBlinking = blink;
+	if(_uiSettingTemperatureHidden && !_uiSettingTemperatureBlinking){
+		_uiSettingTemperatureHidden = false;
+		uiPrintSettingTemperature(_currentSettingTemperature);
+	}
+}
+#endif
+
 void uiInitialize(void)
 {
 	// scan addresses before lcd.begin.
 	ipSet = false;
 	uiRunningTimeStop();
 	uiLcdInitialize();
+	#if SupportDistilling
+	_uiSettingTemperatureBlinking=false;
+	_uiSettingTemperatureHidden=false;
+	#endif
 }
 
 
+void uiLoop(void)
+{
+	#if SupportDistilling
+	if(_uiSettingTemperatureBlinking)
+	{
+		if(_uiSettingTemperatureHidden)
+		{
+			if((gCurrentTimeInMS - _settingTempBlinkTime) > SettingTempteratureBlinkHideCycle)
+			{
+				_settingTempBlinkTime=gCurrentTimeInMS;
+				_uiSettingTemperatureHidden = false;
+				//show
+				uiPrintSettingTemperature(_currentSettingTemperature);
+			}
+		}
+		else
+		{
+			if((gCurrentTimeInMS - _settingTempBlinkTime) > SettingTempteratureBlinkShowCycle)
+			{
+				_settingTempBlinkTime=gCurrentTimeInMS;
+				_uiSettingTemperatureHidden = true;
+				// shown
+				uiHideSettingTemperature();
+			}
+		}
+
+	}
+
+	#endif
+	uiDisplayTemperatureAndRunningTime();
+}
 
 #if SupportDistilling
 void uiDistillingModeTitle(void)
