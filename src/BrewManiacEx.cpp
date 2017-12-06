@@ -534,7 +534,7 @@ public:
 				AsyncWebParameter* p = request->getParam("code");
 				byte code=p->value().toInt();
 	 			bmWeb.sendButton(code & 0xF, (code & 0xF0)!=0);
-	 			request->send(200);
+	 			request->send(200,"text/json","{}");
 	 		}else{
 	 			request->send(400);
 	 		}

@@ -721,14 +721,14 @@ byte _sensorData[9];
 
 
 #if	MaximumNumberOfSensors	> 1
-#define HEX(a) ((a) > 9)? ('A' + (a) -10):('0' + (a))
+#define HEXChar(a) ((a) > 9)? ('A' + (a) -10):('0' + (a))
 
 void printSensorAddress(char *buf, byte *addr)
 {
 	for(byte i=0;i<8;i++)
 	{
-		buf[i*2]= HEX(addr[i] >> 4);
-		buf[i*2 +1]=HEX(addr[i] & 0xF);
+		buf[i*2]= HEXChar(addr[i] >> 4);
+		buf[i*2 +1]=HEXChar(addr[i] & 0xF);
 	}
 	buf[16]=0;
 }
