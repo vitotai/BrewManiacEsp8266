@@ -22,3 +22,11 @@ Run the PID Autotune to get the best PID parameters for your system instead of g
 Run the sparge water heating when the main heating element is idle during mashing to enable using only one 15A/20A GFCI socket.
  * Temperature logging chart
 Watching the temperature chart during brew and after brew
+ * [Untested/uncompleted] Distilling
+PWM controlled heating instead of PID controlled. Customized 4 stages: pre-heat, head, heart, and tail, which are defined by temperature ranges.
+
+
+## Update History
+ * 0.3.3 [12/06/2017]
+    * bugs fixed.
+    * Moveable control panel, progress table, and temperature chart.
