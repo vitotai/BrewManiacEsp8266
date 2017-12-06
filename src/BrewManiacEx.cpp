@@ -527,7 +527,7 @@ public:
 #if	MaximumNumberOfSensors	> 1
 	 	}else if(request->method() == HTTP_GET && request->url() == SCAN_SENSOR_PATH){
 	 		bmWeb.scanSensors();
-	 		request->send(200);
+	 		request->send(200,"text/json","{}");
 #endif
 	 	}else if(request->method() == HTTP_GET && request->url() == BUTTON_PATH){
 			if(request->hasParam("code")){
@@ -686,13 +686,14 @@ void getVersionInfo(String& json)
 	json += String("{\"firmware\":{\"v\":\"") + String(BME8266_VERSION);
 	json += String("\",\"sensors\":") + String(MaximumNumberOfSensors);
 	#if SupportDistilling
-	json += String(",\"distill\":1}}");	
+	json += String(",\"distill\":1");	
 	#endif
 	#if UsePaddleInsteadOfPump
-	json += String(",\"paddle\":1}}");
+	json += String(",\"paddle\":1");
 	#else
-	json += String(",\"paddle\":0}}");
+	json += String(",\"paddle\":0");
 	#endif
+	json +="}}";
 }
 
 

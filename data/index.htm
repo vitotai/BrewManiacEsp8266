@@ -1,12 +1,13 @@
 <!doctype html>
 <html lang="en">
-<head>
-	<meta charset="utf-8"  name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">	
 
-	<title>BrewManiac</title>
-	<!-- <link rel="stylesheet" href="lib.css"> -->
-	<script type="text/javascript" src="lib.js"></script>
-	<script type="text/javascript" src="bm.031.js"></script>
+<head>
+    <meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>BrewManiac</title>
+    <!-- <link rel="stylesheet" href="lib.css"> -->
+    <!-- <script type="text/javascript" src="js/lib.js"></script> -->
+    <script type="text/javascript" src="bm.033.js"></script>
 
 	<style>
 /*! jQuery UI - v1.11.4 - 2015-03-11
@@ -220,10 +221,14 @@ var ButtonLabels_paddle={
 26:{u:"UP",d:"Down",s:"Pause",e:"Stir",i:""},
 27:{u:"UP",d:"Down",s:"RUN",e:"Stir",i:""},
 31:{u:"",d:"",s:"Exit",e:"Stir",i:""},
-36:{u:"UP", d:"DWON", s:"Skip", e:"Stir", i:""}
-
+36:{u:"UP", d:"DWON", s:"Skip", e:"Stir", i:""},
+37:{u:"", d:"", s:"MashOut", e:"Extend", i:""},
+38:{u:"", d:"Manual", s:"Auto", e:"Cancel", i:""}
 };
 
+var ButtonLabels_distill={
+6:{u:"Distill",d:"Manual",s:"Auto",e:"Setup",i:""}
+};
 
 $(function(){
 	$(".fn").hide();
@@ -317,462 +322,963 @@ $(function(){
 #xml-recipe .auto_value { color:red;}
 .recipe-note {text-align:left;}
 .color-block { width: 18px; height:0; padding-bottom: 18px; border-radius: 50%;  overflow:hidden; display:inline-block;}
+#rssi {position:relative; float:right; margin: 0px 16px 0px 0px; height: 24px; width: 24px;}
+.rssi-bar {position:absolute; bottom:0; float:left; width: 4px; border-radius: 1px; background-color: #FFFFFF;}
+.rssi-bar1 {height: 4px; left:0px;}
+.rssi-bar2 {height: 12px; left:6px;}
+.rssi-bar3 {height: 18px; left:12px;}
+.rssi-bar4 {height: 24px; left:18px;}
 </style>
 </head>
+
 <body>
 
-<!-- slide bar  -->
+    <!-- slide bar  -->
 
-<div class="sb-slidebar sb-left sb-width-custom" data-sb-width="160px">
-<ol id="menu">
-  <li class="ui-widget-content" id="status">Panel</li>
-  <li class="ui-widget-content" id="settings">Settings</li>
-  <li class="ui-widget-content" id="automation">Automation</li>
-  <li class="ui-widget-content" id="recipes">Recipes</li>
-  <li class="ui-widget-content" id="brewlog">Brew Logs</li>
-  <li class="ui-widget-content" id="network">Network</li>
-  <li class="ui-widget-content" id="utility">Calculators</li>
-  <li class="ui-widget-content" id="about">About</li>
-</ol>
-</div>
+    <div class="sb-slidebar sb-left sb-width-custom" data-sb-width="160px">
+        <ol id="menu">
+            <li class="ui-widget-content" id="status">Panel</li>
+            <li class="ui-widget-content" id="settings">Settings</li>
+            <li class="ui-widget-content" id="automation">Automation</li>
+            <li class="ui-widget-content" id="recipes">Recipes</li>
+            <li class="ui-widget-content" id="brewlog">Brew Logs</li>
+            <li class="ui-widget-content" id="network">Network</li>
+            <li class="ui-widget-content" id="utility">Calculators</li>
+            <li class="ui-widget-content" id="about">About</li>
+        </ol>
+    </div>
 
-<div id="sb-site">
-<div id="top-bar">
-	<div class="sb-toggle-left top-bar-block" id="menubar">
-		<div class="navicon-line"></div>
-		<div class="navicon-line"></div>
-		<div class="navicon-line"></div>
-	</div>
-	<div class="top-bar-block"> BrewManiacEx</div>
-</div>
+    <div id="sb-site">
+        <div id="top-bar">
+            <div class="sb-toggle-left top-bar-block" id="menubar">
+                <div class="navicon-line"></div>
+                <div class="navicon-line"></div>
+                <div class="navicon-line"></div>
+            </div>
+            <div class="top-bar-block"> BrewManiacEx</div>
+            <div id="rssi">
+                <div class="rssi-bar rssi-bar1"></div>
+                <div class="rssi-bar rssi-bar2"></div>
+                <div class="rssi-bar rssi-bar3"></div>
+                <div class="rssi-bar rssi-bar4"></div>
+            </div>
+        </div>
 
 
-<!-- MainScreren Panel  -->
-<div class="fn" id="status-p">
-<div id="ctrlpanel" class="panel">
-<table>
-<tr><td colspan="2">
-<div id="title">BrewManiacEx 0.3</div>
-<hr id="tline">
-</td></tr>
-<tr>
-	<td colspan="2">
-<table class="ledpanel"><tbody><tr>
-	<td class="leds">
-		<div  id="heatled" class="round-led-circle ledreddim"><span class="round-led"></span></div>
-		<div class="label">HEAT</div>
-	</td>
-	<td class="leds dualheating">
-		<div  id="heat2led" class="round-led-circle ledreddim"><span class="round-led"></span></div>
-		<div class="label">HE#2</div>
-	</td>
-	<td class="leds" id="auxledcon">
-		<div  id="auxled" class="round-led-circle ledreddim"><span class="round-led"></span></div>
-		<div class="label">SPGW</div>
-    </td>
-    <td class="leds">
-		<div  id="pumpled" class="round-led-circle ledgreendim"><span class="round-led"></span></div>
-		<div class="label"><span id="pump-led-label">PUMP</span></div>
-    </td>
-</tr></tbody></table>
-    </td>
-</tr>
-<tr>
-	<td rowspan="2">
-		<div id="maintemp" class="panel">
-		<div class="Tcon"><span class="label TID">T:</span><span id="currenttemp" class="temperature NUM">100.75</span><span class="tmp_unit label">&deg;C</span></div>
-		<hr id="currenttempend">
-		<span class="label">SP</span><span id="setpoint" class="temperature NUM">64.75</span><span class="tmp_unit label">&deg;C</span>
-		</div>
-	</td>
-	<td>
-		<div id="pwmPanel" class="panel">
-		<span class="label">PWM</span>
-		<span id="pwm" class="NUM">99</span>
-		<span class="label">%</span>
-		</div>
-	</td>
+        <!-- MainScreren Panel  -->
+        <div class="fn" id="status-p">
+            <div id="ctrlpanel" class="panel">
+                <table>
+                    <tr>
+                        <td colspan="2">
+                            <div id="title">BrewManiacEx 0.3</div>
+                            <hr id="tline">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <table class="ledpanel">
+                                <tbody>
+                                    <tr>
+                                        <td class="leds">
+                                            <div id="heatled" class="round-led-circle ledreddim"><span class="round-led"></span></div>
+                                            <div class="label">HEAT</div>
+                                        </td>
+                                        <td class="leds dualheating">
+                                            <div id="heat2led" class="round-led-circle ledreddim"><span class="round-led"></span></div>
+                                            <div class="label">HE#2</div>
+                                        </td>
+                                        <td class="leds" id="auxledcon">
+                                            <div id="auxled" class="round-led-circle ledreddim"><span class="round-led"></span></div>
+                                            <div class="label">SPGW</div>
+                                        </td>
+                                        <td class="leds">
+                                            <div id="pumpled" class="round-led-circle ledgreendim"><span class="round-led"></span></div>
+                                            <div class="label"><span id="pump-led-label">PUMP</span></div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td rowspan="2">
+                            <div id="maintemp" class="panel">
+                                <div class="Tcon"><span class="label TID">T:</span><span id="currenttemp" class="temperature NUM">100.75</span><span class="tmp_unit label">&deg;C</span></div>
+                                <hr id="currenttempend">
+                                <span class="label">SP</span><span id="setpoint" class="temperature NUM">64.75</span><span class="tmp_unit label">&deg;C</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div id="pwmPanel" class="panel">
+                                <span class="label">PWM</span>
+                                <span id="pwm" class="NUM">99</span>
+                                <span class="label">%</span>
+                            </div>
+                        </td>
 
-</tr>
-<tr>
-	<td>
-		<div id="timerPanel" class="panel">
-		<div id="timer" class="NUM">01:59:38</div>
-		<div class="label">Time</div>
-		</div>
-	</td>
-</tr>
-<tr><td colspan="2"><div id="info" class="panel"></div></td></tr>
-<tr><td colspan="2">
-<div id="btnpanel">
-<table><tr><td id="btngap" colspan="4"></td></tr><tr>
-<td><div class="round-button-circle"><a id="btn-up" class="round-button">Up</a></div></td>
-<td><div class="round-button-circle"><a id="btn-down" class="round-button">Down</a></div></td>
-<td><div class="round-button-circle"><a id="btn-start" class="round-button">Start</a></div></td>
-<td><div class="round-button-circle"><a id="btn-enter" class="round-button">Enter</a></div></td>
-</tr></table>
-<div id="btncover"></div>
-</div>
-</td></tr>
-</table>
-</div>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div id="timerPanel" class="panel">
+                                <div id="timer" class="NUM">01:59:38</div>
+                                <div class="label">Time</div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <div id="info" class="panel"></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <div id="btnpanel">
+                                <table>
+                                    <tr>
+                                        <td id="btngap" colspan="4"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="round-button-circle"><a id="btn-up" class="round-button">Up</a></div>
+                                        </td>
+                                        <td>
+                                            <div class="round-button-circle"><a id="btn-down" class="round-button">Down</a></div>
+                                        </td>
+                                        <td>
+                                            <div class="round-button-circle"><a id="btn-start" class="round-button">Start</a></div>
+                                        </td>
+                                        <td>
+                                            <div class="round-button-circle"><a id="btn-enter" class="round-button">Enter</a></div>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <div id="btncover"></div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
 
-<div id="auto-p"><table id="auto-t"></table></div></p>
+            <div id="auto-p">
+                <table id="auto-t">
+                    <thead>
+                        <tr>
+                            <th colspan="3">Automation Progress</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="autot-row">
+                            <td class="autot-title"></td>
+                            <td class="autot-temp"></td>
+                            <td class="autot-time"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            </p>
 
-<div id="tchart" style="width:95%;">
-<canvas id="chart-canvas"></canvas>
-</div>
+            <div id="tchart" style="width:95%;">
+                <canvas id="chart-canvas"></canvas>
+            </div>
+        </div>
 
-</div>
+        <!-- Setting  -->
 
-<!-- Setting  -->
+        <div class="fn" id="settings-p">
+            <span class="section">Settings</span>
+            <button id="esetting" class="editbtn">Set</button>
+            <button id="savesetting" class="editbtn">Save</button>
+            <button id="exportsetting" class="editbtn">Export</button>
+            <button id="importsetting" class="editbtn">Import</button>
+            <table>
+                <tr>
+                    <td colspan="2" class="setting-category">PID — PWM</td>
+                </tr>
+                <tr>
+                    <td>kP<span class="dualheating"> primary heater</span> </td>
+                    <td><span id="s_kp">-</span> </td>
+                </tr>
+                <tr>
+                    <td>kI<span class="dualheating"> primary heater</span> </td>
+                    <td><span id="s_ki">-</span> </td>
+                </tr>
+                <tr>
+                    <td>kD<span class="dualheating"> primary heater</span> </td>
+                    <td><span id="s_kd">-</span> </td>
+                </tr>
+                <tr class="dualheating">
+                    <td>kP secondary heater </td>
+                    <td><span id="s_kp2">-</span> </td>
+                </tr>
+                <tr class="dualheating">
+                    <td>kI secondary heater </td>
+                    <td><span id="s_ki2">-</span> </td>
+                </tr>
+                <tr class="dualheating">
+                    <td>kD secondary heater</td>
+                    <td><span id="s_kd2">-</span> </td>
+                </tr>
+                <tr class="dualheating">
+                    <td>kP both Elements </td>
+                    <td><span id="s_kpall">-</span> </td>
+                </tr>
+                <tr class="dualheating">
+                    <td>kI both Elements </td>
+                    <td><span id="s_kiall">-</span> </td>
+                </tr>
+                <tr class="dualheating">
+                    <td>kD both Elements</td>
+                    <td><span id="s_kdall">-</span> </td>
+                </tr>
 
-<div  class="fn"  id="settings-p">
-<span class="section">Settings</span>
-<button id="esetting" class="editbtn">Set</button>
-<button id="savesetting" class="editbtn">Save</button>
-<button id="exportsetting" class="editbtn">Export</button>
-<button id="importsetting" class="editbtn">Import</button>
-	<table>
-	<tr><td colspan="2" class="setting-category">PID — PWM</td></tr>
-  	<tr><td>kP<span class="dualheating"> primary heater</span> </td><td><span id="s_kp">-</span> </td></tr>
-  	<tr><td>kI<span class="dualheating"> primary heater</span> </td><td><span id="s_ki">-</span> </td></tr>
-  	<tr><td>kD<span class="dualheating"> primary heater</span> </td><td><span id="s_kd">-</span> </td></tr>
-  	<tr class="dualheating"><td>kP secondary heater  </td><td><span id="s_kp2">-</span> </td></tr>
-  	<tr class="dualheating"><td>kI secondary heater  </td><td><span id="s_ki2">-</span> </td></tr>
-  	<tr class="dualheating"><td>kD secondary heater</td><td><span id="s_kd2">-</span> </td></tr>
-  	<tr class="dualheating"><td>kP both Elements </td><td><span id="s_kpall">-</span> </td></tr>
-  	<tr class="dualheating"><td>kI both Elements </td><td><span id="s_kiall">-</span> </td></tr>
-  	<tr class="dualheating"><td>kD both Elements</td><td><span id="s_kdall">-</span> </td></tr>
+                <tr>
+                    <td>Sample Time </td>
+                    <td><span id="s_sample_time">-</span> </td>
+                </tr>
+                <tr>
+                    <td>WindowSet </td>
+                    <td><span id="s_window">-</span> ms</td>
+                </tr>
+                <tr>
+                    <td>Heat/PWM in Boil </td>
+                    <td><span id="s_pwm">-</span> %</td>
+                </tr>
+                <tr>
+                    <td class="TCAL_T">Sensor Calibration </td>
+                    <td><span id="s_cal" class="TCAL_V">-</span><span class="tmp_unit">&deg;C</span></td>
+                </tr>
+                <tr>
+                    <td>PID Start</td>
+                    <td><span id="s_pidstart">-</span> <span class="tmp_unit">&deg;C</span></td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="setting-category">Unit Parameters</td>
+                </tr>
+                <tr>
+                    <td>Temperature Unit</td>
+                    <td><span id="s_unit" class="tmp_unit">&deg;C</span></td>
+                </tr>
+                <tr>
+                    <td>Boil Temperature</td>
+                    <td><span id="s_boil">-</span> <span class="tmp_unit">&deg;C</span></td>
+                </tr>
+                <tr>
+                    <td>Pump Cycle </td>
+                    <td><span id="s_pumpcycle">-</span> minutes</td>
+                </tr>
+                <tr>
+                    <td>Pump Rest </td>
+                    <td><span id="s_pumprest">-</span> minutes</td>
+                </tr>
+                <tr>
+                    <td>Pump PreMash </td>
+                    <td><span class="onoff" id="s_pumppremash">-</span></td>
+                </tr>
+                <tr>
+                    <td>Pump on Mash </td>
+                    <td><span class="onoff" id="s_pumpmash">-</span></td>
+                </tr>
+                <tr>
+                    <td>Pump MashOut </td>
+                    <td><span class="onoff" id="s_pumpmashout">-</span> </td>
+                </tr>
+                <tr>
+                    <td>Pump on Boil </td>
+                    <td><span class="onoff" id="s_pumpboil">-</span></td>
+                </tr>
+                <tr>
+                    <td>Pump Stop Temperature</td>
+                    <td><span id="s_pumpstop">-</span><span class="tmp_unit">&deg;C</span></td>
+                </tr>
+                <tr>
+                    <td>PID when Doughing-In</td>
+                    <td><span id="s_piddoughin">-</span></td>
+                </tr>
+                <tr>
+                    <td>PID when Remove Malt </td>
+                    <td><span id="s_pipe">-</span></td>
+                </tr>
+                <tr>
+                    <td>Skip Add </td>
+                    <td><span class="yesno" id="s_skipadd">-</span></td>
+                </tr>
+                <tr>
+                    <td>Skip Remove </td>
+                    <td><span class="yesno" id="s_skipremove">-</span></td>
+                </tr>
+                <tr>
+                    <td>Skip Iodine </td>
+                    <td><span class="yesno" id="s_skipiodine">-</span></td>
+                </tr>
+                <tr>
+                    <td>Iodine Time </td>
+                    <td><span id="s_iodine">-</span></td>
+                </tr>
+                <tr>
+                    <td>Whirlpool</td>
+                    <td><span id="s_whirlpool">-</span></td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="setting-category">Misc Settings</td>
+                </tr>
+                <tr>
+                    <td>Disable Delay Start</td>
+                    <td><span id="s_nodelay">-</span></td>
+                </tr>
+                <tr>
+                    <td>Buzz On Button</td>
+                    <td><span id="s_btnbuzz">-</span></td>
+                </tr>
+                <tr>
+                    <td>Pump Prime Cycle</td>
+                    <td><span id="s_pprime">-</span></td>
+                </tr>
+                <tr>
+                    <td>Pump Prime On Time</td>
+                    <td><span id="s_ppon">-</span>ms</td>
+                </tr>
+                <tr>
+                    <td>Pump Prime Off Time</td>
+                    <td><span id="s_ppoff">-</span>ms</td>
+                </tr>
+                <tr class="spargeheating">
+                    <td colspan="2" class="setting-subcategory">Sparge Water Heating Control</td>
+                </tr>
+                <tr class="spargeheating">
+                    <td>Control Sparge Heating</td>
+                    <td><span id="s_spenable">-</span></td>
+                </tr>
+                <tr class="spargeheating">
+                    <td>Temperature Control</td>
+                    <td><span id="s_sptempctrl">-</span></td>
+                </tr>
+                <tr class="spargeheating">
+                    <td>Sensor Index</td>
+                    <td><span id="s_spsensor">-</span></td>
+                </tr>
+                <tr class="spargeheating">
+                    <td>Target Temperature</td>
+                    <td><span id="s_sptemp">-</span><span class="tmp_unit">&deg;C</span></td>
+                </tr>
+                <tr class="spargeheating">
+                    <td>Temp. Difference</td>
+                    <td><span id="s_spdiff">-</span></td>
+                </tr>
+                <tr class="dualheating">
+                    <td colspan="2" class="setting-subcategory">Heating Element Usage</td>
+                </tr>
+                <tr class="dualheating">
+                    <td>PreMash Heating Element</td>
+                    <td><span id="s_preheat">-</span></td>
+                </tr>
+                <tr class="dualheating">
+                    <td>Mashing Heating Element</td>
+                    <td><span id="s_mashheat">-</span></td>
+                </tr>
+                <tr class="dualheating">
+                    <td>Boiling Heating Element</td>
+                    <td><span id="s_boilheat">-</span></td>
+                </tr>
+                <tr class="dualheating">
+                    <td>Post Boil Heating Element</td>
+                    <td><span id="s_pbheat">-</span></td>
+                </tr>
+            </table>
 
-  	<tr><td>Sample Time  </td><td><span id="s_sample_time">-</span> </td></tr>
-  	<tr><td>WindowSet </td><td><span id="s_window">-</span> ms</td></tr>
-    <tr><td>Heat/PWM in Boil </td><td><span id="s_pwm">-</span> %</td></tr>
-    <tr><td class="TCAL_T">Sensor Calibration </td><td><span id="s_cal" class="TCAL_V">-</span><span class="tmp_unit">&deg;C</span></td></tr>
-    <tr><td>PID Start</td><td><span id="s_pidstart">-</span> <span class="tmp_unit">&deg;C</span></td></tr>
-	<tr><td colspan="2" class="setting-category">Unit Parameters</td></tr>
-    <tr><td>Temperature Unit</td><td><span id="s_unit" class="tmp_unit">&deg;C</span></td></tr>
-    <tr><td>Boil Temperature</td><td><span id="s_boil">-</span> <span class="tmp_unit">&deg;C</span></td></tr>
-    <tr><td>Pump Cycle </td><td><span id="s_pumpcycle">-</span> minutes</td></tr>
-    <tr><td>Pump Rest </td><td><span id="s_pumprest">-</span> minutes</td></tr>
-    <tr><td>Pump PreMash </td><td><span class="onoff" id="s_pumppremash">-</span></td></tr>
-    <tr><td>Pump on Mash </td><td><span class="onoff" id="s_pumpmash">-</span></td></tr>
-    <tr><td>Pump MashOut </td><td><span class="onoff" id="s_pumpmashout">-</span> </td></tr>
-    <tr><td>Pump on Boil </td><td><span class="onoff" id="s_pumpboil">-</span></td></tr>
-    <tr><td>Pump Stop Temperature</td><td><span id="s_pumpstop">-</span><span class="tmp_unit">&deg;C</span></td></tr>
-    <tr><td>PID when Doughing-In</td><td><span id="s_piddoughin">-</span></td></tr>
-    <tr><td>PID when Remove Malt </td><td><span id="s_pipe">-</span></td></tr>
-    <tr><td>Skip Add </td><td><span class="yesno" id="s_skipadd">-</span></td></tr>
-    <tr><td>Skip Remove </td><td><span  class="yesno" id="s_skipremove">-</span></td></tr>
-    <tr><td>Skip Iodine </td><td><span  class="yesno" id="s_skipiodine">-</span></td></tr>
-    <tr><td>Iodine Time </td><td><span id="s_iodine">-</span></td></tr>
-    <tr><td>Whirlpool</td><td><span id="s_whirlpool">-</span></td></tr>
-    <tr><td colspan="2" class="setting-category">Misc Settings</td></tr>
-    <tr><td>Disable Delay Start</td><td><span id="s_nodelay">-</span></td></tr>
-    <tr><td>Buzz On Button</td><td><span id="s_btnbuzz">-</span></td></tr>
-    <tr><td>Pump Prime Cycle</td><td><span id="s_pprime">-</span></td></tr>
-    <tr><td>Pump Prime On Time</td><td><span id="s_ppon">-</span>ms</td></tr>
-    <tr><td>Pump Prime Off Time</td><td><span id="s_ppoff">-</span>ms</td></tr>
-    <tr class="spargeheating"><td colspan="2" class="setting-subcategory">Sparge Water Heating Control</td></tr>
-    <tr class="spargeheating"><td>Control Sparge Heating</td><td><span id="s_spenable">-</span></td></tr>
-    <tr class="spargeheating"><td>Temperature Control</td><td><span id="s_sptempctrl">-</span></td></tr>
-    <tr class="spargeheating"><td>Sensor Index</td><td><span id="s_spsensor">-</span></td></tr>
-    <tr class="spargeheating"><td>Target Temperature</td><td><span id="s_sptemp">-</span><span class="tmp_unit">&deg;C</span></td></tr>
-    <tr class="spargeheating"><td>Temp. Difference</td><td><span id="s_spdiff">-</span></td></tr>
-    <tr class="dualheating"><td colspan="2" class="setting-subcategory">Heating Element Usage</td></tr>
-    <tr class="dualheating"><td>PreMash Heating Element</td><td><span id="s_preheat">-</span></td></tr>
-    <tr class="dualheating"><td>Mashing Heating Element</td><td><span id="s_mashheat">-</span></td></tr>
-    <tr class="dualheating"><td>Boiling Heating Element</td><td><span id="s_boilheat">-</span></td></tr>
-    <tr class="dualheating"><td>Post Boil Heating Element</td><td><span id="s_pbheat">-</span></td></tr>
-	</table>
+            <!-- Sensors  -->
 
-<!-- Sensors  -->
+            <div id="multisensor">
+                <h3>Temperature Sensors</h3>
+                <table>
+                    <tr class="setting-category">
+                        <th>#</th>
+                        <th>Address</th>
+                    </tr>
+                    <tr class="sensor_row">
+                        <td class="sensor_id">1</td>
+                        <td class="sensor_addr">0xFFFFFFFFFFFFFFFF</td>
+                    </tr>
+                </table>
+                <br> Sensor Assignment:
+                <table>
+                    <tr class="setting-category">
+                        <th>Stage</th>
+                        <th>Primary</th>
+                        <th>Auxiliary</th>
+                    </tr>
+                    <tr>
+                        <td>Main Screen</td>
+                        <td id="sensor_P_0">1</td>
+                        <td id="sensor_S_0">1</td>
+                    </tr>
+                    <tr>
+                        <td>Manual Mode</td>
+                        <td id="sensor_P_1">1</td>
+                        <td id="sensor_S_1">1</td>
+                    </tr>
+                    <tr>
+                        <td>Pre-Mash</td>
+                        <td id="sensor_P_2">1</td>
+                        <td id="sensor_S_2">1</td>
+                    </tr>
+                    <tr>
+                        <td>Mashing</td>
+                        <td id="sensor_P_3">1</td>
+                        <td id="sensor_S_3">1</td>
+                    </tr>
+                    <tr>
+                        <td>Boil</td>
+                        <td id="sensor_P_4">1</td>
+                        <td id="sensor_S_4">1</td>
+                    </tr>
+                    <tr>
+                        <td>Cooling</td>
+                        <td id="sensor_P_5">1</td>
+                        <td id="sensor_S_5">1</td>
+                    </tr>
+                </table>
+            </div>
+            <!-- div id="multisensor" -->
 
-<div id="multisensor">
-<h3>Temperature Sensors</h3>
-<table>
-<tr class="setting-category"><th>#</th><th>Address</th></tr>
-<tr class="sensor_row"><td class="sensor_id">1</td><td class="sensor_addr">0xFFFFFFFFFFFFFFFF</td></tr>
-</table>
-<br>
-Sensor Assignment:
-<table>
-<tr class="setting-category"><th>Stage</th><th>Primary</th><th>Auxiliary</th></tr>
-<tr><td>Main Screen</td><td id="sensor_P_0">1</td><td id="sensor_S_0">1</td></tr>
-<tr><td>Manual Mode</td><td id="sensor_P_1">1</td><td id="sensor_S_1">1</td></tr>
-<tr><td>Pre-Mash</td><td id="sensor_P_2">1</td><td id="sensor_S_2">1</td></tr>
-<tr><td>Mashing</td><td id="sensor_P_3">1</td><td id="sensor_S_3">1</td></tr>
-<tr><td>Boil</td><td id="sensor_P_4">1</td><td id="sensor_S_4">1</td></tr>
-<tr><td>Cooling</td><td id="sensor_P_5">1</td><td id="sensor_S_5">1</td></tr>
-</table>
-</div> <!-- div id="multisensor" -->
+        </div>
+        <!-- Setting  -->
 
-</div><!-- Setting  -->
+        <!-- Automation  -->
+        <div class="fn" id="automation-p">
+            <em>Automation</em>
+            <button id="editauto" class="editbtn">Edit</button>
+            <button id="saveauto" class="editbtn">Save</button>
+            <table id="auto_table">
+                <tr>
+                    <td colspan="3" class="setting-category">Mash Schedule <button id="addrest" class="editbtn">Add Mash Rest</button></td>
+                </tr>
+                <tr>
+                    <th> Rest</th>
+                    <th>Temperature</th>
+                    <th>Time</th>
+                </tr>
+                <tr>
+                    <td> Mash In </td>
+                    <td><span id="s0_tp">-</span><span class="tmp_unit">&deg;C</span></td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td> Mash Out </td>
+                    <td><span id="s7_tp">-</span><span class="tmp_unit">&deg;C</span></td>
+                    <td><span id="s7_tm">-</span> min</td>
+                </tr>
+                <tr>
+                    <tr>
+                        <td colspan="3" class="setting-category">Boil & Hop <button id="addhop" class="editbtn">Add Hop</button></td>
+                    </tr>
+                    <tr>
+                        <td> Boil Time</td>
+                        <td colspan="2"><span id="boiltime">-</span> min</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="setting-category">Hop Stand <button id="addhopstand" class="editbtn">Add Session</button></td>
+                    </tr>
+                    <tr>
+                        <td>Session <span class="session-number">1</span></td>
+                        <td>start: <span class="session-start-temp">99</span><span class="tmp_unit">&deg;C</span></td>
+                        <td>keep:<span class="session-hold-temp"> 80</span><span class="tmp_unit">&deg;C</span> <button class="editbtn addpbh">Add Hop</button></td>
+                    </tr>
+            </table>
+        </div>
+        <!-- Automation  -->
 
-<!-- Automation  -->
-<div class="fn" id="automation-p">
-<em>Automation</em>
-<button id="editauto" class="editbtn">Edit</button>
-<button id="saveauto" class="editbtn">Save</button>
-<table id="auto_table">
-<tr><td colspan="3"  class="setting-category">Mash Schedule <button id="addrest" class="editbtn">Add Mash Rest</button></td></tr>
-<tr><th> Rest</th><th>Temperature</th><th>Time</th></tr>
-<tr><td> Mash In </td><td><span id="s0_tp">-</span><span class="tmp_unit">&deg;C</span></td><td>-</td></tr>
-<tr><td> Mash Out </td><td><span id="s7_tp">-</span><span class="tmp_unit">&deg;C</span></td><td><span id="s7_tm">-</span> min</td></tr>
-<tr>
-<tr><td colspan="3"  class="setting-category">Boil & Hop <button id="addhop" class="editbtn">Add Hop</button></td></tr>
-<tr><td> Boil Time</td><td colspan="2"><span id="boiltime">-</span> min</td></tr>
-<tr><td colspan="3"  class="setting-category">Hop Stand <button id="addhopstand" class="editbtn">Add Session</button></td></tr>
-<tr><td>Session <span class="session-number">1</span></td><td>start: <span class="session-start-temp">99</span><span class="tmp_unit">&deg;C</span></td>
-    <td>keep:<span class="session-hold-temp"> 80</span><span class="tmp_unit">&deg;C</span> <button class="editbtn addpbh">Add Hop</button></td></tr>
-</table>
-</div><!-- Automation  -->
+        <!-- recipes  -->
+        <div class="fn" id="recipes-p">
+            <div id="recipe-list-panel">
+                <ol id="recipe-list">
+                    <li class="ui-widget-content" id="recipe-options">Options</li>
+                    <li class="ui-widget-content" id="recipe-import">Import</li>
+                    <hr>
+                </ol>
+            </div>
+            <div id="recipe-display">
+                <div id="recipe-options-panel">
+                    <h3>Recipe Options</h3>
+                    <table>
+                        <tr>
+                            <td>Unit</td>
+                            <td colspan="3">
+                                <input type="radio" name="genunit" id="unit_metric" value="m">
+                                <label for="unit_metric">Metric</label>
+                                <input type="radio" name="genunit" id="unit_us" value="u">
+                                <label for="unit_us">US</label>
+                            </td>
+                        </tr>
 
-<!-- recipes  -->
-<div class="fn" id="recipes-p">
-<div id="recipe-list-panel">
-<ol id="recipe-list">
-  <li class="ui-widget-content" id="recipe-options">Options</li>
-  <li class="ui-widget-content" id="recipe-import">Import</li>
-  <hr>
-</ol>
-</div>
-<div id="recipe-display">
-<div id="recipe-options-panel"><h3>Recipe Options</h3>
-<table>
- <tr><td>Unit</td>
-   <td colspan="3">
-    <input type="radio" name="genunit" id="unit_metric" value="m">
-    <label for="unit_metric">Metric</label>
-    <input type="radio" name="genunit" id="unit_us" value="u">
-    <label for="unit_us">US</label>
-    </td></tr>
+                        <tr>
+                            <td>Gravity/Plato</td>
+                            <td colspan="3">
+                                <input type="radio" name="sugarunit" id="su_gravity" value="g">
+                                <label for="su_gravity">Gravity</label>
+                                <input type="radio" name="sugarunit" id="su_plato" value="p">
+                                <label for="su_plato">&deg;Plato</label>
+                            </td>
+                        </tr>
 
- <tr><td>Gravity/Plato</td>
-   <td colspan="3">
-    <input type="radio" name="sugarunit" id="su_gravity" value="g">
-    <label for="su_gravity">Gravity</label>
-    <input type="radio" name="sugarunit" id="su_plato" value="p">
-    <label for="su_plato">&deg;Plato</label>
-    </td></tr>
-
- <tr><td rowspan="6">Mash In Temperature</td>
-    <td colspan="3">
-      <input type="checkbox" name="perfer_infuse" id="mi_prefer_infuse">
-      <label for="mi_prefer_infuse">Prefer INFUSE_TEMP in 1st rest</label>
-    </td></tr>
-    <td colspan="3">
-      <input type="radio" name="mashin_temp" id="mi_1stRest" value="1">
-      <label for="mi_1stRest">As First Rest</label>
-    </td></tr>
-  <tr><td rowspan="3"><input type="radio" name="mashin_temp" id="mi_cal" value="c">
-      <label for="mi_cal">Calculated</label></td>
-    <td><label for="grain-temp">Grain Temperature</label></td><td><input type="text" id="grain-temp" size="4"></input><span class="tmp_unit">&deg;C</span></td>
-    </tr>
-  <tr><td><label for="equip-adj" >Equipment Adjust</label></td><td><input type="text" id="equip-adj" size="4"></input><span class="tmp_unit">&deg;C</span></td></tr>
-  <tr><td><label for="kettle-mass" >Kettle equiv. mass</label></td><td><input type="text" id="kettle-mass" size="4"></input><span id="kettlemass_unit">L</span></td></tr>
-  <tr><td>
-    <input type="radio" name="mashin_temp" id="mi_fixed" value="s">
-    <label for="mi_fixed">Specified</label>
-   </td><td>
-    <label for="mashin-temp">Temperature</label></td><td><input type="text" id="mashin-stemp" size="4"></input><span class="tmp_unit">&deg;C</span>
-      </td></tr>
-   <tr><td rowspan="2">Default Mash Out</td>
-    <td colspan="2">
-      <label for="mo-temp">Temperature</label></td><td><input type="text" id="mo-temp" size="4"></input><span class="tmp_unit">&deg;C</span></td></tr>
-   <tr><td colspan="2"><label for="mo-time" >Time</label></td><td><input type="text" id="mo-time" size="4"></input>M
-   </td></tr>
-</table>
-<br>
-<button id="recipe-option-update">Update</button>
-</div>
-<div id="recipe-import-panel"><h3>Import BeerXML</h3>
-	<div id="fileinputgrp">
-	<input type="file" id="fileinput" /> 
-	</div><br>
-	<div id="import-xml-pane">
-		<div>
-    	<select name="xml-recipe-select" id="xml-recipe-select">
+                        <tr>
+                            <td rowspan="6">Mash In Temperature</td>
+                            <td colspan="3">
+                                <input type="checkbox" name="prefer_infuse" id="mi_prefer_infuse">
+                                <label for="mi_prefer_infuse">Prefer INFUSE_TEMP in 1st rest</label>
+                            </td>
+                        </tr>
+                        <td colspan="3">
+                            <input type="radio" name="mashin_temp" id="mi_1stRest" value="1">
+                            <label for="mi_1stRest">As First Rest</label>
+                        </td>
+                        </tr>
+                        <tr>
+                            <td rowspan="3"><input type="radio" name="mashin_temp" id="mi_cal" value="c">
+                                <label for="mi_cal">Calculated</label></td>
+                            <td><label for="grain-temp">Grain Temperature</label></td>
+                            <td><input type="text" id="grain-temp" size="4"></input><span class="tmp_unit">&deg;C</span></td>
+                        </tr>
+                        <tr>
+                            <td><label for="equip-adj">Equipment Adjust</label></td>
+                            <td><input type="text" id="equip-adj" size="4"></input><span class="tmp_unit">&deg;C</span></td>
+                        </tr>
+                        <tr>
+                            <td><label for="kettle-mass">Kettle equiv. mass</label></td>
+                            <td><input type="text" id="kettle-mass" size="4"></input><span id="kettlemass_unit">L</span></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <input type="radio" name="mashin_temp" id="mi_fixed" value="s">
+                                <label for="mi_fixed">Specified</label>
+                            </td>
+                            <td>
+                                <label for="mashin-temp">Temperature</label></td>
+                            <td><input type="text" id="mashin-stemp" size="4"></input><span class="tmp_unit">&deg;C</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td rowspan="2">Default Mash Out</td>
+                            <td colspan="2">
+                                <label for="mo-temp">Temperature</label></td>
+                            <td><input type="text" id="mo-temp" size="4"></input><span class="tmp_unit">&deg;C</span></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2"><label for="mo-time">Time</label></td>
+                            <td><input type="text" id="mo-time" size="4"></input>M
+                            </td>
+                        </tr>
+                    </table>
+                    <br>
+                    <button id="recipe-option-update">Update</button>
+                </div>
+                <div id="recipe-import-panel">
+                    <h3>Import BeerXML</h3>
+                    <div id="fileinputgrp">
+                        <input type="file" id="fileinput" />
+                    </div><br>
+                    <div id="import-xml-pane">
+                        <div>
+                            <select name="xml-recipe-select" id="xml-recipe-select">
     	</select>
-    	<br>Save as<input type="text" size="20" maxlength="28" id="xml-savename"></input>
-    	<button id="xml-save">Save</button>
-    	<button id="xml-brew">Brew</button>
-    	</div>
-	</div>
-</div>
-<div id="recipe-view-panel"><h3>Recipe</h3>
-		<div>
-    	<button id="recipe-del">Delete</button>
-    	<button id="recipe-brew">Brew</button>
-    	</div>	
-</div>
-</div>
-<div id="recipe-table">
-<hr>
-<table id="xml-recipe">
-<tr><td><table class="subcat">
-		<tr><th>Name</th><td><span class="recipe-name"></span></td></tr>
-		<tr><th>Style</th><td><span class="recipe-style"></span></td></tr>
-		<tr><th>Batch Size</th><td><span class="batch-size"></span></td></tr>
-		<tr><th><span class="auto_value">Boil Time</span></th><td><span class="boil-time"></span></td></tr>
-	</table></td></tr>
+                            <br>Save as<input type="text" size="20" maxlength="28" id="xml-savename"></input>
+                            <button id="xml-save">Save</button>
+                            <button id="xml-brew">Brew</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="recipe-view-panel">
+                    <h3>Recipe</h3>
+                    <div>
+                        <button id="recipe-del">Delete</button>
+                        <button id="recipe-brew">Brew</button>
+                    </div>
+                </div>
+            </div>
+            <div id="recipe-table">
+                <hr>
+                <table id="xml-recipe">
+                    <tr>
+                        <td>
+                            <table class="subcat">
+                                <tr>
+                                    <th>Name</th>
+                                    <td><span class="recipe-name"></span></td>
+                                </tr>
+                                <tr>
+                                    <th>Style</th>
+                                    <td><span class="recipe-style"></span></td>
+                                </tr>
+                                <tr>
+                                    <th>Batch Size</th>
+                                    <td><span class="batch-size"></span></td>
+                                </tr>
+                                <tr>
+                                    <th><span class="auto_value">Boil Time</span></th>
+                                    <td><span class="boil-time"></span></td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
 
-<tr><td><table class="subcat">
-		<tr><th>Efficiency</th><th>OG</th><th>FG</th><th>ABV</th><th>Color</th><th>IBU</th></tr>
-		<tr><td><span class="recipe-eff">-</span>%</td><td><span class="recipe-og"></span></td><td><span class="recipe-fg"></span></td>
-		<td><span class="recipe-abv"></span>%</td><td><span class="color-block"></span> <span class="recipe-color"></span></td><td><span class="recipe-ibu"></span></td></tr>
-	</table></td></tr>
-<tr><th>Fermentables</th></tr>
-<tr><td>
-	<table class="subcat">
-	<tr class="ferm-header"><th>Fermentable</th><th>Weight</th><th><span class="yieldtitle">Yield</span><span class="ppgtitle">PPG</span></th><th>Color</th><th>Note</th></tr>
-	<tr class="ferm-row"><td class="ferm-name">TT</td><td class="ferm-weight RA"></td><td class="ferm-yield RA"></td><td class="ferm-color RA"></td><td class="ferm-af"></td></tr>
-	</table></td></tr>
-<tr><th>Hops & Misc </th></tr>
-<tr><td><table class="subcat">
-	<tr class="hop-header"><th></th><th>Time</th><th>Name</th><th>Weight</th><th>alpha</th><th>Note</th></tr>
-	<tr class="hop-row"><td class="hop-order"></td><td class="hop-time"></td><td class="hop-name"></td><td class="hop-weight RA"></td><td class="hop-alpha RA"></td><td class="hop-note"></td></tr>
-	</table></td></tr>
-<tr><th>Mash Profile</th></tr>
-<tr><td><table class="subcat">
-	<tr class="mash-header"><th></th><th>Name</th><th>Temperature</th><th>Time</th><th>Type</th><th>Water</th></tr>
-	<tr class="mash-row"><td class="mash-autorest"><td class="mash-name"></td><td class="mash-temp RA"></td><td class="mash-time"></td><td class="mash-type"></td><td class="mash-water RA"></td></tr>
-	</table></td></tr>
-<tr><th>Yeast</th></tr>
-<tr><td><table class="subcat">
-	<tr class="yeast-header"><th>Name</th><th>Lab/Product</th><th>Temperature</th><th>Attenuation</th></tr>
-	<tr class="yeast-row"><td><span class="yeast-name"></span></td><td><span class="yeast-pid"></span></td><td><span class="yeast-temp"></span></td><td><span class="yeast-att"></span>%</td></tr>
-</table></td></tr>
-<tr><th>Fermentation</th></tr>
-<tr><td><table class="subcat">
-	<tr class="fermstage-header"><th>Stage</th><th>Temperature</th><th>Duration</th></tr>
-	<tr class="fermstage-row"><td><span  class="ferm-stage"></span></td><td><span  class="ferm-temp"></span></td> <td><span class="ferm-time"></span> days</td></tr>
-	</table></td></tr>
-<tr><th>Note:</th></tr>
-<tr><td class="recipe-note"></td></tr>
-</table>    	
-</div>
-</div><!-- recipes  -->
+                    <tr>
+                        <td>
+                            <table class="subcat">
+                                <tr>
+                                    <th>Efficiency</th>
+                                    <th>OG</th>
+                                    <th>FG</th>
+                                    <th>ABV</th>
+                                    <th>Color</th>
+                                    <th>IBU</th>
+                                </tr>
+                                <tr>
+                                    <td><span class="recipe-eff">-</span>%</td>
+                                    <td><span class="recipe-og"></span></td>
+                                    <td><span class="recipe-fg"></span></td>
+                                    <td><span class="recipe-abv"></span>%</td>
+                                    <td><span class="color-block"></span> <span class="recipe-color"></span></td>
+                                    <td><span class="recipe-ibu"></span></td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Fermentables</th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <table class="subcat">
+                                <tr class="ferm-header">
+                                    <th>Fermentable</th>
+                                    <th>Weight</th>
+                                    <th><span class="yieldtitle">Yield</span><span class="ppgtitle">PPG</span></th>
+                                    <th>Color</th>
+                                    <th>Note</th>
+                                </tr>
+                                <tr class="ferm-row">
+                                    <td class="ferm-name">TT</td>
+                                    <td class="ferm-weight RA"></td>
+                                    <td class="ferm-yield RA"></td>
+                                    <td class="ferm-color RA"></td>
+                                    <td class="ferm-af"></td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Hops & Misc </th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <table class="subcat">
+                                <tr class="hop-header">
+                                    <th></th>
+                                    <th>Time</th>
+                                    <th>Name</th>
+                                    <th>Weight</th>
+                                    <th>alpha</th>
+                                    <th>Note</th>
+                                </tr>
+                                <tr class="hop-row">
+                                    <td class="hop-order"></td>
+                                    <td class="hop-time"></td>
+                                    <td class="hop-name"></td>
+                                    <td class="hop-weight RA"></td>
+                                    <td class="hop-alpha RA"></td>
+                                    <td class="hop-note"></td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Mash Profile</th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <table class="subcat">
+                                <tr class="mash-header">
+                                    <th></th>
+                                    <th>Name</th>
+                                    <th>Temperature</th>
+                                    <th>Time</th>
+                                    <th>Type</th>
+                                    <th>Water</th>
+                                </tr>
+                                <tr class="mash-row">
+                                    <td class="mash-autorest">
+                                        <td class="mash-name"></td>
+                                        <td class="mash-temp RA"></td>
+                                        <td class="mash-time"></td>
+                                        <td class="mash-type"></td>
+                                        <td class="mash-water RA"></td>
+                                </tr>
+                            </table>
+                            </td>
+                    </tr>
+                    <tr>
+                        <th>Yeast</th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <table class="subcat">
+                                <tr class="yeast-header">
+                                    <th>Name</th>
+                                    <th>Lab/Product</th>
+                                    <th>Temperature</th>
+                                    <th>Attenuation</th>
+                                </tr>
+                                <tr class="yeast-row">
+                                    <td><span class="yeast-name"></span></td>
+                                    <td><span class="yeast-pid"></span></td>
+                                    <td><span class="yeast-temp"></span></td>
+                                    <td><span class="yeast-att"></span>%</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Fermentation</th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <table class="subcat">
+                                <tr class="fermstage-header">
+                                    <th>Stage</th>
+                                    <th>Temperature</th>
+                                    <th>Duration</th>
+                                </tr>
+                                <tr class="fermstage-row">
+                                    <td><span class="ferm-stage"></span></td>
+                                    <td><span class="ferm-temp"></span></td>
+                                    <td><span class="ferm-time"></span> days</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Note:</th>
+                    </tr>
+                    <tr>
+                        <td class="recipe-note"></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <!-- recipes  -->
 
-<!-- Network  -->
-<div class="fn" id="network-p">
-<h2>Network Settings</h2>
-<table>
-<tr><td>Host/Network Name</td><td><input id="hostname" type="text" size="20" maxlength="20"></td></tr>
-<tr><td>Always need password</td><td><input type="checkbox" id="protected" value="yes"></td></tr>
-<tr><td>New User Name</td><td><input id="newusername" type="text" size="20" maxlength="20"></td></tr>
-<tr><td>New Password</td><td><input id="newpasswd" type="password" size="20" maxlength="16"></td></tr>
-<tr><td>Retype new Password</td><td><input id="newpasswd2" type="password" size="20" maxlength="16"></td></tr>
-<tr><td colspan="2" id="passmatch">New passwords don't match!!</td></tr>
-<tr><td>User Name</td><td><input id="username" type="text" size="20" maxlength="20"></td></tr>
-<tr><td>Password</td><td><input id="password" type="password" size="20" maxlength="16"></td></tr>
-<tr><td><button id="wifidisc">Disconnect WiFi</button></td><td><button id="savecfg">Save</button></td></tr>
-<tr><td colspan="2" id="saveok">New setting will be effective after restart.</td></tr>
-<tr><td colspan="2" id="savefail">Update failed!!</td></tr>
-</table>
-</div> <!-- Network  -->
-<!-- Logs  -->
-<div class="fn" id="brewlog-p">
-<em>Brew Logs</em>
-<button id="listfile">Refresh</button>
-<table id="loglist">
-<tr><th style="width:30%;">Log</th><th style="width:40%;">Date</th><th>Action</th></tr>
-<tr><td class="logid"></td><td class="logdate"></td><td><button class="dlbutton">Download</button><button class="viewbutton">View</button></td></tr>
-</table>
-<br>
+        <!-- Network  -->
+        <div class="fn" id="network-p">
+            <h2>Network Settings</h2>
+            <table>
+                <tr>
+                    <td>Host/Network Name</td>
+                    <td><input id="hostname" type="text" size="20" maxlength="20"></td>
+                </tr>
+                <tr>
+                    <td>Always need password</td>
+                    <td><input type="checkbox" id="protected" value="yes"></td>
+                </tr>
+                <tr>
+                    <td>New User Name</td>
+                    <td><input id="newusername" type="text" size="20" maxlength="20"></td>
+                </tr>
+                <tr>
+                    <td>New Password</td>
+                    <td><input id="newpasswd" type="password" size="20" maxlength="16"></td>
+                </tr>
+                <tr>
+                    <td>Retype new Password</td>
+                    <td><input id="newpasswd2" type="password" size="20" maxlength="16"></td>
+                </tr>
+                <tr>
+                    <td colspan="2" id="passmatch">New passwords don't match!!</td>
+                </tr>
+                <tr>
+                    <td>User Name</td>
+                    <td><input id="username" type="text" size="20" maxlength="20"></td>
+                </tr>
+                <tr>
+                    <td>Password</td>
+                    <td><input id="password" type="password" size="20" maxlength="16"></td>
+                </tr>
+                <tr>
+                    <td><button id="wifidisc">Disconnect WiFi</button></td>
+                    <td><button id="savecfg">Save</button></td>
+                </tr>
+                <tr>
+                    <td colspan="2" id="saveok">New setting will be effective after restart.</td>
+                </tr>
+                <tr>
+                    <td colspan="2" id="savefail">Update failed!!</td>
+                </tr>
+            </table>
+        </div>
+        <!-- Network  -->
+        <!-- Logs  -->
+        <div class="fn" id="brewlog-p">
+            <em>Brew Logs</em>
+            <button id="listfile">Refresh</button>
+            <table id="loglist">
+                <tr>
+                    <th style="width:30%;">Log</th>
+                    <th style="width:40%;">Date</th>
+                    <th>Action</th>
+                </tr>
+                <tr>
+                    <td class="logid"></td>
+                    <td class="logdate"></td>
+                    <td><button class="dlbutton">Download</button><button class="viewbutton">View</button></td>
+                </tr>
+            </table>
+            <br>
 
-<div id="vchart" style="width:95%;">
-<span id="viewlogname"></span>
-<canvas id="vchart-canvas"></canvas>
-</div>
+            <div id="vchart" style="width:95%;">
+                <span id="viewlogname"></span>
+                <canvas id="vchart-canvas"></canvas>
+            </div>
 
-</div><!-- Logs  -->
+        </div>
+        <!-- Logs  -->
 
 
-<div  class="fn"  id="utility-p">
-  <fieldset class="commonset">
-    <legend>Volume</legend>
-    <input type="radio" name="volume_unit" id="volume_liter" value="L">
-    <label for="volume_liter">L</label>
-    <input type="radio" name="volume_unit" id="volume_gallon" value="G">
-    <label for="volume_gallon">gal</label>
-    <input type="radio" name="volume_unit" id="volume_quart" value="Q">
-    <label for="volume_quart">qt</label>
-  </fieldset>
+        <div class="fn" id="utility-p">
+            <fieldset class="commonset">
+                <legend>Volume</legend>
+                <input type="radio" name="volume_unit" id="volume_liter" value="L">
+                <label for="volume_liter">L</label>
+                <input type="radio" name="volume_unit" id="volume_gallon" value="G">
+                <label for="volume_gallon">gal</label>
+                <input type="radio" name="volume_unit" id="volume_quart" value="Q">
+                <label for="volume_quart">qt</label>
+            </fieldset>
 
-  <fieldset class="commonset">
-    <legend>Weight</legend>
-    <input type="radio" name="weight_unit" id="weight_kg" value="M">
-    <label for="weight_kg">kg</label>
-    <input type="radio" name="weight_unit" id="weight_lb" value="U">
-    <label for="weight_lb">lb</label>
-  </fieldset>
-  <fieldset class="commonset">
-    <legend>Temperature</legend>
-    <input type="radio" name="temp_unit" id="temp_c" value="C">
-    <label for="temp_c">&deg;C</label>
-    <input type="radio" name="temp_unit" id="temp_f" value="F">
-    <label for="temp_f">&deg;F</label>
-  </fieldset>
-  
-<br class="fieldsetspace">
-  
-<fieldset class="FWSG">
-<legend>First Wort SG</legend>
-<table>
-<tr><th>Grains</th>    <td><input size="5"  class="grain weightinput fwsg"></input><span class="weight_u">kg</span></td></tr>
-<tr><th>Mash Water</th><td><input size="5" class="water volinput fwsg"></input><span class="vol_u">L</span></td></tr>
-<tr><th>FW SG</th>     <td><span class="result"></span></td></tr>
-</table>
-</fieldset>
+            <fieldset class="commonset">
+                <legend>Weight</legend>
+                <input type="radio" name="weight_unit" id="weight_kg" value="M">
+                <label for="weight_kg">kg</label>
+                <input type="radio" name="weight_unit" id="weight_lb" value="U">
+                <label for="weight_lb">lb</label>
+            </fieldset>
+            <fieldset class="commonset">
+                <legend>Temperature</legend>
+                <input type="radio" name="temp_unit" id="temp_c" value="C">
+                <label for="temp_c">&deg;C</label>
+                <input type="radio" name="temp_unit" id="temp_f" value="F">
+                <label for="temp_f">&deg;F</label>
+            </fieldset>
 
-<fieldset class="HYDROMETER">
-<legend>Hydrometer</legend>
-<table>
-<tr><th>Gravity:</th>     <td><input size="5" value="1.0" class="hydroinput sgfraction"></input></td><tr>
-<tr><th>Temperature:</th> <td> <input size="3" class="hydroinput tempinput sgtemp"></input><span class="tmp_u">&deg;C</span></td></tr>
-<tr><th>Corrected at</th> <td> <input size="3" value="20" class="hydroinput tempinput correctedTemp"></input><span class="tmp_u">&deg;C</span></td><tr>
-<tr><th>Corrected SG:</th><td><span class="result"></span></td></tr>
-</table>
-</fieldset>
+            <br class="fieldsetspace">
 
-<fieldset class="REFRACTO">
-<legend>Refractometer</legend>
-<table>
-<tr><th>Reading </th>       <td><input size="3" class="brixinput brixreading"></input>%</td></tr>
-<tr><th>Wort Correction</th><td><input size="4" value="1.04" class="brixinput wortcorrection"></input></td></tr>
-<tr><th>Corrected SG</th>   <td><span class="result"></span></td></tr>
-</table>
-</fieldset>
+            <fieldset class="FWSG">
+                <legend>First Wort SG</legend>
+                <table>
+                    <tr>
+                        <th>Grains</th>
+                        <td><input size="5" class="grain weightinput fwsg"></input><span class="weight_u">kg</span></td>
+                    </tr>
+                    <tr>
+                        <th>Mash Water</th>
+                        <td><input size="5" class="water volinput fwsg"></input><span class="vol_u">L</span></td>
+                    </tr>
+                    <tr>
+                        <th>FW SG</th>
+                        <td><span class="result"></span></td>
+                    </tr>
+                </table>
+            </fieldset>
 
-<fieldset class="BOILOFF">
-<legend>Boil off</legend>
-<table>
-<tr><th>Current Gravity</th>	<td><input size="5" class="boiloffinput sg" value="1.0"></input></td></tr>
-<tr><th>Current Volume</th>		<td><input size="5" class="boiloffinput vol" value="6"></input><span class="vol_u">L</span></td></tr>
-<tr><th>Desired SG</th>			<td><input size="5" class="boiloffinput newsg" value="1.0"></input></td></tr>
-<tr><th>New Volume</th>			<td><span class="resultvol">--</span><span class="vol_u">L</span></td></tr>
-<tr><th>Desired Volume</th>		<td><input size="5" class="boiloffinput newvol"></input><span class="vol_u">L</span></td></tr>
-<tr><th>New SG</th>			<td><span class="resultsg">--</span></td></tr>
-</table>
-</fieldset>
-</div> <!-- utility -->
+            <fieldset class="HYDROMETER">
+                <legend>Hydrometer</legend>
+                <table>
+                    <tr>
+                        <th>Gravity:</th>
+                        <td><input size="5" value="1.0" class="hydroinput sgfraction"></input>
+                        </td>
+                        <tr>
+                            <tr>
+                                <th>Temperature:</th>
+                                <td> <input size="3" class="hydroinput tempinput sgtemp"></input><span class="tmp_u">&deg;C</span></td>
+                            </tr>
+                            <tr>
+                                <th>Corrected at</th>
+                                <td> <input size="3" value="20" class="hydroinput tempinput correctedTemp"></input><span class="tmp_u">&deg;C</span></td>
+                                <tr>
+                                    <tr>
+                                        <th>Corrected SG:</th>
+                                        <td><span class="result"></span></td>
+                                    </tr>
+                </table>
+            </fieldset>
 
-<!-- About  -->
-<div class="fn" id="about-p">
-	<p> BrewManiacEx
-	<br> firmware version: <span id="firmware-version"></span>
-	<br> HTML/JS version: <span id="js-version"></span>
-	<p>By Vito Tai. <a href="http://vito.tw/?cat=11" target="_blank">More Info.</a></p>
-	<p style="{text-align:left;}">Powered by</p>
-	<ul> 
-	<li><a href="http://jquery.com" target="_blank">jQuery</a></li>
-	<li><a href="http://plugins.adchsm.me/slidebars/" target="_blank">Slidebars by Adam Smith</a></li>
-	<li><a href="http://olance.github.io/jQuery-switchButton/" target="_blank">jQuery UI iPhone-like Switch Button by Olivier Lance</a></li>
-	<li><a href="http://www.chartjs.org" target="_blank">Chart.js</a></li>
-	</ul>
-    <div>
-   <select name="soundid" id="soundid">
+            <fieldset class="REFRACTO">
+                <legend>Refractometer</legend>
+                <table>
+                    <tr>
+                        <th>Reading </th>
+                        <td><input size="3" class="brixinput brixreading"></input>%</td>
+                    </tr>
+                    <tr>
+                        <th>Wort Correction</th>
+                        <td><input size="4" value="1.04" class="brixinput wortcorrection"></input>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Corrected SG</th>
+                        <td><span class="result"></span></td>
+                    </tr>
+                </table>
+            </fieldset>
+
+            <fieldset class="BOILOFF">
+                <legend>Boil off</legend>
+                <table>
+                    <tr>
+                        <th>Current Gravity</th>
+                        <td><input size="5" class="boiloffinput sg" value="1.0"></input>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Current Volume</th>
+                        <td><input size="5" class="boiloffinput vol" value="6"></input><span class="vol_u">L</span></td>
+                    </tr>
+                    <tr>
+                        <th>Desired SG</th>
+                        <td><input size="5" class="boiloffinput newsg" value="1.0"></input>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>New Volume</th>
+                        <td><span class="resultvol">--</span><span class="vol_u">L</span></td>
+                    </tr>
+                    <tr>
+                        <th>Desired Volume</th>
+                        <td><input size="5" class="boiloffinput newvol"></input><span class="vol_u">L</span></td>
+                    </tr>
+                    <tr>
+                        <th>New SG</th>
+                        <td><span class="resultsg">--</span></td>
+                    </tr>
+                </table>
+            </fieldset>
+        </div>
+        <!-- utility -->
+
+        <!-- About  -->
+        <div class="fn" id="about-p">
+            <p> BrewManiacEx
+                <br> firmware version: <span id="firmware-version"></span>
+                <br> HTML/JS version: <span id="js-version"></span>
+                <p>By Vito Tai. <a href="http://vito.tw/?cat=11" target="_blank">More Info.</a></p>
+                <p style="{text-align:left;}">Powered by</p>
+                <ul>
+                    <li><a href="http://jquery.com" target="_blank">jQuery</a></li>
+                    <li><a href="http://plugins.adchsm.me/slidebars/" target="_blank">Slidebars by Adam Smith</a></li>
+                    <li><a href="http://olance.github.io/jQuery-switchButton/" target="_blank">jQuery UI iPhone-like Switch Button by Olivier Lance</a></li>
+                    <li><a href="http://www.chartjs.org" target="_blank">Chart.js</a></li>
+                </ul>
+                <div>
+                    <select name="soundid" id="soundid">
       <option value="open">Welcome</option>
       <option value="tr">Temperature Reached</option>
       <option value="addhop">Time to Add Hop</option>
@@ -790,44 +1296,46 @@ Sensor Assignment:
       <option value="whirlpool">Whirlpoool</option>
       <option value="disc">Disconnected</option>
     </select>
-    <button id="playsound">Play</button>
+                    <button id="playsound">Play</button>
+                </div>
+        </div>
+
     </div>
-</div>
+    <!-- <div id="sb-site"> -->
+    <!-- Dialogs -->
 
-</div> <!-- <div id="sb-site"> -->
-<!-- Dialogs -->
+    <div id="d_ConnectionError" title="Error!" class="dialog">
+        <p>The connection to BrewManiac is down. It might be wireless issue or ESP8266 issue. Check your Brew ASAP.</p>
+    </div>
+    <div id="d_warning" title="Warning!" class="no-close dialog">
+        <ul>
+            <li>Never leave your brew unattended!</li>
+            <li>Wireless connection may be unstable, and the status may be out of sync.</li>
+            <li>Use at your own risk.</li>
+        </ul>
+        <label><input type="checkbox" id="nshow" class="dialog"> Don't show this again. </label>
+    </div>
 
-<div id="d_ConnectionError" title="Error!" class="dialog">
- <p>The connection to BrewManiac is down. It might be wireless issue or ESP8266 issue. Check your Brew ASAP.</p>
-</div>
-<div id="d_warning" title="Warning!" class="no-close dialog">
-<ul>
-<li>Never leave your brew unattended!</li>
-<li>Wireless connection may be unstable, and the status may be out of sync.</li>
-<li>Use at your own risk.</li>
-</ul>
-<label><input type="checkbox" id="nshow" class="dialog"> Don't show this again. </label>
-</div>
-
-<div id="d_home_confirm" title="Note:" class="dialog">
- <p>Do you Really want to END current job and go back to Main screen?</p>
-</div>
+    <div id="d_home_confirm" title="Note:" class="dialog">
+        <p>Do you Really want to END current job and go back to Main screen?</p>
+    </div>
 
 
-<div id="dialog-confirm" title="">
-  <p><span class="ui-icon ui-icon-alert" style="float:left; margin:12px 12px 20px 0;"></span>
-  <span class="dialog-msg"></span></p>
-</div>
+    <div id="dialog-confirm" title="">
+        <p><span class="ui-icon ui-icon-alert" style="float:left; margin:12px 12px 20px 0;"></span>
+            <span class="dialog-msg"></span></p>
+    </div>
 
-<div id="dialog-alert" title="Alert!">
-  <p><span class="ui-icon ui-icon-alert" style="float:left; margin:12px 12px 20px 0;"></span>
-  <span class="dialog-msg"></span></p>
-</div>
+    <div id="dialog-alert" title="Alert!">
+        <p><span class="ui-icon ui-icon-alert" style="float:left; margin:12px 12px 20px 0;"></span>
+            <span class="dialog-msg"></span></p>
+    </div>
 
-<div id="dialog-file" title="Select File">
-  <p><input type="file"></input>
-  <span class="dialog-msg"></span></p>
-</div>
+    <div id="dialog-file" title="Select File">
+        <p><input type="file"></input>
+            <span class="dialog-msg"></span></p>
+    </div>
 
 </body>
+
 </html>
