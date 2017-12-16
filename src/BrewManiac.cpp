@@ -957,6 +957,8 @@ uint32_t _lastTempRead;
 
 #if MaximumNumberOfSensors > 1
 
+uint32_t _lastValidTempRead[MaximumNumberOfSensors];
+
 void tpReadTemperature(void)
 {
 #if FakeHeating
@@ -990,27 +992,32 @@ void tpReadTemperature(void)
     		if (busy != 0)
     		{
     			float reading=_readTemperature(gSensorAddresses[si]);
+				bool noupdate=false;
 
 				if(IS_TEMP_INVALID(reading))
 				{
 					// invalid sensor data.
-					if(! IS_TEMP_INVALID(gTemperatureReading[si])){
-					//!error case. invalidate the data
+					if(! IS_TEMP_INVALID(gTemperatureReading[si]) &&
+						gCurrentTimeInMS - _lastValidTempRead[si] > SensorDiscGuardTime){
+						//!error case. invalidate the data
 						#if SerialDebug
 						DebugPort.println("Sensor disconneced!");
 						#endif
 						buzzPlaySound(SoundIdWarnning);
+					} else{
+						// invalid readings. wait for a while before "disconnect" the sensor
+						noupdate = true;
 					}
-				}
-				else
+				}else{
 					reading += gSensorCalibrations[si];
-
-				gTemperatureReading[si] = reading;
-
-				_gIsSensorConverting[si] = false;
-
-				if(gPrimarySensorIndex == si) gCurrentTemperature = reading;
-				if(gAuxSensorIndex == si)  gAuxTemperature = reading;
+					_lastValidTempRead[si] =  gCurrentTimeInMS;
+				}
+				if(! noupdate){
+					gTemperatureReading[si] = reading;
+					if(gPrimarySensorIndex == si) gCurrentTemperature = reading;
+					else if(gAuxSensorIndex == si)  gAuxTemperature = reading;
+					_gIsSensorConverting[si] = false;
+				}
     		}
 		}
 	} // for every sensor
@@ -1871,7 +1878,7 @@ public:
 	    if(!_isDeviceOn) return;
 	    // temperature control
 
-	    if(gCurrentTemperature >= _stopTemp)
+	    if(!IS_TEMP_INVALID(gCurrentTemperature) &&  (gCurrentTemperature >= _stopTemp))
 	    {
       	    if(_physicalOn)
       	    {

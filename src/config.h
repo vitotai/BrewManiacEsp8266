@@ -93,6 +93,8 @@
 //#define FakeHeating false
 //#define DEVELOP_SETTING_VALUE false
 
+#define SensorDiscGuardTime 10000
+
 // *************************
 //*  Button timeing setting
 // *************************
