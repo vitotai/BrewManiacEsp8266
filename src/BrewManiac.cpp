@@ -1629,7 +1629,7 @@ void heaterControl(void)
 		else
   	 #endif
   		{
-    		if ((pidSetpoint - pidInput) < gPidStart) // Delta < DeltaPID(3.5),
+    		if (((pidSetpoint - pidInput) < gPidStart ) && ( pidSetpoint < gBoilStageTemperature) ) // Delta < DeltaPID(3.5),
     		{
         		thePID.Compute();   // was 6, getting close, start feeding the PID -mdw
     		}
