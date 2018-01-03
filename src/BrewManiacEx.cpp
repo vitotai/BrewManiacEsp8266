@@ -7,7 +7,9 @@
 #include <Hash.h>
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+#if UseSoftwareSerial == true
 #include <SoftwareSerial.h>
+#endif
 #include <Wire.h>
 #include <EEPROM.h>
 #include <ArduinoJson.h>
@@ -229,6 +231,7 @@ public:
 		}
 	 	return false;
 	}
+	virtual bool isRequestHandlerTrivial() override final {return false;}
 
 };
 
@@ -296,6 +299,7 @@ public:
 	 	if(request->url() == CHART_DATA_PATH || request->url() ==LOGS_PATH) return true;
 	 	return false;
 	}
+	virtual bool isRequestHandlerTrivial() override final {return false;}
 
 };
 
@@ -428,6 +432,8 @@ public:
   		}
 
 	}
+		virtual bool isRequestHandlerTrivial() override final {return false;}
+
 };
 
 NetworkConfig networkConfig;
@@ -490,6 +496,8 @@ protected:
     }
 public:
 	BmwHandler(void){}
+		virtual bool isRequestHandlerTrivial() override final {return false;}
+
 	void handleRequest(AsyncWebServerRequest *request){
 
 		if(_gSecuredAccess && !request->authenticate(_gUsername, _gPassword))
@@ -775,6 +783,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 #if UseServerSideEvent == true
 AsyncEventSource sse(SSE_PATH);
 
+
 void sseConnect(AsyncEventSourceClient *client)
 {
 	String version;
@@ -798,8 +807,32 @@ void sseConnect(AsyncEventSourceClient *client)
 	bmWeb.getCurrentStatus(json,true);
 	client->send(json.c_str());
 
-    Serial.printf("sseconnectes!\n");
 }
+
+
+#define ESPAsyncTCP_issue77_Workaround 1
+
+#if ESPAsyncTCP_issue77_Workaround
+// temp workaround. not a solution
+// method: not sending data in onConnect() but in main loop.
+// potential issue: two or more clients connect at the same time, before the mainloop can handle it
+// (the poential issue can be solved, but mutual access issue should be addressed.)
+//
+AsyncEventSourceClient *_newClient=NULL;
+
+void sseHello(void)
+{
+	if(!_newClient) return;
+	sseConnect(_newClient);
+	_newClient = NULL;
+}
+
+void sseDelayConnect(AsyncEventSourceClient *client)
+{
+	_newClient=client;
+}
+
+#endif //#if ESPAsyncTCP_issue77_Workaround
 
 #endif
 
@@ -1036,7 +1069,11 @@ void setup(void){
 #endif
 
 #if	UseServerSideEvent == true
+#if ESPAsyncTCP_issue77_Workaround
+  		sse.onConnect(sseDelayConnect);
+#else
   		sse.onConnect(sseConnect);
+#endif
   		server.addHandler(&sse);
 #endif
 		server.addHandler(&networkConfig);
@@ -1152,6 +1189,9 @@ void loop(void){
   		}
   	}
 
+#if ESPAsyncTCP_issue77_Workaround
+	sseHello();
+#endif
 
 #if PROFILING == true
 	unsigned long thisloop = millis() - _profileLoopBegin;
