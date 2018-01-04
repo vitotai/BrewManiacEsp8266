@@ -202,10 +202,11 @@ public:
 			request->send(SPIFFS,request->url());
 		}
 	}
-
-    void handleUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
+    virtual void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final)
+	{
 		if(!index){
 			String file=filename;
+			DBG_PRINTF("upload: %s\n", filename.c_str());
 			if(accessAllow(file,WRITE_MASK)){
 	        	request->_tempFile = SPIFFS.open(file, "w");
     	    	_startTime = millis();
