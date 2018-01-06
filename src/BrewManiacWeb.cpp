@@ -83,7 +83,7 @@ void BrewManiacWeb::brewEvent(uint8_t event)
 
 void BrewManiacWeb::updateSettingTemperature(void)
 {
-	if(_eventHandler) _eventHandler(this,BmwEventSettingChanged);
+	if(_eventHandler) _eventHandler(this,BmwEventSettingTemperatureChanged);
 }
 void BrewManiacWeb::updatePwm(uint8_t pwm)
 {

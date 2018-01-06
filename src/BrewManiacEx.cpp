@@ -7,7 +7,7 @@
 #include <Hash.h>
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
-#include <SoftwareSerial.h>
+//#include <SoftwareSerial.h>
 #include <Wire.h>
 #include <EEPROM.h>
 #include <ArduinoJson.h>
