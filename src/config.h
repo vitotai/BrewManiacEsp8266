@@ -144,8 +144,8 @@
 #define DEFAULT_REPORT_PERIOD 6000
 
 
-#define UseWebSocket false
-#define UseServerSideEvent true
+#define UseWebSocket true
+#define UseServerSideEvent false
 
 #define EnableExtendedMashStep true
 

@@ -689,6 +689,9 @@ BmwHandler bmwHandler;
 /**************************************************************************************/
 /* server push  */
 /**************************************************************************************/
+
+#define ESPAsyncTCP_issue77_Workaround 1
+
 // version
 void getVersionInfo(String& json)
 {
@@ -705,6 +708,30 @@ void getVersionInfo(String& json)
 	json +="}}";
 }
 
+void greeting(std::function<void(const String&,const char*)> sendFunc){
+	// version information
+	String version;
+	getVersionInfo(version);
+	sendFunc(version,NULL);
+
+	// send setting, automation, and network config
+	String json;
+	bmWeb.getSettings(json);
+	sendFunc(json,"setting");
+	bmWeb.getAutomation(json);
+	sendFunc(json,"auto");
+
+	char buf[128];
+	sprintf(buf,"{\"host\":\"%s\",\"secured\":%d}",_gHostname,_gSecuredAccess? 1:0);
+
+	sendFunc(buf,"netcfg");
+	sprintf(buf,"{\"time\":%ld}",TimeKeeper.getTimeSeconds());
+
+    sendFunc(String(buf),"timesync");
+
+	bmWeb.getCurrentStatus(json,true);
+	sendFunc(json,NULL);	
+}
 
 #if UseWebSocket == true
 AsyncWebSocket ws(WS_PATH);
@@ -726,16 +753,38 @@ void processRemoteCommand( uint8_t *data, size_t len)
 	}
 }
 
+void wsMessageOnConnect(AsyncWebSocketClient * client)
+{
+	greeting([=](const String& msg,const char* event){
+		String tag=(event==NULL)? "status:":String(event)+":";
+		client->text(tag + msg);
+	});
+}
+
+#if ESPAsyncTCP_issue77_Workaround
+AsyncWebSocketClient * _lastWsClient=NULL;
+
+void wsHello()
+{
+	if(!_lastWsClient) return;
+	
+	wsMessageOnConnect(_lastWsClient);
+
+	_lastWsClient=NULL;
+}
+
+#endif
+
 void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len)
 {
 	if(type == WS_EVT_CONNECT){
     	DBG_PRINTF("ws[%s][%u] connect\n", server->url(), client->id());
-    	String version;
-		getVersionInfo(version);
-		client->text((version);
-		String json;
-		bmWeb.getCurrentStatus(json);
-		client->text(json);
+		client->ping();
+#if ESPAsyncTCP_issue77_Workaround
+		_lastWsClient=client;
+#else		
+		wsMessageOnConnect(client);
+#endif
   	} else if(type == WS_EVT_DISCONNECT){
     	DBG_PRINTF("ws[%s][%u] disconnect: %u\n", server->url(), client->id());
   	} else if(type == WS_EVT_ERROR){
@@ -784,7 +833,13 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 #if UseServerSideEvent == true
 AsyncEventSource sse(SSE_PATH);
 
-
+void sseConnect(AsyncEventSourceClient *client)
+{
+	greeting([=](const String& msg,const char* event){
+		client->send(msg.c_str(),event);
+	});
+}
+/*
 void sseConnect(AsyncEventSourceClient *client)
 {
 	String version;
@@ -809,9 +864,8 @@ void sseConnect(AsyncEventSourceClient *client)
 	client->send(json.c_str());
 
 }
+*/
 
-
-#define ESPAsyncTCP_issue77_Workaround 1
 
 #if ESPAsyncTCP_issue77_Workaround
 // temp workaround. not a solution
@@ -835,13 +889,13 @@ void sseDelayConnect(AsyncEventSourceClient *client)
 
 #endif //#if ESPAsyncTCP_issue77_Workaround
 
-#endif
+#endif //#if UseServerSideEvent == true
 
 
 void broadcastMessage(String msg)
 {
 #if UseWebSocket == true
-	ws.textAll(msg);
+	ws.textAll(String("status:") + msg);
 #endif
 
 #if UseServerSideEvent == true
@@ -852,13 +906,27 @@ void broadcastMessage(String msg)
 void broadcastMessage(const char* msg, const char* event=NULL)
 {
 #if UseWebSocket == true
-	ws.textAll(msg);
+	String tag=(event==NULL)? "status:":String(event)+":";
+	ws.textAll(tag + msg);
 #endif
 
 #if UseServerSideEvent == true
 	sse.send(msg,event);
 #endif
 }
+
+#if ESPAsyncTCP_issue77_Workaround
+void sayHello()
+{
+#if UseWebSocket == true
+	wsHello();
+#endif
+
+#if UseServerSideEvent == true
+	sseHello();
+#endif
+}
+#endif
 
 /**************************************************************************************/
 /* callback from BM */
@@ -1191,7 +1259,7 @@ void loop(void){
   	}
 
 #if ESPAsyncTCP_issue77_Workaround
-	sseHello();
+	sayHello();
 #endif
 
 #if PROFILING == true
