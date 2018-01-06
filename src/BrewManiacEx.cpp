@@ -747,9 +747,14 @@ void processRemoteCommand( uint8_t *data, size_t len)
 	buf[i]='\0';
 	JsonObject& root = jsonBuffer.parseObject(buf);
 
-	if (root.success() && root.containsKey("btn") ){
-		int code = root["btn"];
-		bmWeb.sendButton(code & 0xF, (code & 0xF0)!=0);
+	if (root.success()){
+		if(root.containsKey("btn") ){
+			int code = root["btn"];
+			bmWeb.sendButton(code & 0xF, (code & 0xF0)!=0);
+		}else if(root.containsKey("btnx")){
+			int code = root["btnx"];
+			bmWeb.sendButton(code,false);
+		}
 	}
 }
 
