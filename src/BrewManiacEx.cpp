@@ -761,8 +761,8 @@ void processRemoteCommand( uint8_t *data, size_t len)
 void wsMessageOnConnect(AsyncWebSocketClient * client)
 {
 	greeting([=](const String& msg,const char* event){
-		String tag=(event==NULL)? "status:":String(event)+":";
-		client->text(tag + msg);
+		if(event==NULL) client->text(msg);
+		else client->text(String(event)+":" + msg);
 	});
 }
 
@@ -801,7 +801,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
     	String msg = "";
     	if(info->final && info->index == 0 && info->len == len){
       		//the whole message is in a single frame and we got all of it's data
-      		DBG_PRINTF("ws[%s][%u] %s-message[%llu]: ", server->url(), client->id(), (info->opcode == WS_TEXT)?"text":"binary", info->len);
+      		DBG_PRINTF("ws[%s][%u] %s-message[%llu]\n", server->url(), client->id(), (info->opcode == WS_TEXT)?"text":"binary", info->len);
 			processRemoteCommand(data,info->len);
 
 		} else {
@@ -900,7 +900,7 @@ void sseDelayConnect(AsyncEventSourceClient *client)
 void broadcastMessage(String msg)
 {
 #if UseWebSocket == true
-	ws.textAll(String("status:") + msg);
+	ws.textAll(msg);
 #endif
 
 #if UseServerSideEvent == true
@@ -911,8 +911,8 @@ void broadcastMessage(String msg)
 void broadcastMessage(const char* msg, const char* event=NULL)
 {
 #if UseWebSocket == true
-	String tag=(event==NULL)? "status:":String(event)+":";
-	ws.textAll(tag + msg);
+	if(event==NULL) ws.textAll(msg);
+	ws.textAll(String(event)+":" + msg);
 #endif
 
 #if UseServerSideEvent == true
