@@ -30,9 +30,11 @@ void WiFiSetupClass::enterApMode(void)
 {
 
 	WiFi.disconnect();
+	WiFi.mode(WIFI_OFF);
 	DBG_PRINTF("AP Mode\n");
     _apMode=true;
-
+	
+	WiFi.mode(WIFI_AP);	
 	dnsServer.reset(new DNSServer());
 	dnsServer->setErrorReplyCode(DNSReplyCode::NoError);
 	dnsServer->start(DNS_PORT, "*", WiFi.softAPIP());
