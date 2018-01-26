@@ -598,5 +598,5 @@ bool BrewManiacWeb::updateAutomation(String& json)
 
 void BrewManiacWeb::sendButton(byte mask,bool longPressed)
 {
-	virtualButtonPress(mask & 0xF,longPressed);
+	virtualButtonPress(mask,longPressed);
 }

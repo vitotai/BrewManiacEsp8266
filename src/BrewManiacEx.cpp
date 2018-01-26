@@ -7,7 +7,9 @@
 #include <Hash.h>
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
-//#include <SoftwareSerial.h>
+#if UseSoftwareSerial == true
+#include <SoftwareSerial.h>
+#endif
 #include <Wire.h>
 #include <EEPROM.h>
 #include <ArduinoJson.h>
@@ -200,10 +202,11 @@ public:
 			request->send(SPIFFS,request->url());
 		}
 	}
-
-    void handleUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
+    virtual void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final)
+	{
 		if(!index){
 			String file=filename;
+			DBG_PRINTF("upload: %s\n", filename.c_str());
 			if(accessAllow(file,WRITE_MASK)){
 	        	request->_tempFile = SPIFFS.open(file, "w");
     	    	_startTime = millis();
@@ -229,6 +232,7 @@ public:
 		}
 	 	return false;
 	}
+	virtual bool isRequestHandlerTrivial() override final {return false;}
 
 };
 
@@ -296,6 +300,7 @@ public:
 	 	if(request->url() == CHART_DATA_PATH || request->url() ==LOGS_PATH) return true;
 	 	return false;
 	}
+	virtual bool isRequestHandlerTrivial() override final {return false;}
 
 };
 
@@ -428,6 +433,8 @@ public:
   		}
 
 	}
+		virtual bool isRequestHandlerTrivial() override final {return false;}
+
 };
 
 NetworkConfig networkConfig;
@@ -490,6 +497,8 @@ protected:
     }
 public:
 	BmwHandler(void){}
+		virtual bool isRequestHandlerTrivial() override final {return false;}
+
 	void handleRequest(AsyncWebServerRequest *request){
 
 		if(_gSecuredAccess && !request->authenticate(_gUsername, _gPassword))
@@ -680,6 +689,9 @@ BmwHandler bmwHandler;
 /**************************************************************************************/
 /* server push  */
 /**************************************************************************************/
+
+#define ESPAsyncTCP_issue77_Workaround 1
+
 // version
 void getVersionInfo(String& json)
 {
@@ -696,6 +708,30 @@ void getVersionInfo(String& json)
 	json +="}}";
 }
 
+void greeting(std::function<void(const String&,const char*)> sendFunc){
+	// version information
+	String version;
+	getVersionInfo(version);
+	sendFunc(version,NULL);
+
+	// send setting, automation, and network config
+	String json;
+	bmWeb.getSettings(json);
+	sendFunc(json,"setting");
+	bmWeb.getAutomation(json);
+	sendFunc(json,"auto");
+
+	char buf[128];
+	sprintf(buf,"{\"host\":\"%s\",\"secured\":%d}",_gHostname,_gSecuredAccess? 1:0);
+
+	sendFunc(buf,"netcfg");
+	sprintf(buf,"{\"time\":%ld}",TimeKeeper.getTimeSeconds());
+
+    sendFunc(String(buf),"timesync");
+
+	bmWeb.getCurrentStatus(json,true);
+	sendFunc(json,NULL);	
+}
 
 #if UseWebSocket == true
 AsyncWebSocket ws(WS_PATH);
@@ -711,22 +747,49 @@ void processRemoteCommand( uint8_t *data, size_t len)
 	buf[i]='\0';
 	JsonObject& root = jsonBuffer.parseObject(buf);
 
-	if (root.success() && root.containsKey("btn") ){
-		int code = root["btn"];
-		bmWeb.sendButton(code & 0xF, (code & 0xF0)!=0);
+	if (root.success()){
+		if(root.containsKey("btn") ){
+			int code = root["btn"];
+			bmWeb.sendButton(code & 0xF, (code & 0xF0)!=0);
+		}else if(root.containsKey("btnx")){
+			int code = root["btnx"];
+			bmWeb.sendButton(code,false);
+		}
 	}
 }
+
+void wsMessageOnConnect(AsyncWebSocketClient * client)
+{
+	greeting([=](const String& msg,const char* event){
+		if(event==NULL) client->text(msg);
+		else client->text(String(event)+":" + msg);
+	});
+}
+
+#if ESPAsyncTCP_issue77_Workaround
+AsyncWebSocketClient * _lastWsClient=NULL;
+
+void wsHello()
+{
+	if(!_lastWsClient) return;
+	
+	wsMessageOnConnect(_lastWsClient);
+
+	_lastWsClient=NULL;
+}
+
+#endif
 
 void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len)
 {
 	if(type == WS_EVT_CONNECT){
     	DBG_PRINTF("ws[%s][%u] connect\n", server->url(), client->id());
-    	String version;
-		getVersionInfo(version);
-		client->text((version);
-		String json;
-		bmWeb.getCurrentStatus(json);
-		client->text(json);
+		client->ping();
+#if ESPAsyncTCP_issue77_Workaround
+		_lastWsClient=client;
+#else		
+		wsMessageOnConnect(client);
+#endif
   	} else if(type == WS_EVT_DISCONNECT){
     	DBG_PRINTF("ws[%s][%u] disconnect: %u\n", server->url(), client->id());
   	} else if(type == WS_EVT_ERROR){
@@ -738,7 +801,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
     	String msg = "";
     	if(info->final && info->index == 0 && info->len == len){
       		//the whole message is in a single frame and we got all of it's data
-      		DBG_PRINTF("ws[%s][%u] %s-message[%llu]: ", server->url(), client->id(), (info->opcode == WS_TEXT)?"text":"binary", info->len);
+      		DBG_PRINTF("ws[%s][%u] %s-message[%llu]\n", server->url(), client->id(), (info->opcode == WS_TEXT)?"text":"binary", info->len);
 			processRemoteCommand(data,info->len);
 
 		} else {
@@ -777,6 +840,13 @@ AsyncEventSource sse(SSE_PATH);
 
 void sseConnect(AsyncEventSourceClient *client)
 {
+	greeting([=](const String& msg,const char* event){
+		client->send(msg.c_str(),event);
+	});
+}
+/*
+void sseConnect(AsyncEventSourceClient *client)
+{
 	String version;
 	getVersionInfo(version);
 	client->send(version.c_str());
@@ -798,10 +868,33 @@ void sseConnect(AsyncEventSourceClient *client)
 	bmWeb.getCurrentStatus(json,true);
 	client->send(json.c_str());
 
-    Serial.printf("sseconnectes!\n");
+}
+*/
+
+
+#if ESPAsyncTCP_issue77_Workaround
+// temp workaround. not a solution
+// method: not sending data in onConnect() but in main loop.
+// potential issue: two or more clients connect at the same time, before the mainloop can handle it
+// (the poential issue can be solved, but mutual access issue should be addressed.)
+//
+AsyncEventSourceClient *_newClient=NULL;
+
+void sseHello(void)
+{
+	if(!_newClient) return;
+	sseConnect(_newClient);
+	_newClient = NULL;
 }
 
-#endif
+void sseDelayConnect(AsyncEventSourceClient *client)
+{
+	_newClient=client;
+}
+
+#endif //#if ESPAsyncTCP_issue77_Workaround
+
+#endif //#if UseServerSideEvent == true
 
 
 void broadcastMessage(String msg)
@@ -818,13 +911,27 @@ void broadcastMessage(String msg)
 void broadcastMessage(const char* msg, const char* event=NULL)
 {
 #if UseWebSocket == true
-	ws.textAll(msg);
+	if(event==NULL) ws.textAll(msg);
+	ws.textAll(String(event)+":" + msg);
 #endif
 
 #if UseServerSideEvent == true
 	sse.send(msg,event);
 #endif
 }
+
+#if ESPAsyncTCP_issue77_Workaround
+void sayHello()
+{
+#if UseWebSocket == true
+	wsHello();
+#endif
+
+#if UseServerSideEvent == true
+	sseHello();
+#endif
+}
+#endif
 
 /**************************************************************************************/
 /* callback from BM */
@@ -1036,7 +1143,11 @@ void setup(void){
 #endif
 
 #if	UseServerSideEvent == true
+#if ESPAsyncTCP_issue77_Workaround
+  		sse.onConnect(sseDelayConnect);
+#else
   		sse.onConnect(sseConnect);
+#endif
   		server.addHandler(&sse);
 #endif
 		server.addHandler(&networkConfig);
@@ -1152,6 +1263,9 @@ void loop(void){
   		}
   	}
 
+#if ESPAsyncTCP_issue77_Workaround
+	sayHello();
+#endif
 
 #if PROFILING == true
 	unsigned long thisloop = millis() - _profileLoopBegin;

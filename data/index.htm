@@ -5,9 +5,10 @@
     <meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
     <title>BrewManiac</title>
-    <!-- <link rel="stylesheet" href="lib.css"> -->
-    <!-- <script type="text/javascript" src="js/lib.js"></script> -->
-    <script type="text/javascript" src="bm.033.js"></script>
+    <script>
+    var BMLIB_VERSION = "0.4";
+    </script>
+    <script type="text/javascript" src="bm.040.js"></script>
 
 	<style>
 /*! jQuery UI - v1.11.4 - 2015-03-11
@@ -120,7 +121,7 @@ Automation:"Automation",
 PIDAutoTune:"PID AutoTune",
 DelayStart:"Wait to Start Automation",
 PumpRest:"--Pump Rest--",
-Idle:"BrewManiacEx 0.3",
+Idle:"BrewManiacEx",
 ManualMode:"Manual Mode",
 Setup:"Setup",
 PaddleLed:"STIR",
@@ -206,7 +207,8 @@ var ButtonLabels={
 34:{u:"",d:"",s:"",e:"Yes", i:"Run AP Mode?"},
 35:{u:"Extend",d:"",s:"Skip",e:"Back", i:""},
 36:{u:"UP", d:"DWON", s:"Skip", e:"Pump", i:""},
-37:{u:"", d:"", s:"Mash Out", e:"Extend", i:""}
+37:{u:"", d:"", s:"Mash Out", e:"Extend", i:""},
+38:{u:"", d:"Manual", s:"Auto", e:"Cancel", i:""}
 };
 
 var ButtonLabels_paddle={
@@ -222,8 +224,7 @@ var ButtonLabels_paddle={
 27:{u:"UP",d:"Down",s:"RUN",e:"Stir",i:""},
 31:{u:"",d:"",s:"Exit",e:"Stir",i:""},
 36:{u:"UP", d:"DWON", s:"Skip", e:"Stir", i:""},
-37:{u:"", d:"", s:"MashOut", e:"Extend", i:""},
-38:{u:"", d:"Manual", s:"Auto", e:"Cancel", i:""}
+37:{u:"", d:"", s:"MashOut", e:"Extend", i:""}
 };
 
 var ButtonLabels_distill={

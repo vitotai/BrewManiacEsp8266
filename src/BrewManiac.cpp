@@ -6453,19 +6453,35 @@ protected:
 			}
 			else if(btnIsUpContinuousPressed)
 			{
-				adjustPwm(+2);
+				adjustPwm(+4);
 			}
 			else if(btnIsDownContinuousPressed)
 			{
-				adjustPwm(-2);
+				adjustPwm(-4);
 			}
 			else return false;
 		return true;
 	}
+	
+	bool autoDistillerButtonHandler(void){
+		if(btnIsEnterPressed)
+		{
+			if(btnIsEnterLongPressed)
+			{
+				pump.setRestEnabled(!pump.isRestEnabled());
+			}
+			else
+			{
+				pump.toggle();
+			}
+		}else{
+			handleAdjustPwm();
+		}
+	}
 
 	void eventHanlderBeforeHead(byte event){
 		if(event == ButtonPressedEventMask){
-			handleAdjustPwm();
+			autoDistillerButtonHandler();
 		} else if(event == TemperatureEventMask){
 			if(gCurrentTemperature >= gSettingTemperature ){
 				// stop heating
@@ -6507,7 +6523,7 @@ protected:
 
 	void eventHanlderHead(byte event){
 		if(event == ButtonPressedEventMask){
-			handleAdjustPwm();
+			autoDistillerButtonHandler();
 		} else if(event == TemperatureEventMask){
 			if(gCurrentTemperature >= gSettingTemperature ){
 				_state = DistillingStateHeart;
@@ -6525,7 +6541,7 @@ protected:
 
 	void eventHanlderHeart(byte event){
 		if(event == ButtonPressedEventMask){
-			handleAdjustPwm();
+			autoDistillerButtonHandler();
 		} else if(event == TemperatureEventMask){
 			if(gCurrentTemperature >= gSettingTemperature ){
 				_state = DistillingStateTail;
@@ -6542,7 +6558,7 @@ protected:
 
 	void eventHanlderTail(byte event){
 		if(event == ButtonPressedEventMask){
-			handleAdjustPwm();
+			autoDistillerButtonHandler();
 		} else if(event == TemperatureEventMask){
 			if(gCurrentTemperature >= gSettingTemperature ){
 				_state = DistillingStateEnd;

@@ -144,8 +144,8 @@
 #define DEFAULT_REPORT_PERIOD 6000
 
 
-#define UseWebSocket false
-#define UseServerSideEvent true
+#define UseWebSocket true
+#define UseServerSideEvent false
 
 #define EnableExtendedMashStep true
 
@@ -153,7 +153,7 @@
 /*  version information     														  */
 /**************************************************************************************/
 
-#define BME8266_VERSION "0.3.4"
+#define BME8266_VERSION "0.4"
 
 #if MaximumNumberOfSensors >  1
 	#if LCD_USE_SSD1306 == true

@@ -74,6 +74,7 @@ public:
     bool canHandle(AsyncWebServerRequest *request);
     void handleRequest(AsyncWebServerRequest *request);
     void runUpdate(void);
+	virtual bool isRequestHandlerTrivial() override final {return false;}
 };
 
 #endif

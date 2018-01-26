@@ -27,6 +27,13 @@ PWM controlled heating instead of PID controlled. Customized 4 stages: pre-heat,
 
 
 ## Update History
+ * 0.4 [pre-release]
+    * update ESPAsyncTCP and ESPAsyncWebServer library
+    * Websocket instead of Server Side Event(EventSource)
+    * Continuously Up/Down button action
+    * Bug fixed, no temperature chart in Manual and Distilling mode.
+    * Bug fixed, setting temperature udpate when changed
+    * Bug fixed, No PUMP control in distilling auto mode
  * 0.3.3 [12/06/2017]
     * bugs fixed.
     * Moveable control panel, progress table, and temperature chart.
