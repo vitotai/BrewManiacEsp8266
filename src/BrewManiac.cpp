@@ -2116,6 +2116,7 @@ public:
         if( _item.address ==0 && _getValue != NULL) _itemValue=_getValue(_currentSettingIndex);
 	    else _itemValue=(int)readSetting(_item.address);
 
+	    _currentSettingAddress=_item.address;
     }
 
     void nextItem(void)
