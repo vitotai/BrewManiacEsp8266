@@ -43,6 +43,7 @@ extern void brewmaniac_loop();
 extern bool readSkipNetCfgButton(void);
 extern void startBrewManiac(void);
 
+extern String getContentType(String filename);
 #define ResponseAppleCNA true
 
 /**************************************************************************************/
@@ -442,6 +443,7 @@ NetworkConfig networkConfig;
 /**************************************************************************************/
 /* BrewManiac interface */
 /**************************************************************************************/
+
 class FileReader
 {
     File _file;
@@ -636,8 +638,16 @@ public:
 	 		}else{
     	 		String pathWithGz = path + ".gz";
   	    		if(SPIFFS.exists(pathWithGz)){
-	 	    		response = request->beginResponse(SPIFFS, pathWithGz,"application/x-gzip");
-			    	response->addHeader("Content-Encoding", "gzip");
+			    	// AsyncFileResonse will add "content-disposion" header, result in "download" of Safari, instead of "render" 
+	 	    	  	// response = request->beginResponse(SPIFFS, pathWithGz,"application/x-gzip");
+			      	// response->addHeader("Content-Encoding", "gzip");
+				  	File file=SPIFFS.open(pathWithGz,"r");
+			 	  	if(!file){
+						request->send(500);
+						return;
+					}
+					response = request->beginResponse(file, path,getContentType(path));
+
   			    }else{
 	 			    response = request->beginResponse(SPIFFS, path);
 			    }
