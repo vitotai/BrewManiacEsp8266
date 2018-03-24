@@ -836,6 +836,11 @@ void tpSetSensorResolution(byte *addr, byte res)
     ds.write(0x00);         // User byte 1 - Unused
     ds.write((res << 5)|0x1F);         // set up en 12 bits (0x7F)
     ds.reset();             // reset 1-Wire
+	// write EEPROM, by lekrom
+	if(addr) ds.select(addr);
+	else ds.skip();        
+	ds.write(0x48);			// Save settings to non-volatile	
+	delay(15);                            // Wait for EEPROM write to complete.
 }
 #endif //#if EnableSensorResolution	== true
 
@@ -2115,7 +2120,8 @@ public:
         }
         if( _item.address ==0 && _getValue != NULL) _itemValue=_getValue(_currentSettingIndex);
 	    else _itemValue=(int)readSetting(_item.address);
-
+		
+		_currentSettingAddress=_item.address;
     }
 
     void nextItem(void)
