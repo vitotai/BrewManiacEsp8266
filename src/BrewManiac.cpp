@@ -192,6 +192,7 @@ void distillingEventHandler(byte);
 #define StageDoughIn 	    0
 // 1 -6 rest,
 // 7 mashout
+#define MashStepMashOut 7
 #define StageBoil 		    8
 #define StageCooling 		9
 #define StageWhirlpool     10
@@ -1966,6 +1967,16 @@ class PumpControl: public RestableDevice
         setCycle((unsigned long) readSetting(PS_PumpCycle) *60*1000,(unsigned long) readSetting(PS_PumpRest)*60 *1000);
     #endif
     }
+
+	void updateUI() {
+		if ( isOn() ) {
+			uiPumpStatus(PumpStatus_On);
+		    wiReportPump(PumpStatus_On);
+		} else {
+			uiPumpStatus(PumpStatus_Off);
+			wiReportPump(PumpStatus_Off);
+		}
+	}
 };
 
 PumpControl pump;
@@ -2629,7 +2640,7 @@ void settingAutomationDisplayItem(void)
 {
 	int value;
 
-	if(_editingStage <=7) // from MashIn,Phytase,Glucanase,Protease,bAmylase,aAmylase1,aAmylase2,MashOut
+	if(_editingStage <= MashStepMashOut /*7*/) // from MashIn,Phytase,Glucanase,Protease,bAmylase,aAmylase1,aAmylase2,MashOut
 	{
 		if(_editingStageAux==0){
 			value = ToTempForEditing(automation.stageTemperature(_editingStage));
@@ -2656,7 +2667,7 @@ void settingAutomationDisplayItem(void)
 		editItem(STR(Mash_In),value,max,min,&displayStageTemperature);
 	}
 
-	else if(_editingStage >0 && _editingStage < 7)
+	else if(_editingStage >0 && _editingStage < MashStepMashOut /*7*/)
 	{
 		int max=(gIsUseFahrenheit)? ToTempForEditing(169):ToTempForEditing(76);
 		int minTemp;
@@ -2675,7 +2686,7 @@ void settingAutomationDisplayItem(void)
 		editItemTitleAppendNumber(_editingStage);
 	}
 
-	else if(_editingStage ==7)
+	else if(_editingStage == MashStepMashOut /*7*/)
 	{
 		// MashOut
 		if (_editingStageAux == 0){
@@ -2782,7 +2793,7 @@ void settingAutoEventHandler(byte)
 
 			_editingStageAux=0;
 		}
-		if(_editingStage <= 7)
+		if(_editingStage <= MashStepMashOut /*7*/)
 		{
 			if(_editingStageAux ==0)
 			{
@@ -2911,7 +2922,7 @@ void settingAutoEventHandler(byte)
 			changeAutomationTime(_editingStage,(byte)value);
 			// End Mash step and go to MashOut
 			changeAutomationTime(_editingStage +1,(byte)0);
-			_editingStage = 7;
+			_editingStage = MashStepMashOut; //7;
 			_editingStageAux=0;
 			settingAutomationDisplayItem();
 		}
@@ -4084,14 +4095,14 @@ void autoModeNextMashingStep(bool resume)
 
 	if (_mashingStep > _numberMashingStep){
 		// go direct to mashout
-		_mashingStep = 7;
+		_mashingStep = MashStepMashOut; //7;
 	}
 	time = automation.stageTime(_mashingStep);
 	if(time==0) time=1;
 
 	// 	if(_mashingStep > 7), mashout time will always more than 1
 
-	if(_mashingStep > 0 && _mashingStep <7)
+	if(_mashingStep > 0 && _mashingStep < MashStepMashOut /*7*/)
 		uiAutoModeMashTitle(_mashingStep,_numberMashingStep);
 	else
 		uiAutoModeStage(_mashingStep);
@@ -4133,7 +4144,7 @@ void autoModeNextMashingStep(bool resume)
 #endif
 
 	}
-	else if(_mashingStep ==7)
+	else if(_mashingStep == MashStepMashOut /*7*/)
 	{
 		if(readSetting(PS_PumpOnMashOut)) pump.on();
 		else pump.off();
@@ -4160,7 +4171,7 @@ void autoModeGetMashStepNumber(void)
 {
 	byte idx=1;
 	byte time;
-	while(idx < 7 && (time = automation.stageTime(idx)) != 0)
+	while(idx < MashStepMashOut /*7*/ && (time = automation.stageTime(idx)) != 0)
 	{
 		idx++;
 	}
@@ -4223,8 +4234,10 @@ void autoModeIodineTestToMashExtension(void)
 	buzzMute();
     tmPauseTimer();
     uiClearScreen();
-    uiAutoModeTitle();
 
+    uiAutoModeTitle();
+	pump.updateUI();
+	
 	uiAutoModeMashTitle(_mashingStep,_numberMashingStep);
     uiTempDisplaySetPosition(TemperatureAutoModePosition);
 	uiRunningTimeSetPosition(RunningTimeNormalPosition);
@@ -4251,10 +4264,10 @@ void autoModeIodineTestToMashout(void)
 	uiRunningTimeStop();
 	buzzMute();
 	// restore Screen
-
 	uiClearScreen();
 
 	uiAutoModeTitle();
+	pump.updateUI();
 	// temperateure position
 	uiTempDisplaySetPosition(TemperatureAutoModePosition);
 	//phase name, setting point, and counting time will be shown
@@ -4331,7 +4344,7 @@ void autoModeExitPause(void)
 
 	uiAutoModeTitle();
 
-	if(_mashingStep > 0 && _mashingStep <7)
+	if(_mashingStep > 0 && _mashingStep < MashStepMashOut /*7*/)
 		uiAutoModeMashTitle(_mashingStep,_numberMashingStep);
 	else
 		uiAutoModeStage(_mashingStep);
@@ -4387,7 +4400,7 @@ void autoModeEnterBoiling(void);
 void autoModeMashingStageFinished(void)
 {
 	//[TODO:] make sure step 6 , beta 2 is non-skippable.
-	if(_mashingStep < 7) // step 7 = mashout
+	if(_mashingStep < MashStepMashOut /*7*/) // step 7 = mashout
 	{
     	DBG_PRINTF("autoModeMashingStageFinished:%d @%d iodine skip%d, extended:%d\n",_mashingStep,_numberMashingStep,readSetting(PS_SkipIodineTest),_mashingStageExtending);
 		if((_mashingStep == _numberMashingStep)
