@@ -596,6 +596,7 @@ void uiHeatingStatus(byte status)
 #endif
 
 #if SpargeHeaterSupport == true
+char const S_STR[] PROGMEM ="S";
 
 void uiAuxHeatingStatus(byte status)
 {
@@ -605,7 +606,7 @@ void uiAuxHeatingStatus(byte status)
 		uiLcdDrawSymbol(AuxHeatingSymbolCol,AuxHeatingSymbolRow,LcdCharRevSpargeHeating);
 	}else if(status==HeatingStatus_On_PROGRAM_OFF){
 		//uiLcdDrawSymbol(AuxHeatingSymbolCol,AuxHeatingSymbolRow,SpargeHeatingSymbol);
-		uiLcdPrint(AuxHeatingSymbolCol,AuxHeatingSymbolRow,"S");
+		uiLcdPrint_P(AuxHeatingSymbolCol,AuxHeatingSymbolRow,S_STR);
 
 	}else{
 		uiLcdClear(AuxHeatingSymbolCol,AuxHeatingSymbolRow,1);
