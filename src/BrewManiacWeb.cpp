@@ -225,8 +225,19 @@ static const char* SettingMap[]={
 	"s_ppon",
 	// 45
 	"s_ppoff",
-	// 46-49,
-	NULL,NULL,NULL,NULL,
+	// 46-47,
+	#if EnableLevelSensor
+	//46	
+	"s_wlv",
+	//47
+	"s_wlvtrigger",
+	//48
+	"s_pmpminrest",
+	#else
+	NULL,NULL,NULL,
+	#endif
+	//49
+	NULL,
 #if SecondaryHeaterSupport == true
 	//50,
 	"s_preheat",

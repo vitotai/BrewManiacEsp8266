@@ -377,4 +377,11 @@ StringConst(Heart,"Heart");
 StringConst(Tail,"Tail");
 #endif
 
+#if EnableLevelSensor
+StringConst(Enable_Level_Sensor,"Enable LV Sen");
+StringConst(Lv_Trig,"LV Trig. ms");
+StringConst(Ext_Pump_Rest,"Ext Pump Rest");
+#endif
+
+
 #endif //RESOURCES_H

@@ -62,7 +62,7 @@ extern String getContentType(String filename);
 
 #define NETCFG_PATH 		"/netcfg.php"
 #define SCAN_SENSOR_PATH 	"/scan.php"
-#define DEFAULT_INDEX_FILE  "index.htm"
+#define DEFAULT_INDEX_FILE  "bm.htm"
 
 #define MAX_CONFIG_LEN 256
 #define JSON_BUFFER_SIZE 256
@@ -219,8 +219,10 @@ public:
         	}
         	if(final){
           		request->_tempFile.close();
+				#if SerialDebug
           		uint32_t uploadTime = millis() - _startTime;
           		DBG_PRINTF("upload: %s, %u B, %u ms\n", filename.c_str(), index+len, uploadTime);
+				#endif
        		}
       	}
     }
@@ -610,7 +612,7 @@ public:
 			        const char *mime;
 			        if(path.endsWith(".m4a")) mime = "audio/mp4";
 			        else if(path.endsWith(".mp3")) mime="audio/mepg";
-			        else if(path.endsWith(".ogg")) mime = "audio/ogg";
+			        else /*if(path.endsWith(".ogg"))*/ mime = "audio/ogg";
 
                 if(start ==0 && end == -1){
     	 			response = request->beginResponse(SPIFFS, path,mime);
@@ -750,7 +752,7 @@ void processRemoteCommand( uint8_t *data, size_t len)
 {
 	StaticJsonBuffer<128> jsonBuffer;
 	char buf[128];
-	int i;
+	size_t i;
 	for(i=0;i< len && i<127;i++){
 		buf[i]=data[i];
 	}

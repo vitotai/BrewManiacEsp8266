@@ -49,7 +49,7 @@ public:
 	{
 		_tmpFile=SPIFFS.open(BREWING_TMPFILE,"a+");
 		size_t fsize= _tmpFile.size();
-		size_t rsize;
+		size_t rsize=0;
 		_savedLength=fsize;
 
 		initProcessingResume();
@@ -167,7 +167,7 @@ public:
 		addStage(s);
 	}
 
-	size_t beginCopyAfter(int last)
+	size_t beginCopyAfter(size_t last)
 	{
 		_readStart = last;
 		//DBG_PRINTF("beginCopyAfter:%d, _logIndex=%ld, saved=%ld last >= (_logIndex +_savedLength)=%c\n",last,_logIndex,_savedLength, (last >= (_logIndex +_savedLength))? 'Y':'N' );
@@ -240,9 +240,9 @@ private:
 	byte _stage;
 	bool _started;
 
-	int _logIndex;
-	int _savedLength;
-	int _readStart;
+	size_t _logIndex;
+	size_t _savedLength;
+	size_t _readStart;
 
 	char _logBuffer[LogBufferSize];
 	File _file;
