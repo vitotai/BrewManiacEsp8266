@@ -6700,7 +6700,7 @@ void uiPrintInitialScreen(void)
 
 	uiShowTextAtRow_P(1,STR(Initialization),CenterAligned,1);
 }
-
+/*
 void brewmaniac_ApPrompt(void)
 {
 	uiShowTextAtRow_P(1,STR(SetupNetwork),CenterAligned,1);
@@ -6717,7 +6717,7 @@ bool readSkipNetCfgButton(void)
 	}
 	return false;
 }
-
+*/
 void startBrewManiac()
 {
 	switchApplication(MAIN_SCREEN);

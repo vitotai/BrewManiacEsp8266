@@ -38,9 +38,9 @@
 #endif
 
 extern void brewmaniac_setup();
-extern void brewmaniac_ApPrompt(void);
+//extern void brewmaniac_ApPrompt(void);
 extern void brewmaniac_loop();
-extern bool readSkipNetCfgButton(void);
+//extern bool readSkipNetCfgButton(void);
 extern void startBrewManiac(void);
 
 extern String getContentType(String filename);
@@ -78,6 +78,10 @@ extern String getContentType(String filename);
 #define AUDIO_PATH 	"/audio"
 
 #define AUDIO_FILE 	"/sounds.json"
+
+#define WIFI_SCAN_PATH "/wifiscan"
+#define WIFI_CONNECT_PATH "/wificon"
+#define WIFI_DISC_PATH "/wifidisc"
 
 #define MaxNameLength 32
 
@@ -328,6 +332,39 @@ public:
 	NetworkConfig(){}
 
 	void handleRequest(AsyncWebServerRequest *request){
+		if(request->url() == NETCFG_PATH) handleNetCfg(request);
+		else if(request->url() == WIFI_SCAN_PATH) handleNetworkScan(request);
+		else if(request->url() == WIFI_CONNECT_PATH) handleNetworkConnect(request);
+		else if(request->url() == WIFI_DISC_PATH) handleNetworkDisconnect(request);
+	}
+
+	void handleNetworkScan(AsyncWebServerRequest *request){
+		if(WiFiSetup.requestScanWifi())
+			request->send(200,"application/json","{}");
+		else 
+			request->send(403);
+	}
+
+	void handleNetworkDisconnect(AsyncWebServerRequest *request){
+		WiFiSetup.disconnect();
+		request->send(200,"application/json","{}");
+	}
+
+	void handleNetworkConnect(AsyncWebServerRequest *request){
+		if(!request->hasParam("nw")){
+			request->send(400);
+			return;
+		}
+		String ssid=request->getParam("nw")->value();
+		const char *pass=NULL;
+		if(request->hasParam("pass")){
+			pass = request->getParam("pass")->value().c_str();
+		}
+		WiFiSetup.connect(ssid.c_str(),pass);
+		request->send(200,"application/json","{}");
+	}
+
+	void handleNetCfg(AsyncWebServerRequest *request){
 		if(request->method() == HTTP_POST){
 			String data=request->getParam("data", true, false)->value();
 			DynamicJsonBuffer jsonBuffer(JSON_BUFFER_SIZE);
@@ -396,6 +433,9 @@ public:
 
 	bool canHandle(AsyncWebServerRequest *request){
 	 	if(request->url() == NETCFG_PATH) return true;
+		else if(request->url() == WIFI_SCAN_PATH) return true; 
+		else if(request->url() == WIFI_CONNECT_PATH) return true;
+		else if(request->url() == WIFI_DISC_PATH) return true;
 
 	 	return false;
 	}
@@ -943,6 +983,9 @@ void sayHello()
 }
 #endif
 
+void wiFiEvent(const char* msg){
+	broadcastMessage(msg,"nw");
+}
 /**************************************************************************************/
 /* callback from BM */
 /**************************************************************************************/
@@ -1100,9 +1143,10 @@ void setup(void){
 
 
 	//3. Start WiFi
-	WiFiSetup.setBreakCallback(&readSkipNetCfgButton);
-	WiFiSetup.setAPCallback(&brewmaniac_ApPrompt);
-	WiFiSetup.begin(_gHostname);
+//	WiFiSetup.setBreakCallback(&readSkipNetCfgButton);
+//	WiFiSetup.setAPCallback(&brewmaniac_ApPrompt);
+	WiFiSetup.onEvent(wiFiEvent);
+	WiFiSetup.begin((const char*)_gHostname);
 
   	DebugOut("Connected! IP address: ");
   	DebugOut(WiFi.localIP());
