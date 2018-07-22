@@ -297,7 +297,7 @@ void BrewManiacWeb::getSettings(String& json)
     //json = "{\"code\":0,\"result\":\"OK\", \"data\":{";
     json = "{";
 	bool comma=false;
-    for(int i=0;i< sizeof(SettingMap)/sizeof(const char*);i++)
+    for(int i=0;i<(int)( sizeof(SettingMap)/sizeof(const char*));i++)
     {
     	if(SettingMap[i]){
     		if(!comma){
@@ -494,7 +494,7 @@ bool BrewManiacWeb::updateSettings(String& json)
 		return false;
 	}
 
-	for(int i=0;i< sizeof(SettingMap)/sizeof(const char*);i++){
+	for(int i=0;i<(int) (sizeof(SettingMap)/sizeof(const char*));i++){
 		if(SettingMap[i] && root.containsKey(SettingMap[i])){
 			byte value =  root[SettingMap[i]].as<byte>();
 			wiUpdateSetting(i,value);
@@ -583,7 +583,7 @@ bool BrewManiacWeb::updateAutomation(String& json)
 {
     File f=SPIFFS.open(AUTOMATION_FILE,"w+");
 	if(f){
-	    size_t len=f.print(json.c_str());
+	    /*size_t len=*/f.print(json.c_str());
 		f.close();
 	}else{
 	    return false;

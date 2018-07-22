@@ -736,7 +736,7 @@ void printSensorAddress(char *buf, byte *addr)
 
 
 byte scanSensors(byte max,byte addresses[][8]) {
-	byte i;
+//	byte i;
   	byte m=0;
 #if SerialDebug == true
   	Serial.print("Looking for 1-Wire devices...\n\r");// "\n\r" is NewLine
@@ -2125,7 +2125,7 @@ public:
  	    const char* addr=(const char*) & _SettingItems[_currentSettingIndex];
 
         char *dst=(char*) &_item;
- 	    for (int i=0; i< sizeof(SettingItem); i++)
+ 	    for (int i=0; i< (int)sizeof(SettingItem); i++)
         {
             dst[i] =	pgm_read_byte_near(addr + i);
         }
@@ -2589,7 +2589,7 @@ void settingUnitEventHandler(byte)
 	if(settingEditor.buttonHandler())
 	{
 	    int index = settingEditor.index();
-		if(index  >= (sizeof(unitSettingItems)/sizeof(SettingItem) -1)){
+		if(index  >=(int) (sizeof(unitSettingItems)/sizeof(SettingItem) -1)){
 	        switchApplication(SETUP_SCREEN);
             return;
 	    }
@@ -2638,7 +2638,7 @@ int _maxHopTime; // to make sure hop time is in order
 
 void settingAutomationDisplayItem(void)
 {
-	int value;
+	int value=0;
 
 	if(_editingStage <= MashStepMashOut /*7*/) // from MashIn,Phytase,Glucanase,Protease,bAmylase,aAmylase1,aAmylase2,MashOut
 	{
@@ -3030,7 +3030,7 @@ void miscSettingEventHandler(byte)
         }
 #endif
 #endif
-	    if(index >=(sizeof(miscSettingItems)/sizeof(SettingItem) -1)){
+	    if(index >=(int)(sizeof(miscSettingItems)/sizeof(SettingItem) -1)){
 	        switchApplication(SETUP_SCREEN);
             return;
 	    }
@@ -4899,7 +4899,7 @@ void autoModeStartHopStandHopTimer(void)
     if(!remainingTime) return;
 
     int idx;
-    uint32_t hopTime;
+    uint32_t hopTime=0;
     for(idx=0;idx< automation.numberOfHopInSession(_hopStandSession);idx++){
         hopTime=(uint32_t)automation.hopInSession(_hopStandSession,idx) * 60000;
         if( remainingTime > hopTime) break;
@@ -5037,7 +5037,7 @@ void autoModeStartHopStand(void)
 byte hopStandSessionByTime(uint32_t elapsed)
 {
     int i;
-	int time=0;
+	uint32_t time=0;
 	for(i=0;i<automation.numberOfHopStandSession();i++){
 	    time += automation.hopInSession(i,0);
 	    if(elapsed < time) break;
@@ -5090,7 +5090,7 @@ void autoModeResumeProcess(void)
 				if(hopnum > 0)
 				{
 					byte i;
-					byte nextHopTime;
+					byte nextHopTime=0;
 					for(i=0;i<hopnum;i++)
 					{
 						nextHopTime=automation.timeOfHop(i);
@@ -5099,7 +5099,7 @@ void autoModeResumeProcess(void)
 					}
 					if(_numHopToBeAdded > 0)
 					{
-						unsigned long hopTimer =time - nextHopTime;
+						unsigned long hopTimer =(uint32_t)(time - nextHopTime);
 						recoveryTimer = false;
 						tmSetAuxTimeoutAfter((unsigned long)hopTimer * 60 * 1000);
 					}

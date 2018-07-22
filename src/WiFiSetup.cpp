@@ -55,6 +55,7 @@ bool WiFiSetupClass::connect(char const *ssid,const char *passwd){
 	if(_apMode){
 		_apMode =false;
 	}
+	return true;
 }
 
 bool WiFiSetupClass::disconnect(void){
@@ -63,6 +64,9 @@ bool WiFiSetupClass::disconnect(void){
 	return true;
 }
 
+bool WiFiSetupClass::isConnected(void){
+	return WiFi.status() == WL_CONNECTED;
+}
 
 bool WiFiSetupClass::stayConnected(void)
 {

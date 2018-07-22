@@ -62,7 +62,7 @@ word _currentPeriod;
 byte* _ptrCurrentNote;
 
 byte* _currentSound;
-
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
 void buzzStartPlay(SoundId id, boolean repeat)
 {
 	#ifdef ESP8266
@@ -113,7 +113,7 @@ void buzzThread(void)
 {
 	if(!_playing) return;
 
-	if((gCurrentTimeInMS-_buzzingTime) >= (_currentPeriod + BUZZER_TIME_TOLERANCE))
+	if((gCurrentTimeInMS-_buzzingTime) >= ((uint32_t)_currentPeriod + BUZZER_TIME_TOLERANCE))
 	{
 		_numberofNtesToPlay --;
 		if(_numberofNtesToPlay ==0)

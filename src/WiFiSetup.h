@@ -22,7 +22,8 @@
 class WiFiSetupClass
 {
 public:
-	WiFiSetupClass():_switchToAp(false),_autoReconnect(true),_wifiScanState(WiFiScanStateNone),_targetSSID(NULL),_targetPass(NULL),_eventHandler(NULL){_wifiState=WiFiStateConnected;_apMode=false; _maxReconnect=0;}
+	WiFiSetupClass():_wifiState(WiFiStateConnected),_wifiScanState(WiFiScanStateNone),_apMode(false),_switchToAp(false),_autoReconnect(true),
+		 _maxReconnect(0),_eventHandler(NULL),_targetSSID(NULL),_targetPass(NULL){}
 
 	void begin(char const *ssid,const char *passwd=NULL);
 	void onEvent(std::function<void(const char*)> handler){ _eventHandler = handler;}
@@ -39,16 +40,19 @@ public:
 	bool connect(char const *ssid,const char *passwd);
 	bool disconnect(void);
 
-private:
-	unsigned int _maxReconnect;
-	unsigned int _reconnect;
+	bool isConnected(void);
 
-	unsigned long _time;
+private:
 	byte _wifiState;
 	byte _wifiScanState;
 	bool _apMode;
 	bool _switchToAp;
 	bool _autoReconnect;
+
+	unsigned int _maxReconnect;
+	unsigned int _reconnect;
+
+	unsigned long _time;
 	std::function<void(const char*)> _eventHandler;
 	
 	std::unique_ptr<DNSServer>        dnsServer;

@@ -424,7 +424,13 @@ public:
 	//			char configBuff[MAX_CONFIG_LEN];
 	//			makeConfig(configBuff,_gHostname,_gUsername,_gPassword,_gSecuredAccess);
 			String rsp=String("{\"host\":\"") + String(_gHostname)
-				+ String("\",\"secured\":") + (_gSecuredAccess? "1":"0") +"}";
+				+ String("\",\"secured\":") + (_gSecuredAccess? "1":"0");
+
+				if(WiFiSetup.isConnected()){
+					rsp += String(",\"wifi\":") + WiFi.SSID();
+				}
+
+				rsp +=String("}");
 
 				request->send(200, "text/json",rsp);
 			}
@@ -647,7 +653,7 @@ public:
                     decodeRange(h->value(),start,end);
                     DBG_PRINTF("decode: %d - %d\n", start, end);
                 }
-			        const char *mime;
+			        const char *mime=NULL;
 			        if(path.endsWith(".m4a")) mime = "audio/mp4";
 			        else if(path.endsWith(".mp3")) mime="audio/mepg";
 			        else if(path.endsWith(".ogg")) mime = "audio/ogg";
@@ -791,7 +797,7 @@ void processRemoteCommand( uint8_t *data, size_t len)
 	StaticJsonBuffer<128> jsonBuffer;
 	char buf[128];
 	int i;
-	for(i=0;i< len && i<127;i++){
+	for(i=0;i< (int)len && i<127;i++){
 		buf[i]=data[i];
 	}
 	buf[i]='\0';
@@ -841,7 +847,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 		wsMessageOnConnect(client);
 #endif
   	} else if(type == WS_EVT_DISCONNECT){
-    	DBG_PRINTF("ws[%s][%u] disconnect: %u\n", server->url(), client->id());
+    	DBG_PRINTF("ws[%s] disconnect: %u\n", server->url(),(unsigned) client->id());
   	} else if(type == WS_EVT_ERROR){
     	DBG_PRINTF("ws[%s][%u] error(%u): %s\n", server->url(), client->id(), *((uint16_t*)arg), (char*)data);
   	} else if(type == WS_EVT_PONG){
@@ -1146,7 +1152,7 @@ void setup(void){
 //	WiFiSetup.setBreakCallback(&readSkipNetCfgButton);
 //	WiFiSetup.setAPCallback(&brewmaniac_ApPrompt);
 	WiFiSetup.onEvent(wiFiEvent);
-	WiFiSetup.begin((const char*)_gHostname);
+	WiFiSetup.begin((const char*)_gHostname,(const char*)_gPassword);
 
   	DebugOut("Connected! IP address: ");
   	DebugOut(WiFi.localIP());

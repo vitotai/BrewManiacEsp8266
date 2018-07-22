@@ -49,7 +49,7 @@ public:
 	{
 		_tmpFile=SPIFFS.open(BREWING_TMPFILE,"a+");
 		size_t fsize= _tmpFile.size();
-		size_t rsize;
+		size_t rsize=0;
 		_savedLength=fsize;
 
 		initProcessingResume();
@@ -167,7 +167,7 @@ public:
 		addStage(s);
 	}
 
-	size_t beginCopyAfter(int last)
+	size_t beginCopyAfter(size_t last)
 	{
 		_readStart = last;
 		//DBG_PRINTF("beginCopyAfter:%d, _logIndex=%ld, saved=%ld last >= (_logIndex +_savedLength)=%c\n",last,_logIndex,_savedLength, (last >= (_logIndex +_savedLength))? 'Y':'N' );
@@ -240,9 +240,9 @@ private:
 	byte _stage;
 	bool _started;
 
-	int _logIndex;
-	int _savedLength;
-	int _readStart;
+	size_t _logIndex;
+	size_t _savedLength;
+	size_t _readStart;
 
 	char _logBuffer[LogBufferSize];
 	File _file;
@@ -405,22 +405,22 @@ private:
 				DBG_PRINTF("Resume: sensor:%d, period:%d, start:%d\n",_sensorNumber,_tempLogPeriod,_starttime);
 			}else if(b1 == StageTag){
 				_stage = b2;
-				DBG_PRINTF("%ld - stage %d\n",ptr - data,_stage);
+				DBG_PRINTF("%ld - stage %d\n",(long)(ptr - data),_stage);
 
 				if(_stage == 12){ //StageHopStand
 				    if(! _timeRunning){
         				_timeRunning=true;
         				_timerStart= _tempCount;
-        				DBG_PRINTF("hopstand :%ld\n",_timerStart);
+        				DBG_PRINTF("hopstand :%ld\n",(long)_timerStart);
         			}else{
         			    _pauseSum += _tempCount - _paused;
-        			    DBG_PRINTF("hopstandchill end:%ld\n",_pauseSum);
+        			    DBG_PRINTF("hopstandchill end:%ld\n",(long)_pauseSum);
         			}
 				}else if(_stage == 11){ //StageHopStandChill
 				    if(_timeRunning){
     				    _paused = _tempCount;
                     }
-                    DBG_PRINTF("hopstandchill :%ld\n",_timerStart);
+                    DBG_PRINTF("hopstandchill :%ld\n",(long)_timerStart);
 				}else{
     				_timeRunning=false;
 	    			_pauseSum=0;

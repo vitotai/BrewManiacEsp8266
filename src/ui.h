@@ -428,7 +428,7 @@ byte _wiStatus;
 
 void uiDisplayWirelessIcon(void)
 {
-	byte sid;
+	//byte sid;
 	if(_wiStatus == WiStateNotConnected)
 	{
 	   	uiLcdClear(19,0,1);
@@ -915,7 +915,7 @@ void uiAutoModeMashTitle(byte idx,byte num)
 
 void uiAutoModeStage(byte idx)
 {
-	const char* str;
+	const char* str="";
 	if(idx ==0) str = STR( Mash_In);
 	else if(idx ==MashOutStage)  str=STR( Mash_out);
 	else if(idx ==BoilingStage) str=STR( Boil);
@@ -956,7 +956,7 @@ void uiPreparePasueScreen(str_t message)
 {
 	uiClearScreen();
 
-	byte i;
+//	byte i;
 #if MaximumNumberOfSensors > 1
 	uiLcdLine(0,0,3);
 	uiLcdLine(17,0,3);

@@ -185,7 +185,7 @@ word readSettingWord(int addr)
 	return word(SpiEEPROM.read(addr),SpiEEPROM.read(addr+1));
 }
 
-word updateSettingWord(int addr,word value)
+void updateSettingWord(int addr,word value)
 {
   	SpiEEPROM.write(addr,highByte(value));
   	SpiEEPROM.write((addr+1),lowByte(value));

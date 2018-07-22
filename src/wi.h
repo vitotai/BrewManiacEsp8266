@@ -107,14 +107,14 @@ extern byte gSensorAddresses[MaximumNumberOfSensors][8];
 
 byte wiReadCalibrationOfSensor(byte i)
 {
-	readSetting(CalibrationAddressOf(i));
+	return readSetting(CalibrationAddressOf(i));
 }
 
 void wiUpdateCalibrationOfSensor(byte i,byte value)
 {
 	updateSetting(CalibrationAddressOf(i),value);
 	gSensorCalibrations[i]=((float)value -50.0)/10.0;
-	Serial.printf("cal:%d, %value\n",i,value);
+	Serial.printf("cal:%d, value:%d\n",i,value);
 }
 
 byte wiReadPrimarySensor(byte i)

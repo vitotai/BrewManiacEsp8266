@@ -40,12 +40,13 @@ typedef enum _UpdaterState
 
 class HttpUpdateHandler: public AsyncWebHandler
 {
-	UpdaterState _state;
-
 	String _fwVersion;
 	String _jsVersion;
 	String _fwInfoUrl;
 	String _jsInfoUrl;
+
+	UpdaterState _state;
+
 
 	String _firmwareUpdateUrl;
 	t_httpUpdate_return _updateReturn;

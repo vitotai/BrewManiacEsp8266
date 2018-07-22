@@ -12,11 +12,9 @@
 
 
 #if SerialDebug == true
-#define DEBUGF(...) DebugPort.printf(__VA_ARGS__)
-#define DDEBUGF(...) DebugPort.printf(__VA_ARGS__)
+#define DBG_PRINTF(...) DebugPort.printf(__VA_ARGS__)
 #else
-#define DEBUGF(...)
-#define DDEBUGF(...)
+#define DBG_PRINTF(...)
 #endif
 
 static const char indexhtml[] PROGMEM = R"END(
@@ -117,13 +115,13 @@ void HttpUpdateHandler::_firmwareUpdateStatus(AsyncWebServerRequest *request)
 {
 	if(_state == US_Idle){
 		if(_updateReturn==HTTP_UPDATE_FAILED) {
-        	DEBUGF("[update] Update failed.");
+        	DBG_PRINTF("[update] Update failed.");
 	      	request->send(200, "application/json", "{\"finished\":1, \"result\":\"Error:"+ ESPhttpUpdate.getLastErrorString() +"\"}");
         }else if(_updateReturn == HTTP_UPDATE_NO_UPDATES){
-		    DEBUGF("[update] Update no Update.");
+		    DBG_PRINTF("[update] Update no Update.");
 	      	request->send(200, "application/json", "{\"finished\":1, \"result\":\"Nothing to Update.\"}");
 		}else if(_updateReturn == HTTP_UPDATE_OK){
-			DEBUGF("[update] Update ok.");
+			DBG_PRINTF("[update] Update ok.");
 	      	request->send(200, "application/json", "{\"finished\":1, \"refresh\":15, \"result\":\"OK\"}");
 	      	// start timer to reset
 	      	_state=US_RestartInitiated;
@@ -131,7 +129,7 @@ void HttpUpdateHandler::_firmwareUpdateStatus(AsyncWebServerRequest *request)
 			request->send(200, "application/json", "{\"finished\":1, \"result\":\"unknown error\"}");
 		}
 	}else if (_state == US_FirmwareUpdatePending || _state == US_FirmwareUpdating){
-		DEBUGF("[RSP] Updating...\n");
+		DBG_PRINTF("[RSP] Updating...\n");
 		request->send(200, "application/json",R"({"finished":0})");
 	}else{
 		request->send(500);
@@ -195,7 +193,7 @@ void HttpUpdateHandler::_scriptUpdateStart(AsyncWebServerRequest *request)
 
 void HttpUpdateHandler::_scriptUpdateStatus(AsyncWebServerRequest *request)
 {
-	DEBUGF("JS update status, state=%d\n",_state);
+	DBG_PRINTF("JS update status, state=%d\n",_state);
 	if(_state == US_Idle){
 		//finished
 		if(_fileDownloader.isSuccess()){
@@ -206,7 +204,7 @@ void HttpUpdateHandler::_scriptUpdateStatus(AsyncWebServerRequest *request)
 			request->send(200, "application/json",output);
 		}
 	}else if(_state == US_FileDownloadPending || _state == US_FileDownloading){
-		DEBUGF("Query download Status...\n");
+		DBG_PRINTF("Query download Status...\n");
 		request->send(200, "application/json",R"({"finished":0})");
 	}else {
 		request->send(500);
@@ -265,17 +263,17 @@ void HttpUpdateHandler::runUpdate(void)
 {
 	if(_state ==US_FirmwareUpdatePending){
 		_state = US_FirmwareUpdating;
-		DEBUGF("Start http update:%s\n",_firmwareUpdateUrl.c_str());
+		DBG_PRINTF("Start http update:%s\n",_firmwareUpdateUrl.c_str());
 		ESPhttpUpdate.rebootOnUpdate(false);
 		_updateReturn = ESPhttpUpdate.update(_firmwareUpdateUrl, _fwVersion);
-		DEBUGF("End of http update\n");
+		DBG_PRINTF("End of http update\n");
 
 		_state = US_Idle;
 	}else if(_state ==US_FileDownloadPending){
 		_state= US_FileDownloading;
-		DEBUGF("Start file download\n");
+		DBG_PRINTF("Start file download\n");
 		_fileDownloader.download();
-		DEBUGF("End file download\n");
+		DBG_PRINTF("End file download\n");
 		_state = US_Idle;
 	}else if(_state == US_RestartInitiated){
 		_resetInitiatedTimer= millis();
@@ -285,9 +283,9 @@ void HttpUpdateHandler::runUpdate(void)
 		 	ESP.restart();
 	}else if(_state ==US_FormatPending){
 		_state= US_Formating;
-		DEBUGF("Start Formating SPIFFS\n");
+		DBG_PRINTF("Start Formating SPIFFS\n");
 		SPIFFS.format();
-		DEBUGF("End Formating SPIFFS\n");
+		DBG_PRINTF("End Formating SPIFFS\n");
 		_state = US_RestartInitiated;
 	}
 
@@ -300,18 +298,18 @@ void HttpFileDownloader::download(void)
 
     File f=SPIFFS.open(_filename,"w+");
     if(!f){
-    	DEBUGF("file open failed\n");
+    	DBG_PRINTF("file open failed\n");
 		_error = -1;
 		_errorMsg = "Error open filed!";
 
     	_finished=true;
     	return;
     }
-	DEBUGF("Download %s\n",_filename.c_str());
+	DBG_PRINTF("Download %s\n",_filename.c_str());
 
 	_buff =(uint8_t*) malloc(FLASH_SECTOR_SIZE);
 	if(!_buff){
-		DEBUGF("error allocate memory\n");
+		DBG_PRINTF("error allocate memory\n");
 		_error = -1;
 		_errorMsg = "Not enough resource.";
 
@@ -321,12 +319,12 @@ void HttpFileDownloader::download(void)
 
     _http.begin(_url);
 
-    DEBUGF("[HTTP] GET %s...\n",_url.c_str());
+    DBG_PRINTF("[HTTP] GET %s...\n",_url.c_str());
     // start connection and send HTTP header
     int httpCode = _http.GET();
     if(httpCode > 0) {
     	// HTTP header has been send and Server response header has been handled
-        DEBUGF("[HTTP] GET... code: %d\n", httpCode);
+        DBG_PRINTF("[HTTP] GET... code: %d\n", httpCode);
 
         // file found at server
         if(httpCode == HTTP_CODE_OK) {
@@ -334,7 +332,7 @@ void HttpFileDownloader::download(void)
             // get lenght of document (is -1 when Server sends no Content-Length header)
             int len = _http.getSize();
             int wlen=0;
-			DEBUGF("[HTTP] Content Length: %d\n", len);
+			DBG_PRINTF("[HTTP] Content Length: %d\n", len);
             // create buffer for read
             //uint8_t buff[512] = { 0 };
 
@@ -350,13 +348,13 @@ void HttpFileDownloader::download(void)
 
                 if(size) {
                 	int c = stream->readBytes(ptr, ((size > space) ? space : size));
-					DDEBUGF("read %d bytes\n",c);
+					DBG_PRINTF("read %d bytes\n",c);
 					ptr += c;
 					space -= c;
                     if(len > 0) len -= c;
 
                     if(space == 0) {
-	                    DDEBUGF("write %d bytes\n",FLASH_SECTOR_SIZE);
+	                    DBG_PRINTF("write %d bytes\n",FLASH_SECTOR_SIZE);
                         ESP.wdtDisable();
                         f.write(_buff,FLASH_SECTOR_SIZE);
                         ESP.wdtEnable(10);
@@ -368,7 +366,7 @@ void HttpFileDownloader::download(void)
                 delay(1);
             }
             if(space < FLASH_SECTOR_SIZE){
-				DDEBUGF("write %d bytes\n",FLASH_SECTOR_SIZE-space);
+				DBG_PRINTF("write %d bytes\n",FLASH_SECTOR_SIZE-space);
                 ESP.wdtDisable();
                 f.write(_buff,FLASH_SECTOR_SIZE - space);
                 wlen += FLASH_SECTOR_SIZE-space;
@@ -382,17 +380,17 @@ void HttpFileDownloader::download(void)
 				_errorMsg = "Connection broken!";
 			}
 
-            DEBUGF("[HTTP] connection closed. written %d.\n",wlen);
+            DBG_PRINTF("[HTTP] connection closed. written %d.\n",wlen);
 
     	} else {
     		// httpCode != OKs
-    		DEBUGF("[HTTP] Response:%d\n",httpCode);
+    		DBG_PRINTF("[HTTP] Response:%d\n",httpCode);
     		_error = httpCode;
     		_errorMsg="HTTP code:" + String(_error);
     	}
     } else {
     	// httpCode <=0
-        DEBUGF("[HTTP] GET... failed, error: %s\n", _http.errorToString(httpCode).c_str());
+        DBG_PRINTF("[HTTP] GET... failed, error: %s\n", _http.errorToString(httpCode).c_str());
         _error=httpCode;
         _errorMsg=_http.errorToString(httpCode);
     }
