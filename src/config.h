@@ -128,7 +128,7 @@
 // http://bm.local:8008/update
 #define SYSTEM_UPDATE_PATH "/systemupdate"
 #define Default_USERNAME "brewmaniac"
-#define Default_PASSWORD "rdwhahb"
+#define Default_PASSWORD "rdwhahb!"
 #define Default_HOSTNAME "bm"
 
 /**************************************************************************************/

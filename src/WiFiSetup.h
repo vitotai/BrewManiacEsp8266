@@ -22,8 +22,8 @@
 class WiFiSetupClass
 {
 public:
-	WiFiSetupClass():_wifiState(WiFiStateConnected),_wifiScanState(WiFiScanStateNone),_apMode(false),_switchToAp(false),_autoReconnect(true),
-		 _maxReconnect(0),_eventHandler(NULL),_targetSSID(NULL),_targetPass(NULL){}
+	WiFiSetupClass():_wifiState(WiFiStateConnected),_wifiScanState(WiFiScanStateNone),_apMode(false),_switchToAp(true),_autoReconnect(true),
+		 _maxReconnect(5),_eventHandler(NULL),_targetSSID(NULL),_targetPass(NULL),_ip(INADDR_NONE),_gw(INADDR_NONE),_nm(INADDR_NONE){}
 
 	void begin(char const *ssid,const char *passwd=NULL);
 	void onEvent(std::function<void(const char*)> handler){ _eventHandler = handler;}
@@ -37,7 +37,7 @@ public:
 
 	String scanWifi(void);
 	bool requestScanWifi(void);
-	bool connect(char const *ssid,const char *passwd);
+	bool connect(char const *ssid,const char *passwd,IPAddress ip=(uint32_t)0x00000000,IPAddress gw=(uint32_t)0x00000000, IPAddress nm=(uint32_t)0x00000000);
 	bool disconnect(void);
 
 	bool isConnected(void);
@@ -62,6 +62,9 @@ private:
 
 	const char *_targetSSID;
 	const char *_targetPass;
+	IPAddress _ip;
+	IPAddress _gw;
+	IPAddress _nm;
 
 	void setupApService(void);
 	void enterApMode();

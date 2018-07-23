@@ -37,20 +37,27 @@ void WiFiSetupClass::begin(char const *ssid,const char *passwd)
 	_apPassword=passwd;
 	WiFi.mode(WIFI_AP_STA);
 	_apMode=false;
+	WiFi.begin();
    	
 	WiFi.softAP(_apName, _apPassword);
 	setupApService();
+	DBG_PRINTF("\ncreate network:%s pass:%s\n",ssid, passwd);
 	
-	WiFi.begin();
 }
 
-bool WiFiSetupClass::connect(char const *ssid,const char *passwd){
+bool WiFiSetupClass::connect(char const *ssid,const char *passwd,IPAddress ip,IPAddress gw, IPAddress nm){
 	DBG_PRINTF("Connect to %s pass:%s\n",ssid, passwd);
 
 	if(_targetSSID) free((void*)_targetSSID);
 	_targetSSID=strdup(ssid);
 	if(_targetPass) free((void*)_targetPass);
 	_targetPass=strdup(passwd);
+	if((ip !=INADDR_NONE) && (gw!=INADDR_NONE) & (nm!=INADDR_NONE)){
+		_ip=ip;
+		_gw=gw;
+		_nm=nm;
+	}
+
 	_wifiState = WiFiStateChangeConnectPending;
 	if(_apMode){
 		_apMode =false;
@@ -81,6 +88,9 @@ bool WiFiSetupClass::stayConnected(void)
 			WiFi.disconnect();
 			//DBG_PRINTF("Disconnect\n");
 			//}
+			if(_ip != INADDR_NONE){
+				WiFi.config(_ip,_gw,_nm);
+			}
 			WiFi.begin(_targetSSID,_targetPass);
 			_time=millis();
 			_reconnect =0;
@@ -164,7 +174,7 @@ bool WiFiSetupClass::requestScanWifi(void) {
 
 String WiFiSetupClass::scanWifi(void) {
 	
-	String rst="{\"net\":[";
+	String rst="{\"list\":[";
 	
 	DBG_PRINTF("Scan Networks...\n");
 	int n = WiFi.scanNetworks();
@@ -207,7 +217,7 @@ String WiFiSetupClass::scanWifi(void) {
         	DBG_PRINTLN(WiFi.SSID(indices[i]));
 	        DBG_PRINTLN(WiFi.RSSI(indices[i]));
         	//int quality = getRSSIasQuality(WiFi.RSSI(indices[i]));
-			String item=String("{\"ssid\"=\"") + WiFi.SSID(indices[i]) + 
+			String item=String("{\"ssid\":\"") + WiFi.SSID(indices[i]) + 
 			String("\",\"rssi\":") + WiFi.RSSI(indices[i]) +
 			String(",\"enc\":") +  String((WiFi.encryptionType(indices[i]) != ENC_TYPE_NONE)? "1":"0")
 			+ String("}");

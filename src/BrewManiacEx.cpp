@@ -351,16 +351,24 @@ public:
 	}
 
 	void handleNetworkConnect(AsyncWebServerRequest *request){
-		if(!request->hasParam("nw")){
+		if(!request->hasParam("nw",true)){
 			request->send(400);
 			return;
 		}
-		String ssid=request->getParam("nw")->value();
+		String ssid=request->getParam("nw",true)->value();
 		const char *pass=NULL;
-		if(request->hasParam("pass")){
-			pass = request->getParam("pass")->value().c_str();
+		if(request->hasParam("pass",true)){
+			pass = request->getParam("pass",true)->value().c_str();
 		}
-		WiFiSetup.connect(ssid.c_str(),pass);
+		if(request->hasParam("ip",true) && request->hasParam("gw",true) && request->hasParam("nm",true)){
+			WiFiSetup.connect(ssid.c_str(),pass, 
+				IPAddress((uint32_t)request->getParam("nw",true)->value().toInt()),
+				IPAddress((uint32_t)request->getParam("gw",true)->value().toInt()),
+				IPAddress((uint32_t)request->getParam("nm",true)->value().toInt())
+				);
+		}else{
+			WiFiSetup.connect(ssid.c_str(),pass);
+		}
 		request->send(200,"application/json","{}");
 	}
 
@@ -990,7 +998,7 @@ void sayHello()
 #endif
 
 void wiFiEvent(const char* msg){
-	broadcastMessage(msg,"nw");
+	broadcastMessage(msg,"wifi");
 }
 /**************************************************************************************/
 /* callback from BM */
