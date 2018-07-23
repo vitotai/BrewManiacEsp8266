@@ -66,7 +66,11 @@
 #define PS_PumpPrimeOnTime   44
 #define PS_PumpPrimeOffTime  45
 
-//    46 -  49 reserved
+#define PS_EnableLevelSensor      46  //    
+#define PS_LevelSensorMinimumTime      47  //    
+#define PS_PumpRestExtendedTime      48  //    
+
+//    49 reserved
 #define PS_PreMashHeating    50
 #define PS_MashingHeating    51
 #define PS_BoilingHeating    52
@@ -79,6 +83,7 @@
 #define PS_kP_AllOn      58  // 	kP
 #define PS_kI_AllOn      59  //	kI
 #define PS_kD_AllOn      60  //     kD
+
 // space 
 
 

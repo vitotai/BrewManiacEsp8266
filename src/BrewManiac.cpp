@@ -82,7 +82,6 @@ byte gBoilHeatOutput;
 //   and parameter setting
 
 boolean gIsHeatOn;
-boolean gIsPumpOn;
 boolean gIsUseFahrenheit;
 
 boolean gIsHeatProgramOff;
@@ -1757,21 +1756,27 @@ void setSettingTemperature(float temp)
     brewLogger.setPoint(gSettingTemperature);
     wiReportSettingTemperature();
 }
+
+
 // *************************
 //*  pump related function
 // *************************
 
 class RestableDevice
 {
-    boolean _isDeviceOn;
-    boolean _physicalOn;
+    bool _isDeviceOn;
+    bool _physicalOn;
     unsigned long _lastSwitchOnTime;
     float _stopTemp;
 
     unsigned long _restTime;
     unsigned long _cycleTime;
-    boolean _isRestStateChanged;
-    boolean _restEnabled;
+    bool _isRestStateChanged;
+    bool _restEnabled;
+
+#if EnableLevelSensor
+	bool _forcedRest;
+#endif
 
     void virtual deviceOn(void)=0;
     void virtual deviceOff(bool)=0;
@@ -1782,6 +1787,10 @@ public:
 	    _isDeviceOn=false;
 	    _isRestStateChanged = false;
 	    _restEnabled=false;
+#if EnableLevelSensor
+		_forcedRest = false;
+#endif
+
     }
 
     void turnPhysicalOn(void)
@@ -1847,6 +1856,24 @@ public:
         return _isDeviceOn;
     }
 
+    bool isRest(void)
+    {
+	    return ! _physicalOn;
+    }
+
+#if EnableLevelSensor
+	void setForcedRest(bool rest){
+		_forcedRest = rest;
+		
+		if(!_forcedRest){
+			// end of forced Rest, 
+			// reset the time. so that the pump will be turned on in run()
+			_lastSwitchOnTime = gCurrentTimeInMS;
+			if(_isDeviceOn) _isRestStateChanged = true;
+		}
+	}
+#endif
+
     void setRestEnabled(boolean enable)
     {
 	    _restEnabled=enable;
@@ -1863,12 +1890,6 @@ public:
 	    }
     }
 
-
-    boolean isRest(void)
-    {
-	    return ! _physicalOn;
-    }
-
     boolean restEvent(void)
     {
 	    if(_isRestStateChanged)
@@ -1882,8 +1903,19 @@ public:
     void run(void)
     {
 	    if(!_isDeviceOn) return;
-	    // temperature control
 
+#if EnableLevelSensor
+		if(_forcedRest){
+      	    if(_physicalOn)
+      	    {
+			    turnPhysicalOff();
+        	    _isRestStateChanged = true;
+		    }
+			return;
+		}
+#endif
+
+	    // overheat temperature protection
 	    if(!IS_TEMP_INVALID(gCurrentTemperature) &&  (gCurrentTemperature >= _stopTemp))
 	    {
       	    if(_physicalOn)
@@ -1895,7 +1927,9 @@ public:
   	    }
   	    else // of if(gCurrentTemperature >= _pumpStopTemp)
   	    {
-  		    // if under pump stop temperature
+			// if under pump stop temperature
+
+			// device is "ON" (or it returns at beginning of this function)
 		    if(!_restEnabled)
 		    {
       		    if(!_physicalOn) turnPhysicalOn();
@@ -1925,6 +1959,7 @@ public:
         	    if ((gCurrentTimeInMS - _lastSwitchOnTime) >= (_cycleTime + _restTime))
         	    {
         		    _lastSwitchOnTime = gCurrentTimeInMS;
+					// pump will be truned-on on next "run()" call.
         		    //Serial.println("on time start");
         	    }
       	    }
@@ -1945,10 +1980,10 @@ class PumpControl: public RestableDevice
 	    wiReportPump(PumpStatus_On);
     }
 
-    void virtual deviceOff(bool)
+    void virtual deviceOff(bool programOff)
     {
         setPumpOut(LOW);
-	    if(gIsPumpOn){
+	    if(programOff){
 		    uiPumpStatus(PumpStatus_On_PROGRAM_OFF);
 		    wiReportPump(PumpStatus_On_PROGRAM_OFF);
 	    }else{
@@ -1980,6 +2015,108 @@ class PumpControl: public RestableDevice
 };
 
 PumpControl pump;
+
+
+// *************************
+//*  Wort/Water level sensor // for K-RIMS
+// *************************
+#if EnableLevelSensor
+
+#define WL_IDLE 0
+#define WL_REST 1
+#define WL_REST_MINIMUM 2
+
+class WaterLevelMonitor{
+	bool _monitoring;
+	bool _full;
+	bool _mightFull;
+	uint8_t _state;
+	uint32_t _lastChanged;
+	uint32_t _lastPumpSwitch;
+	uint32_t _pumpExtendedTime;
+	uint32_t _sensorMinTriggerTime;
+public:
+	WaterLevelMonitor(){
+		_monitoring =false;
+		_full=false;
+		_mightFull=false;
+		_state = WL_IDLE;
+	}
+
+	void startMonitor(){
+		_monitoring= true;
+		_state = WL_IDLE;
+	}
+
+	void stopMonitor(){
+		_monitoring =false;
+		if(_state == WL_REST_MINIMUM  || _state == WL_REST){
+			pump.setForcedRest(false);
+		}
+	}
+
+	bool isFull(){
+		return _full;
+	}
+	
+	bool checkState(){
+		bool fullness=isWaterLevelFull();
+
+		if(fullness != _mightFull){
+			_mightFull = fullness;
+			_lastChanged = gCurrentTimeInMS;
+			DBG_PRINTF("waterlevel attempt\n");
+			return false;
+		} else{
+			// the same, check time
+			if( _full != _mightFull
+			    && (gCurrentTimeInMS - _lastChanged) >= _sensorMinTriggerTime){
+					// meet minimum time requirement
+					DBG_PRINTF("waterlevel full:%d\n",_mightFull);
+					_full = _mightFull;
+					return true;
+				}
+		}
+
+		return false;
+	}
+	void run(){
+		if(!_monitoring) return;
+		if(checkState()){
+			// state changed
+			if(_full){
+				pump.setForcedRest(true);
+				_state = WL_REST;
+			}else{
+				// switch indicates NOT FULL
+				if(_state == WL_REST){
+					_lastPumpSwitch=gCurrentTimeInMS;
+					_state = WL_REST_MINIMUM;
+				}
+			}
+		}
+		if(_state == WL_REST_MINIMUM){
+			// pump to non=rest
+			// check if minimum off time meets
+			if((gCurrentTimeInMS - _lastPumpSwitch) >= _pumpExtendedTime){
+				pump.setForcedRest(false);
+				_state = WL_IDLE;
+			}
+		}
+	}
+	void loadParameters(){
+		// load from EEPROM
+		_sensorMinTriggerTime = readSetting(PS_LevelSensorMinimumTime) * 50; // 100ms unit
+		_pumpExtendedTime = readSetting(PS_PumpRestExtendedTime) * 1000; // 1s
+	}
+	void reset(){
+		stopMonitor();
+	}
+
+};
+
+WaterLevelMonitor lvMonitor;
+#endif
 
 // *************************
 //*  buzzer related function
@@ -2214,6 +2351,12 @@ void displayMultiply250(int data)
 	uiSettingDisplayNumber(fvalue,0);
 }
 
+void displayMultiply50(int data)
+{
+	float fvalue=(float)data *50.0;
+	uiSettingDisplayNumber(fvalue,0);
+}
+
 void displaySimpleInteger(int data)
 {
 	uiSettingDisplayNumber((float)data,0);
@@ -2282,7 +2425,7 @@ void displayActivePassive(int value)
 	else uiSettingDisplayText(STR(Active));
 }*/
 
-#if UsePaddleInsteadOfPump
+#if UsePaddleInsteadOfPump  || EnableLevelSensor
 void displayTimeSec(int value)
 {
 	uiSettingTimeInSeconds((byte)value);
@@ -2484,6 +2627,7 @@ int pidGetValue(int index)
     else
         return (int)readSetting(CalibrationAddressOf(_pidSettingAux));
 #endif
+	return 0;
 }
 
 void pidSetValue(int index, int value)
@@ -3001,7 +3145,15 @@ const SettingItem miscSettingItems[] PROGMEM=
 /**/{STR(HeaterBoiling),    &displayHeaterSelection,PS_BoilingHeating,3,1},
 /**/{STR(HeaterPostBoil),   &displayHeaterSelection,PS_PostBoilHeating,3,1}
 #endif
+#if EnableLevelSensor
+	,{STR(Enable_Level_Sensor),    &displayOnOff, PS_EnableLevelSensor,1,0},
+	{STR(Lv_Trig),    &displayMultiply50, PS_LevelSensorMinimumTime,20,1},
+	{STR(Ext_Pump_Rest),    &displayTimeSec, PS_PumpRestExtendedTime,90,2}
+#endif
 };
+
+#define SpargeHeaterEnableIndex 5
+#define SpargeHeaterSettingNumber 5
 
 #define  SpargeTemperatureControlIndex 6
 #define  SpargeSensorIndex 7
@@ -3021,10 +3173,10 @@ void miscSettingEventHandler(byte)
 
 #if SpargeHeaterSupport == true
 #if MaximumNumberOfSensors >1
-        if(index == 5){
+        if(index == SpargeHeaterEnableIndex){
             if(!readSetting(PS_SpargeWaterEnableAddress)){
                 // disable. sparge heating control. skip the following 5 items
-                index += 5;
+                index += SpargeHeaterSettingNumber;
                 settingEditor.setIndex(index);
             }
         }
@@ -3477,6 +3629,10 @@ void loadBrewParameters(void)
 {
 	heatLoadParameters();
 	pump.loadParameters();
+	#if EnableLevelSensor
+	lvMonitor.loadParameters();
+	#endif
+
 }
 // ***************************************************************************
 //*  Manual Mode Screen
@@ -3864,6 +4020,32 @@ void manualModeEventHandler(byte event)
 			togglePwmInput();
 
 		} // end of temperature handling
+		else if(event == PumpRestEventMask)
+		{
+			//
+			if(pump.isRest())
+			{
+				// into rest
+				//no special manual uiButtonLabel(ButtonLabel(_Pump_Rest_));
+				// stop heat
+				#if !UsePaddleInsteadOfPump
+				heatProgramOff();
+				buzzPlaySound(PumpRestSoundId);
+				#endif
+
+				wiReportEvent(RemoteEventPumpRest);
+			}
+			else
+			{
+
+				#if !UsePaddleInsteadOfPump
+				heatOn();
+				buzzPlaySound(PumpRestEndSoundId);
+				#endif
+
+				wiReportEvent(RemoteEventPumpRestEnd);
+			}
+		}
 		#if SupportManualModeCountDown == true
 		else if(event == TimeoutEventMask)
 		{
@@ -3973,7 +4155,11 @@ void autoModeEnterDoughIn(void)
 {
 	_state = AS_DoughIn;
 	// setup temperature event mask request after this.
+	#if EnableLevelSensor
+	setEventMask(TemperatureEventMask | ButtonPressedEventMask | PumpRestEventMask);
+	#else
 	setEventMask(TemperatureEventMask /*| ButtonPressedEventMask */);
+	#endif
 
 	//load temperature value
 	float doughinTemp = automation.stageTemperature(0);
@@ -4000,6 +4186,11 @@ void autoModeEnterDoughIn(void)
 
 	if(readSetting(PS_PumpPreMash)) pump.on();
 	else pump.off();
+
+	#if EnableLevelSensor
+	if(readSetting(PS_EnableLevelSensor))
+		lvMonitor.startMonitor();
+	#endif
 
 #if MaximumNumberOfSensors > 1
 	setSensorForStage(SensorForPreMash);
@@ -4418,6 +4609,10 @@ void autoModeMashingStageFinished(void)
 	}
 	else
 	{
+		#if EnableLevelSensor
+		lvMonitor.stopMonitor();
+		#endif
+
 		// change to boiling stage, or malt out waiting state
 			if(readSetting(PS_SkipRemoveMalt))
 				autoModeEnterBoiling();
@@ -5031,6 +5226,39 @@ void autoModeStartHopStand(void)
     }
 }
 
+void togglePumpRest(void){
+				//
+			if(pump.isRest())
+			{
+				// into rest
+				//no special manual uiButtonLabel(ButtonLabel(_Pump_Rest_));
+				// stop heat
+				#if !UsePaddleInsteadOfPump
+				heatProgramOff();
+				buzzPlaySound(PumpRestSoundId);
+				#endif
+
+				wiReportEvent(RemoteEventPumpRest);
+			}
+			else
+			{
+				#if 0
+				// back from rest
+				#if MANUAL_PUMP_MASH == true
+				uiButtonLabel(ButtonLabel(Up_Down_PmPus_STP));
+				#else
+				uiButtonLabel(ButtonLabel(Up_Down_Pause_STP));
+				#endif
+				#endif
+
+				#if !UsePaddleInsteadOfPump
+				heatOn();
+				buzzPlaySound(PumpRestEndSoundId);
+				#endif
+
+				wiReportEvent(RemoteEventPumpRestEnd);
+			}
+}
 //************************************
 // for recovery
 //
@@ -5171,6 +5399,11 @@ void autoModeResumeProcess(void)
 
 		_mashingStep = stage - 1; // next step will increase the step
 		autoModeNextMashingStep(true);
+
+		#if EnableLevelSensor
+		if(readSetting(PS_EnableLevelSensor))
+			lvMonitor.startMonitor();
+		#endif
 
 		// adjust timer if necessary
 		if(elapsed != INVALID_RECOVERY_TIME)
@@ -5339,7 +5572,7 @@ void autoModeEventHandler(byte event)
 #endif
 				} // else of prime pump < 5
 
-			} // end of else if(gIsPumpOn)
+			} // end of else if pump on
 		} // end of handling of TimeoutEventMask
 	} // end of state AS_PumpPrime
 #if NoDelayStart == false
@@ -5478,6 +5711,13 @@ void autoModeEventHandler(byte event)
 				processAdjustButtons();
 			}
 		}//ButtonPressedEventMask
+		#if EnableLevelSensor
+		else if(event == PumpRestEventMask)
+		{
+			togglePumpRest();
+		}
+		#endif
+
 	} // endof state AS_DoughIn
 	else if(AutoStateIs(AS_Pause))
 	{
@@ -5654,37 +5894,7 @@ void autoModeEventHandler(byte event)
 		}
 		else if(event == PumpRestEventMask)
 		{
-			//
-			if(pump.isRest())
-			{
-				// into rest
-				//no special manual uiButtonLabel(ButtonLabel(_Pump_Rest_));
-				// stop heat
-				#if !UsePaddleInsteadOfPump
-				heatProgramOff();
-				buzzPlaySound(PumpRestSoundId);
-				#endif
-
-				wiReportEvent(RemoteEventPumpRest);
-			}
-			else
-			{
-				#if 0
-				// back from rest
-				#if MANUAL_PUMP_MASH == true
-				uiButtonLabel(ButtonLabel(Up_Down_PmPus_STP));
-				#else
-				uiButtonLabel(ButtonLabel(Up_Down_Pause_STP));
-				#endif
-				#endif
-
-				#if !UsePaddleInsteadOfPump
-				heatOn();
-				buzzPlaySound(PumpRestEndSoundId);
-				#endif
-
-				wiReportEvent(RemoteEventPumpRestEnd);
-			}
+			togglePumpRest();
 		}
 		else // else of PumpRestEvent & Button,
 		{
@@ -6681,7 +6891,9 @@ void backToMain(void)
 #endif
 	pump.off();
 	buzzMute();
-
+	#if EnableLevelSensor
+	lvMonitor.reset();
+	#endif
 	uiRunningTimeBlink(false); // stop blink if any. additional time print will be done
 								// however, it will be clear later, before enter "Main"
 
@@ -6747,8 +6959,6 @@ void brewmaniac_setup() {
 	uiPrintInitialScreen();
 
 	wiInitialize();
-
-
 }
 
 //*********************************************************************
@@ -6804,6 +7014,9 @@ void brewmaniac_loop() {
 	//
 	// threads
 	heatThread();
+	#if EnableLevelSensor
+	lvMonitor.run();
+	#endif
 	pump.run();
 	buzzThread();
 

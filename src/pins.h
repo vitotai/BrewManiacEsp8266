@@ -53,6 +53,17 @@
 
 #endif
 
+#if EnableLevelSensor
+#define LevelSensorOnIoExpander true
+
+#if LevelSensorOnIoExpander
+#define LevelSensorIOExpPin 32 //P5
+#else
+#define LevelSensorPin NODEMCU_PIN_D4
+#endif
+
+#endif
+
 #if PUMP_USE_EXT != true
 #define PumpControlPin  NODEMCU_PIN_D5
 #else
@@ -182,5 +193,29 @@ void initIOPins(void)
 	setAuxHeaterOut(LOW);
 #endif
 
+#if EnableLevelSensor
+#if LevelSensorOnIoExpander != true
+	pinMode (LevelSensorPin, INPUT_PULLUP);
+#endif
+#endif
 }
+
+#if EnableLevelSensor
+// close/connected/ground: not full
+// open/disconnected/V+: full
+
+#if LevelSensorOnIoExpander
+bool isWaterLevelFull(void){
+	// _portvalue is read for button every loop cycle
+	return (_portvalue & LevelSensorIOExpPin) !=0;
+}
+#else
+bool isWaterLevelFull(void){
+	return digitalRead(LevelSensorPin) == 0;
+}
+#endif
+
+#endif // EnableLevelSensor
+
+
 #endif

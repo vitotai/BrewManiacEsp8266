@@ -95,6 +95,13 @@
 
 #define SensorDiscGuardTime 10000
 
+#ifndef EnableLevelSensor
+#define EnableLevelSensor true
+#endif
+
+#define LevelSensorMinimumTriggerTime 200 // in ms
+#define MinimumPumpOnOffSwitch 5000 // in ms
+
 // *************************
 //*  Button timeing setting
 // *************************
@@ -153,7 +160,7 @@
 /*  version information     														  */
 /**************************************************************************************/
 
-#define BME8266_VERSION "0.4"
+#define BME8266_VERSION "0.4.2"
 
 #if MaximumNumberOfSensors >  1
 	#if LCD_USE_SSD1306 == true

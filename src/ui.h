@@ -714,7 +714,7 @@ void uiSettingDisplayField(float number,byte precision,char unit)
 	uiLcdPrint(LCD_COLUMN_NUM -1 -1 - digitNum ,2,buffer);
 }
 
-#if UsePaddleInsteadOfPump
+#if UsePaddleInsteadOfPump || EnableLevelSensor
 void uiSettingTimeInSeconds(byte sec)
 {
 	uiSettingDisplayField((float)sec,0,'s');
@@ -922,8 +922,8 @@ void uiAutoModeStage(byte idx)
 	else if(idx ==CoolingStage) str=STR( Cooling);
 	else if(idx ==WhirlpoolStage) str=STR( Whirlpool);
 	else if(idx ==HopStandChillingStage) str=STR( HopStandChilling);
-	else if(idx ==HopStandStage) str=STR( HopStand);
-
+	else /*if(idx ==HopStandStage) */str=STR( HopStand);
+	
 	uiLcdClear(10,0,9);
 	uiLcdPrint_P(10,0,str);
 }
