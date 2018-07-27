@@ -318,17 +318,27 @@ TemperatureLogHandler logHandler;
 /* network configuration */
 /**************************************************************************************/
 
-static const char* configFormat =
-R"END({"host":"%s","user":"%s","pass":"%s","secured":%d})END";
 
 void requestRestart(bool disc);
 
 class NetworkConfig:public AsyncWebHandler
 {
 protected:
-	void makeConfig(char *buff,char* host, char* user, char* pass,bool secured)
+	bool saveConfig(void)
 	{
-		sprintf(buff,configFormat,host,user,pass,secured? 1:0);
+
+		File config=SPIFFS.open(CONFIG_FILENAME,"w+");
+  		if(!config){
+  				return false;
+  		}
+		char configBuff[MAX_CONFIG_LEN];
+		static const char* configFormat =
+			R"END({"host":"%s","user":"%s","pass":"%s","secured":%d,"wifi":%s})END";
+
+		sprintf(configBuff,configFormat,_gHostname,_gUsername,_gPassword,_gSecuredAccess? 1:0,WiFiSetup.status().c_str());
+		config.printf(configBuff);
+  		config.close();
+		return true;
 	}
 public:
 	NetworkConfig(){}
@@ -350,27 +360,64 @@ public:
 	void handleNetworkDisconnect(AsyncWebServerRequest *request){
 		WiFiSetup.disconnect();
 		request->send(200,"application/json","{}");
+		saveConfig();
+	}
+
+	IPAddress scanIP(const char *str)
+	{
+    	// DBG_PRINTF("Scan IP length=%d :\"%s\"\n",len,buffer);
+    	// this doesn't work. the last byte always 0: ip.fromString(buffer);
+
+    	int Parts[4] = {0,0,0,0};
+    	int Part = 0;
+		char* ptr=(char*)str;
+    	for ( ; *ptr; ptr++)
+    	{
+	    char c = *ptr;
+	    if ( c == '.' )
+	    {
+		    Part++;
+		    continue;
+	    }
+	    Parts[Part] *= 10;
+	    Parts[Part] += c - '0';
+    	}
+
+    	IPAddress sip( Parts[0], Parts[1], Parts[2], Parts[3] );
+    	return sip;
 	}
 
 	void handleNetworkConnect(AsyncWebServerRequest *request){
-		if(!request->hasParam("nw",true)){
+
+		if(!request->hasParam("nw",true) && !request->hasParam("ap",true)){
 			request->send(400);
 			return;
 		}
-		String ssid=request->getParam("nw",true)->value();
-		const char *pass=NULL;
-		if(request->hasParam("pass",true)){
-			pass = request->getParam("pass",true)->value().c_str();
-		}
-		if(request->hasParam("ip",true) && request->hasParam("gw",true) && request->hasParam("nm",true)){
-			WiFiSetup.connect(ssid.c_str(),pass, 
-				IPAddress((uint32_t)request->getParam("nw",true)->value().toInt()),
-				IPAddress((uint32_t)request->getParam("gw",true)->value().toInt()),
-				IPAddress((uint32_t)request->getParam("nm",true)->value().toInt())
-				);
+
+		if(request->hasParam("ap",true)){
+			// AP only mode
+			WiFiSetup.disconnect();
+			// save to config
 		}else{
-			WiFiSetup.connect(ssid.c_str(),pass);
+			String ssid=request->getParam("nw",true)->value();
+			const char *pass=NULL;
+			if(request->hasParam("pass",true)){
+				pass = request->getParam("pass",true)->value().c_str();
+			}
+			if(request->hasParam("ip",true) && request->hasParam("gw",true) && request->hasParam("nm",true)){
+				DBG_PRINTF("static IP\n");
+				WiFiSetup.connect(ssid.c_str(),pass, 
+							scanIP(request->getParam("ip",true)->value().c_str()),
+							scanIP(request->getParam("gw",true)->value().c_str()),
+							scanIP(request->getParam("nm",true)->value().c_str())
+				);
+				// save to config
+			}else{
+				WiFiSetup.connect(ssid.c_str(),pass);
+				DBG_PRINTF("dynamic IP\n");
+			}
 		}
+		saveConfig();
 		request->send(200,"application/json","{}");
 	}
 
@@ -397,51 +444,36 @@ public:
   				return;
 			}
 
-			File config=SPIFFS.open(CONFIG_FILENAME,"w+");
-  			if(!config){
-  				request->send(500);
-  				return;
-  			}
+			if(root.containsKey("host")){
+				strcpy(_gHostname,root["host"]);
+			}
 
-			const char *nhost;
-			if(root.containsKey("host")) nhost= root["host"];
-			else nhost=_gHostname;
+			if(root.containsKey("nuser")){
+				strcpy(_gUsername,root["nuser"]);
+			}
 
-			const char *nuser;
-			if(root.containsKey("nuser")) nuser=root["nuser"];
-			else nuser=_gUsername;
+			if(root.containsKey("npass")){
+				strcpy(_gPassword,root["npass"]);
+			}
 
-			const char *npass;
-			if(root.containsKey("npass")) npass= root["npass"];
-			else npass=_gPassword;
+			if(root.containsKey("secured")){
+				byte value=root["secured"];
+				_gSecuredAccess =( 0 != value);
+			}
 
-			bool nsecure;
-			byte value=root["secured"];
-			if(root.containsKey("secured")) nsecure=( 0 != value);
-			else nsecure=_gSecuredAccess;
-
-			char configBuff[MAX_CONFIG_LEN];
-			makeConfig(configBuff,(char *)nhost,(char *)nuser,(char *)npass,nsecure);
-  			config.printf(configBuff);
-  			config.close();
-
-			request->send(200);
+			if(saveConfig()){	
+				request->send(200,"text/json","{}");
+			}else{
+				request->send(500);
+			}
 
 		}else if(request->method() == HTTP_GET){
 			if(SPIFFS.exists(CONFIG_FILENAME)){
 				request->send(SPIFFS,CONFIG_FILENAME, "text/json");
 			}else{
-	//			char configBuff[MAX_CONFIG_LEN];
-	//			makeConfig(configBuff,_gHostname,_gUsername,_gPassword,_gSecuredAccess);
-			String rsp=String("{\"host\":\"") + String(_gHostname)
-				+ String("\",\"secured\":") + (_gSecuredAccess? "1":"0");
-
-				if(WiFiSetup.isConnected()){
-					rsp += String(",\"wifi\":") + WiFi.SSID();
-				}
-
-				rsp +=String("}");
-
+				String rsp=String("{\"host\":\"") + String(_gHostname)
+				+ String("\",\"secured\":") + (_gSecuredAccess? "1":"0")
+				+ String(",\"wifi\":\"") +WiFiSetup.status() + String("}");
 				request->send(200, "text/json",rsp);
 			}
 		}
@@ -480,6 +512,8 @@ public:
   			strcpy(_gPassword,Default_PASSWORD);
 			_gSecuredAccess=false;
 
+			WiFiSetup.staConfig(false,WiFi.localIP(),WiFi.gatewayIP(),WiFi.subnetMask());
+
 		}else{
 			config.close();
 
@@ -487,6 +521,19 @@ public:
   			strcpy(_gUsername,root["user"]);
   			strcpy(_gPassword,root["pass"]);
   			_gSecuredAccess=(root.containsKey("secured"))? (bool)(root["secured"]):false;
+
+			if(root.containsKey("ap")){
+				bool apmode=root["ap"];
+				if(apmode) WiFiSetup.staConfig(true);
+				else{
+					IPAddress ip=root.containsKey("ip")? scanIP(root["ip"]):INADDR_NONE;
+					IPAddress gw=root.containsKey("gw")? scanIP(root["gw"]):INADDR_NONE;
+					IPAddress nm=root.containsKey("nm")? scanIP(root["nm"]):INADDR_NONE;
+					WiFiSetup.staConfig(false,ip,gw,nm);
+				}
+			}else{
+				WiFiSetup.staConfig(false,WiFi.localIP(),WiFi.gatewayIP(),WiFi.subnetMask());
+			}
   		}
 
 	}
@@ -788,7 +835,8 @@ void greeting(std::function<void(const String&,const char*)> sendFunc){
 	sendFunc(json,"auto");
 
 	char buf[128];
-	sprintf(buf,"{\"host\":\"%s\",\"secured\":%d}",_gHostname,_gSecuredAccess? 1:0);
+	
+	sprintf(buf,"{\"host\":\"%s\",\"secured\":%d,\"wifi\":%s}",_gHostname,_gSecuredAccess? 1:0,WiFiSetup.status().c_str());
 
 	sendFunc(buf,"netcfg");
 	sprintf(buf,"{\"time\":%ld}",TimeKeeper.getTimeSeconds());
@@ -1195,14 +1243,14 @@ void setup(void){
 	if(forcedUpdate){
 		//5.1 forced to update
 		httpUpdateHandler.setUrl("/");
-		httpUpdateHandler.setVersion(BME8266_VERSION,jsVersion);
-		server.addHandler(&httpUpdateHandler);
 	}else{
 		//5.1 HTTP Update page
 		httpUpdateHandler.setUrl(ONLINE_UPDATE_PATH);
-		httpUpdateHandler.setVersion(BME8266_VERSION,jsVersion);
 		httpUpdateHandler.setCredential(_gUsername,_gPassword);
-		server.addHandler(&httpUpdateHandler);
+	}
+
+	httpUpdateHandler.setVersion(BME8266_VERSION,jsVersion);
+	server.addHandler(&httpUpdateHandler);
 
 
 		//5.2 Normal serving pages
@@ -1227,15 +1275,15 @@ void setup(void){
 		server.addHandler(&bmwHandler);
 
 #if ResponseAppleCNA == true
-		if(WiFiSetup.isApMode())
-			server.addHandler(&appleCNAHandler);
+	if(! forcedUpdate) //CNAHandler makes Mac thought it connected to the internet
+		server.addHandler(&appleCNAHandler);
 #endif
-		server.addHandler(&logHandler);
-		//5.2.2 SPIFFS is part of the serving pages
-		//securedAccess need additional check
-		// server.serveStatic("/", SPIFFS, "/","public, max-age=259200"); // 3 days
 
-	}
+	server.addHandler(&logHandler);
+	//5.2.2 SPIFFS is part of the serving pages
+	//securedAccess need additional check
+	// server.serveStatic("/", SPIFFS, "/","public, max-age=259200"); // 3 days
+
 
 	server.on("/system",[](AsyncWebServerRequest *request){
 		FSInfo fs_info;

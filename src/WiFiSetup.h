@@ -22,10 +22,12 @@
 class WiFiSetupClass
 {
 public:
-	WiFiSetupClass():_wifiState(WiFiStateConnected),_wifiScanState(WiFiScanStateNone),_apMode(false),_switchToAp(true),_autoReconnect(true),
+	WiFiSetupClass():_wifiState(WiFiStateConnected),_wifiScanState(WiFiScanStateNone),_settingApMode(false),_apMode(false),_switchToAp(true),_autoReconnect(true),
 		 _maxReconnect(5),_eventHandler(NULL),_targetSSID(NULL),_targetPass(NULL),_ip(INADDR_NONE),_gw(INADDR_NONE),_nm(INADDR_NONE){}
 
 	void begin(char const *ssid,const char *passwd=NULL);
+	void staConfig(bool apMode,IPAddress ip=(uint32_t)0x00000000,IPAddress gw=(uint32_t)0x00000000, IPAddress nm=(uint32_t)0x00000000);
+
 	void onEvent(std::function<void(const char*)> handler){ _eventHandler = handler;}
 
 	bool stayConnected(void);
@@ -37,14 +39,15 @@ public:
 
 	String scanWifi(void);
 	bool requestScanWifi(void);
-	bool connect(char const *ssid,const char *passwd,IPAddress ip=(uint32_t)0x00000000,IPAddress gw=(uint32_t)0x00000000, IPAddress nm=(uint32_t)0x00000000);
+	bool connect(char const *ssid,const char *passwd=NULL,IPAddress ip=(uint32_t)0x00000000,IPAddress gw=(uint32_t)0x00000000, IPAddress nm=(uint32_t)0x00000000);
 	bool disconnect(void);
 
 	bool isConnected(void);
-
+	String status(void);
 private:
 	byte _wifiState;
 	byte _wifiScanState;
+	bool _settingApMode;
 	bool _apMode;
 	bool _switchToAp;
 	bool _autoReconnect;
@@ -68,6 +71,7 @@ private:
 
 	void setupApService(void);
 	void enterApMode();
+	void onConnected();
 };
 
 extern WiFiSetupClass WiFiSetup;

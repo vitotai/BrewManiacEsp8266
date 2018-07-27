@@ -96,7 +96,7 @@
 #define SensorDiscGuardTime 10000
 
 #ifndef EnableLevelSensor
-#define EnableLevelSensor true
+#define EnableLevelSensor false
 #endif
 
 #define LevelSensorMinimumTriggerTime 200 // in ms

@@ -16,6 +16,19 @@ WiFiSetupClass WiFiSetup;
 #define DBG_PRINTLN(a) 
 #endif
 
+#if SerialDebug
+#define wifi_info(a)	DBG_PRINTF("%s,SSID:%s pass:%s IP:%s, gw:%s\n",(a),WiFi.SSID().c_str(),WiFi.psk().c_str(),WiFi.localIP().toString().c_str(),WiFi.gatewayIP().toString().c_str())
+#else
+#define wifi_info(a)
+#endif
+
+void WiFiSetupClass::staConfig(bool apMode,IPAddress ip,IPAddress gw, IPAddress nm){
+	_settingApMode = apMode;
+	_ip=ip;
+	_gw=gw;
+	_nm=nm;
+}
+
 void WiFiSetupClass::enterApMode(void)
 {
 	WiFi.mode(WIFI_AP);
@@ -33,12 +46,24 @@ void WiFiSetupClass::setupApService(void)
 
 void WiFiSetupClass::begin(char const *ssid,const char *passwd)
 {
+	wifi_info("begin:");
+
 	_apName=ssid;
 	_apPassword=passwd;
-	WiFi.mode(WIFI_AP_STA);
-	_apMode=false;
-	WiFi.begin();
-   	
+
+	if( _settingApMode){
+		DBG_PRINTF("\nAP mode\n");
+		WiFi.mode(WIFI_AP);
+		_apMode=true;
+	}else{
+		DBG_PRINTF("\nAP_STA mode\n");
+		WiFi.mode(WIFI_AP_STA);
+		_apMode=false;
+		if(_ip !=INADDR_NONE){
+			WiFi.config(_ip,_gw,_nm);
+		}
+		WiFi.begin();
+	}
 	WiFi.softAP(_apName, _apPassword);
 	setupApService();
 	DBG_PRINTF("\ncreate network:%s pass:%s\n",ssid, passwd);
@@ -46,17 +71,18 @@ void WiFiSetupClass::begin(char const *ssid,const char *passwd)
 }
 
 bool WiFiSetupClass::connect(char const *ssid,const char *passwd,IPAddress ip,IPAddress gw, IPAddress nm){
-	DBG_PRINTF("Connect to %s pass:%s\n",ssid, passwd);
+	DBG_PRINTF("Connect to %s pass:%s, ip=%s\n",ssid, passwd,ip.toString().c_str());
 
 	if(_targetSSID) free((void*)_targetSSID);
 	_targetSSID=strdup(ssid);
 	if(_targetPass) free((void*)_targetPass);
-	_targetPass=strdup(passwd);
-	if((ip !=INADDR_NONE) && (gw!=INADDR_NONE) & (nm!=INADDR_NONE)){
+	_targetPass=(passwd)? strdup(passwd):NULL;
+
+	//if((ip !=INADDR_NONE) && (gw!=INADDR_NONE) & (nm!=INADDR_NONE)){
 		_ip=ip;
 		_gw=gw;
 		_nm=nm;
-	}
+	//}
 
 	_wifiState = WiFiStateChangeConnectPending;
 	if(_apMode){
@@ -67,12 +93,34 @@ bool WiFiSetupClass::connect(char const *ssid,const char *passwd,IPAddress ip,IP
 
 bool WiFiSetupClass::disconnect(void){
 	DBG_PRINTF("Disconnect Request\n");
+	_settingApMode =true;
 	_wifiState = WiFiStateDisconnectPending;
 	return true;
 }
 
 bool WiFiSetupClass::isConnected(void){
 	return WiFi.status() == WL_CONNECTED;
+}
+
+void WiFiSetupClass::onConnected(){
+	if(_eventHandler){
+		_eventHandler(status().c_str());
+	}
+}
+
+String WiFiSetupClass::status(void){
+	String ret;
+	ret  = String("{\"ap\":") + String(_settingApMode? 1:0) + String(",\"con\":") + String((WiFi.status() == WL_CONNECTED)? 1:0);
+
+	if(!_settingApMode){
+		ret += String(",\"ssid\":\"") + WiFi.SSID() 
+			 + String("\",\"ip\":\"") + _ip.toString()
+			 + String("\",\"gw\":\"") + _gw.toString()
+			 + String("\",\"nm\":\"") + _nm.toString() + String("\"");
+	}
+
+	ret += String("}");
+	return ret;
 }
 
 bool WiFiSetupClass::stayConnected(void)
@@ -96,6 +144,8 @@ bool WiFiSetupClass::stayConnected(void)
 			_reconnect =0;
 			_wifiState = WiFiStateConnecting;
 
+			wifi_info("**try:");
+
 		}else if(_wifiState==WiFiStateDisconnectPending){
 			WiFi.disconnect();
 			WiFi.mode(WIFI_OFF);
@@ -108,6 +158,8 @@ bool WiFiSetupClass::stayConnected(void)
 		}else if(WiFi.status() != WL_CONNECTED){
  			if(_wifiState==WiFiStateConnected)
  			{
+				wifi_info("**disc:");
+
 				_time=millis();
 				DBG_PRINTF("Lost Network. auto reconnect %d\n",_autoReconnect);
 				if(_autoReconnect){
@@ -151,7 +203,10 @@ bool WiFiSetupClass::stayConnected(void)
  			byte oldState=_wifiState;
  			_wifiState=WiFiStateConnected;
  			_reconnect=0;
- 			if(oldState != _wifiState) return true;
+ 			if(oldState != _wifiState){
+				onConnected();
+				return true;
+			}
   		}
 	}
 	
