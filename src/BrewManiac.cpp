@@ -101,6 +101,7 @@ byte gPrimarySensorIndex;
 byte gAuxSensorIndex;
 float gAuxTemperature;
 float gTemperatureReading[MaximumNumberOfSensors];
+bool  gSensorDisconnected[MaximumNumberOfSensors];
 #endif
 
 #if SpargeHeaterSupport
@@ -844,6 +845,7 @@ void tpSetSensorResolution(byte *addr, byte res)
 }
 #endif //#if EnableSensorResolution	== true
 
+void tpReadInitialTemperature(void);
 
 void tpInitialize(void)
 {
@@ -860,6 +862,7 @@ void tpInitialize(void)
 	for(byte i=0;i< MaximumNumberOfSensors;i++){
 		_gIsSensorConverting[i]=false;
 		gTemperatureReading[i]= INVALID_TEMP_C;
+		gSensorDisconnected[i]=true;
 	}
 #else
 	_isConverting=false;
@@ -880,7 +883,7 @@ void tpInitialize(void)
 #endif
 
 #endif //#if FakeHeating
-
+	tpReadInitialTemperature();
 }
 
 // the following code basically comes from Open ArdBir
@@ -890,13 +893,34 @@ void tpInitialize(void)
 
 #if  MaximumNumberOfSensors > 1
 
+float _filteredValues[MaximumNumberOfSensors];
+
+void lpfSetInitialValue(uint8_t idx,float value){
+	_filteredValues[idx]= value;
+}
+
+float lpfAddValue(uint8_t idx,float value){
+	_filteredValues[idx]= _filteredValues[idx] + LowPassFilterParameter *(value - _filteredValues[idx]);
+	return _filteredValues[idx];
+}
+void tpSensorRequestConvert(uint8_t address[])
+{
+	ds.reset();
+	ds.select(address);
+    ds.write(DSCMD_CONVERT_T, 0);
+}
+bool tpSensorDataReady(uint8_t address[]){
+	ds.reset();
+  	ds.select(address);
+	// check for conversion if it isn't complete return if it is then convert to decimal
+    byte busy = ds.read_bit();
+	return busy != 0;
+}
 float  _readTemperature(byte *addr)
 {
 	byte sensorData[9];
-
  	ds.reset();
  	ds.select(addr);
-
     // request data
     ds.write(DSCMD_READ_SCRATCHPAD);
     for ( byte i = 0; i < 9; i++) {           // with crc we need 9 bytes
@@ -922,6 +946,45 @@ float  _readTemperature(byte *addr)
     if(gIsUseFahrenheit) temperature = C2F(temperature);
     return temperature;
 }
+
+void tpReadInitialTemperature(void)
+{
+	for(byte si=0;si < gSensorNumber;si++)
+	{
+		tpSensorRequestConvert(gSensorAddresses[si]);
+  	}
+	bool sensorResponse[MaximumNumberOfSensors];
+	for(byte si=0;si < gSensorNumber;si++) sensorResponse[si]=false;
+
+	int i=0;	
+	while(i< 10){
+		for(byte si=0;si < gSensorNumber;si++){
+    		if (tpSensorDataReady(gSensorAddresses[si])){
+    			float rawreading=_readTemperature(gSensorAddresses[si]);
+
+				if(! IS_TEMP_INVALID(rawreading)){
+					lpfSetInitialValue(si,rawreading);
+					float reading = rawreading + gSensorCalibrations[si];
+					gTemperatureReading[si] = reading;
+					if(gPrimarySensorIndex == si) gCurrentTemperature = reading;
+					else if(gAuxSensorIndex == si)  gAuxTemperature = reading;
+				}
+				//else ,invalid. just ignore
+				// if all read, return.
+				sensorResponse[si]=true;
+				byte s;
+				for(s=0;s < gSensorNumber;s++){
+					if(sensorResponse[s]) break;
+				}
+				if(s == gSensorNumber) return;
+    		}
+			// else , not ready
+		} // for every sneosr
+		delay(100);
+		i++;
+	} // while not timeout
+}
+
 #define SensorForIdle 0
 #define SensorForManual 1
 #define SensorForPreMash 2
@@ -974,14 +1037,10 @@ void tpReadTemperature(void)
 	{
   		if (_gIsSensorConverting[si] == false)
   		{
-  			if(gCurrentTimeInMS - _lastTempRead > MinimumTemperatureReadGap){
+  			if(gCurrentTimeInMS - _lastTempRead > MinimumTemperatureReadGap){				  
 		  		// start conversion and return
-				ds.reset();
-				ds.select(gSensorAddresses[si]);
-
-    			ds.write(DSCMD_CONVERT_T, 0);
+				tpSensorRequestConvert(gSensorAddresses[si]);
     			_gIsSensorConverting[si] = true;
-
     			if (si == (gSensorNumber -1)){
     				_lastTempRead = gCurrentTimeInMS;
     			}
@@ -989,40 +1048,35 @@ void tpReadTemperature(void)
   		}
   		else
   		{
-  			// converting, check ready or not
-			ds.reset();
-  			ds.select(gSensorAddresses[si]);
-			// check for conversion if it isn't complete return if it is then convert to decimal
-    		byte busy = ds.read_bit();
-    		if (busy != 0)
+    		if (tpSensorDataReady(gSensorAddresses[si]))
     		{
-    			float reading=_readTemperature(gSensorAddresses[si]);
-				bool noupdate=false;
+    			float rawreading=_readTemperature(gSensorAddresses[si]);
+				_gIsSensorConverting[si] = false;
 
-				if(IS_TEMP_INVALID(reading))
+				float reading;
+
+				if(IS_TEMP_INVALID(rawreading))
 				{
 					// invalid sensor data.
-					if(! IS_TEMP_INVALID(gTemperatureReading[si]) &&
-						gCurrentTimeInMS - _lastValidTempRead[si] > SensorDiscGuardTime){
+					if(gSensorDisconnected[si]  &&
+						(gCurrentTimeInMS - _lastValidTempRead[si] > SensorDiscGuardTime)){
 						//!error case. invalidate the data
 						#if SerialDebug
 						DebugPort.println("Sensor disconneced!");
 						#endif
 						buzzPlaySound(SoundIdWarnning);
-					} else{
-						// invalid readings. wait for a while before "disconnect" the sensor
-						noupdate = true;
+						gSensorDisconnected[si]=false; //reset to beep on next time
+					}else{
+						gSensorDisconnected[si]=true;
 					}
 				}else{
-					reading += gSensorCalibrations[si];
+					gSensorDisconnected[si]=false;
+					reading = lpfAddValue(si,rawreading) + gSensorCalibrations[si];
 					_lastValidTempRead[si] =  gCurrentTimeInMS;
-				}
-				if(! noupdate){
 					gTemperatureReading[si] = reading;
 					if(gPrimarySensorIndex == si) gCurrentTemperature = reading;
 					else if(gAuxSensorIndex == si)  gAuxTemperature = reading;
-					_gIsSensorConverting[si] = false;
-				}
+				}				
     		}
 		}
 	} // for every sensor
@@ -1031,34 +1085,32 @@ void tpReadTemperature(void)
 
 #else // #if MaximumNumberOfSensors > 1
 
-void tpReadTemperature(void)
-{
-#if FakeHeating
-	return;
-#endif
+float _filteredValue;
+void lpfSetInitialValue(float value){
+	_filteredValue= value;
+}
 
-  	if (_isConverting == false)
-  	{
-	  	if(gCurrentTimeInMS - _lastTempRead > MinimumTemperatureReadGap){
-		  	// start conversion and return
-			ds.reset();
-			ds.skip();
-    		ds.write(DSCMD_CONVERT_T, 0);
-    		_isConverting = true;
+float lpfAddValue(float value){
+	_filteredValue= _filteredValue + LowPassFilterParameter *(value - _filteredValue);
+	return _filteredValue;
+}
 
-			_lastTempRead = gCurrentTimeInMS;
-		}
-    	return;
-  	}
-  	// else if convert start
-  	//if (_isConverting)
-  	//
 
-  	// check for conversion if it isn't complete return if it is then convert to decimal
-  	ds.reset();
+void tpSensorRequestConvert(void){
+	ds.reset();
+	ds.skip();
+    ds.write(DSCMD_CONVERT_T, 0);
+}
+
+bool tpSensorDataReady(void){
+ 	ds.reset();
 	ds.skip();
     byte busy = ds.read_bit();
-    if (busy == 0) return;
+    if (busy == 0) return false;
+	return true;
+}
+
+bool tpSensorRead(float* pReading){
 	// reset & "select" again
     ds.reset();
   	ds.skip();
@@ -1070,28 +1122,77 @@ void tpReadTemperature(void)
     	/* add this routine for crc version */
     if ( OneWire::crc8(_sensorData, 8) != _sensorData[8]) {  //if checksum fails start a new conversion right away
 		// re-issue convert command
-    	ds.reset();
-		ds.skip();
-      	ds.write(DSCMD_CONVERT_T, 0);
-      	_isConverting = true;
-      	return;
+      	return false;
     }
 	// data got!
-    unsigned int raw = (_sensorData[1] << 8) + _sensorData[0];
-
 #if EnableSensorResolution	== true
 	gSensorResolution=_sensorData[4] & 0x60;
 #endif
+
+	// data got!
+    unsigned int raw = (_sensorData[1] << 8) + _sensorData[0];
+
     // at lower res, the low bits are undefined, so let's zero them
     if (gSensorResolution == 0x00) raw = raw & ~7;  // 0.5C 9 bit resolution, 93.75 ms
     else if (gSensorResolution == 0x20) raw = raw & ~3; // 0.25C 10 bit res, 187.5 ms
     else if (gSensorResolution == 0x40) raw = raw & ~1; // 0.125C 11 bit res, 375 ms
 	// 0x60  0.0625C 12bits, 750ms
 
-    gCurrentTemperature = (float)raw  * 0.0625;
-	if(gIsUseFahrenheit) gCurrentTemperature = C2F(gCurrentTemperature);
+	float reading = raw  * 0.0625;
+	if(gIsUseFahrenheit) reading = C2F(reading);
+	*pReading = reading;
+	return true;
+}
+
+void tpReadInitialTemperature(void){
+	tpSensorRequestConvert();
+	int i=0;
+	while(i< 10){
+		if(tpSensorDataReady()) break;
+		delay(100);
+		i++;
+	}
+	float reading;
+	if(tpSensorRead(&reading)){
+		lpfSetInitialValue(reading);
+		gCurrentTemperature= reading +gSensorCalibration;
+	}
+}
+
+void tpReadTemperature(void)
+{
+#if FakeHeating
+	return;
+#endif
+
+  	if (_isConverting == false)
+  	{
+	  	if(gCurrentTimeInMS - _lastTempRead > MinimumTemperatureReadGap){
+		  	// start conversion and return
+			tpSensorRequestConvert();
+    		_isConverting = true;
+
+			_lastTempRead = gCurrentTimeInMS;
+		}
+    	return;
+  	}
+  	// else if convert start
+  	//if (_isConverting)
+  	//
+
+  	// check for conversion if it isn't complete return if it is then convert to decimal
+	if(! tpSensorDataReady()) return;
+
+	float reading;
+	if(! tpSensorRead(&reading)){
+		// CRC Error;
+		tpSensorRequestConvert();
+      	_isConverting = true;
+      	return;
+    }
+	//    reading +=  gSensorCalibration; //((float)(readSetting(PS_Offset) - 50) / 10.0);
     //apply calibration
-    gCurrentTemperature +=  gSensorCalibration; //((float)(readSetting(PS_Offset) - 50) / 10.0);
+    gCurrentTemperature = lpfAddValue(reading) + gSensorCalibration;
     _isConverting = false;
 }
 

@@ -81,7 +81,7 @@
 #define  PidAutoTuneLookBack  30
 
 #define MinimumTemperatureReadGap 500
-
+#define LowPassFilterParameter 0.08
 // Idle,Manual,PreMash,Mashing,Boiling,PostBoil,Distill
 #if SupportDistilling
 #define NumberSensorStage 7
