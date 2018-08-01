@@ -35,7 +35,9 @@ typedef enum _UpdaterState
 	US_RestartInitiated,
 	US_RestartPending,
 	US_FormatPending,
-	US_Formating
+	US_Formating,
+	US_FormatForDownloadPending,
+	US_FormatForDownloadFinished
 }UpdaterState;
 
 class HttpUpdateHandler: public AsyncWebHandler
