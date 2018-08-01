@@ -5,6 +5,7 @@
 #include <ESPAsyncWebServer.h>
 #include "config.h"
 #include "HttpUpdateHandler.h"
+#include "BackupService.h"
 #define RESET_WAITING_TIME 3000
 
 #define SPIFFS_FORMAT_PATH     "/format-spiffs"
@@ -459,10 +460,13 @@ void HttpUpdateHandler::runUpdate(void)
 		if((millis() - _resetInitiatedTimer) > RESET_WAITING_TIME)
 		 	ESP.restart();
 	}else if(_state ==US_FormatPending){
+        // todo: STOP normal web service
 		_state= US_Formating;
+        BackupService.backup();
 		DBG_PRINTF("Start Formating SPIFFS\n");
 		SPIFFS.format();
 		DBG_PRINTF("End Formating SPIFFS\n");
+        BackupService.restore();
 		_state = US_RestartInitiated;
 	}
 

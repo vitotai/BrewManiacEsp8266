@@ -26,8 +26,8 @@ void SpiffsEEPROMClass::begin(int size)
 	}
 }
 
-void SpiffsEEPROMClass::commit(void){
-		if(!_dirty) return;
+void SpiffsEEPROMClass::commit(bool force){
+		if(!_dirty && !force) return;
 
 //		Serial.printf("commit EEPROM\n");
 
