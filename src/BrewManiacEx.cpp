@@ -1172,6 +1172,38 @@ void displayIP(bool apmode){
 	}
 }
 
+String checkJSVersion(void){
+
+	String version="0";
+
+	Dir dir=SPIFFS.openDir("/");
+	bool indexFileExist=false;
+	bool jsFileExist=false;
+	int lastIndex;
+	#define JS_FILE_START  "\bm."
+	#define JS_FILE_EXTEND ".jgz"
+	String FullindexFile = String("/") + String(DEFAULT_INDEX_FILE);
+	while (dir.next()) {
+    	String fn=dir.fileName();
+		DBG_PRINTF("file:%s\n",fn.c_str());
+		if(fn.compareTo(FullindexFile) == 0 ||
+			fn.compareTo(FullindexFile + ".gz") == 0){ // might be .htm or htm.gz
+			indexFileExist=true;
+			if(jsFileExist) break;
+		}else if((fn.startsWith(JS_FILE_START) == 0) && ((lastIndex=fn.lastIndexOf( JS_FILE_EXTEND)) > 0)){
+			String verstr = fn.substring(strlen(JS_FILE_START)+1,lastIndex);
+			version = verstr.substring(0,1) + String(".") + verstr.substring(1,2) + String(".") + verstr.substring(2);
+			DBG_PRINTF("version:%s\n",version.c_str());
+			jsFileExist = true;
+			if(indexFileExist) break;
+		}
+	}
+	if(!indexFileExist || !jsFileExist){
+		version="0";
+		DBG_PRINTF("missing file!\n");	
+	}
+	return version;
+}
 /**************************************************************************************/
 /* Main procedure */
 /**************************************************************************************/
@@ -1225,17 +1257,11 @@ void setup(void){
 
 	//4. check version
 	bool forcedUpdate;
-	String jsVersion;
-	File vf=SPIFFS.open("/version.txt","r");
-	if(!vf){
-		jsVersion="0";
-  		DebugOut("Failed to open version.txt");
+	String jsVersion = checkJSVersion();
+	
+	if(jsVersion == "0"){
   		forcedUpdate=true;
-
 	}else{
-		jsVersion=vf.readString();
-		DebugOut("Version.txt:");
-		DebugOut(jsVersion.c_str());
 		forcedUpdate=false;
 	}
 
