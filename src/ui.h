@@ -46,6 +46,29 @@ Constant definition
 #define LcdCharReserved 7
 
 
+
+typedef enum _SymbolId{
+SymbolCelsius=0,
+SymbolSetpoint=1,
+SymbolPump=2,
+SymbolRevPump=3,
+SymbolHeating=4,
+SymbolRevHeating=5,
+SymbolFahrenheit=6,
+SymbolWireless=7,
+SymbolWirelessAP=8,
+SymbolRevSpargeHeating =9
+#if SecondaryHeaterSupport == true
+,
+SymbolPrimaryHeater=10,
+SymbolRevPrimaryHeater=11,
+SymbolSecondaryHeaterS=12,
+SymbolRevSecondaryHeater=13
+#endif
+} SymbolId;
+
+
+
 #define LCD_COLUMN_NUM 20
 
 #define MashOutStage 7
@@ -90,12 +113,12 @@ void uiLcdClearAll(void);
 
 void uiLcdDrawSymbol(byte col,byte row,byte sid);
 
-void uiLcdDrawSymbolBmp(byte col,byte row,const byte* symbol);
+void uiLcdDrawSymbolBmp(byte col,byte row,SymbolId symbol);
 
 void uiLcdLine(byte col,byte row,byte num);
 
 void uiLcdInitialize(void);
-void uiLcdAssignSymbol(byte sid,const byte* symbol);
+void uiLcdAssignSymbol(byte sid,SymbolId symbol);
 
 #include "uiTempTime.h"
 /**********************************************************************
@@ -241,33 +264,52 @@ void uiLcdInitialize(void)
 ***********************************************************************/
 
 
-const byte WirelessSymbol[8] PROGMEM =  {B00000,B01110,B10001,B00100,B01010,B00000,B00100,B00000};
-const byte WirelessAPSymbol[8] PROGMEM ={B00000,B10001,B01010,B10101,B00100,B00100,B00100,B01110};
+const byte _CelsiusSymbol[8]  PROGMEM  = {B01000, B10100, B01000, B00111, B01000, B01000, B01000, B00111};  // [0] degree c sybmol
+const byte _FahrenheitSymbol[8] PROGMEM = {B01000, B10100, B01000, B00111, B00100, B00110, B00100, B00100};  // [0] degree f symbol
 
+const byte _SetpointSymbol[8]  PROGMEM  = {B11100, B10000, B11100, B00111, B11101, B00111, B00100, B00100};  // [2] SP Symbol
 
+const byte _PumpSymbol[8]  PROGMEM  = {B00000, B01110, B01010, B01110, B01000, B01000, B01000, B00000};  // [3] Pump Symbol
+const byte _RevPumpSymbol[8] PROGMEM = {B11111, B10001, B10101, B10001, B10111, B10111, B10111, B11111};  // [4] Reverse PUMP Symbol
+const byte _HeatingSymbol[8] PROGMEM   = {	B00000, B01010, B01010, B01110, B01110, B01010, B01010, B00000};  // [5] HEAT symbol
+const byte _RevHeatingSymbol[8] PROGMEM = {B11111, B10101, B10101, B10001, B10001, B10101, B10101, B11111};  // [6] reverse HEAT symbol
+const byte _RevSpargeHeatingSymbol[8] PROGMEM={B11111,B10001,B1111,B10001,B11110,B1110,B10001,B11111};
 
-const byte CelsiusSymbol[8]  PROGMEM  = {B01000, B10100, B01000, B00111, B01000, B01000, B01000, B00111};  // [0] degree c sybmol
-const byte FahrenheitSymbol[8] PROGMEM = {B01000, B10100, B01000, B00111, B00100, B00110, B00100, B00100};  // [0] degree f symbol
+const byte _WirelessSymbol[8] PROGMEM =  {B00000,B01110,B10001,B00100,B01010,B00000,B00100,B00000};
+const byte _WirelessAPSymbol[8] PROGMEM ={B00000,B10001,B01010,B10101,B00100,B00100,B00100,B01110};
 
-const byte SetpointSymbol[8]  PROGMEM  = {B11100, B10000, B11100, B00111, B11101, B00111, B00100, B00100};  // [2] SP Symbol
-
-const byte PumpSymbol[8]  PROGMEM  = {B00000, B01110, B01010, B01110, B01000, B01000, B01000, B00000};  // [3] Pump Symbol
-const byte RevPumpSymbol[8] PROGMEM = {B11111, B10001, B10101, B10001, B10111, B10111, B10111, B11111};  // [4] Reverse PUMP Symbol
-const byte HeatingSymbol[8] PROGMEM   = {	B00000, B01010, B01010, B01110, B01110, B01010, B01010, B00000};  // [5] HEAT symbol
-const byte RevHeatingSymbol[8] PROGMEM = {B11111, B10101, B10101, B10001, B10001, B10101, B10101, B11111};  // [6] reverse HEAT symbol
-const byte RevSpargeHeatingSymbol[8] PROGMEM={B11111,B10001,B1111,B10001,B11110,B1110,B10001,B11111};
 
 #if SecondaryHeaterSupport == true
 
 //1
-const byte PrimaryHeaterSymbol[8] PROGMEM= {0b00000, 0b00100, 0b01100, 0b00100, 0b00100, 0b00100, 0b01110, 0b00000};
-const byte RevPrimaryHeaterSymbol[8] PROGMEM = { 0b11111, 0b11011, 0b10011, 0b11011, 0b11011, 0b11011, 0b10001, 0b11111};
+const byte _PrimaryHeaterSymbol[8] PROGMEM= {0b00000, 0b00100, 0b01100, 0b00100, 0b00100, 0b00100, 0b01110, 0b00000};
+const byte _RevPrimaryHeaterSymbol[8] PROGMEM = { 0b11111, 0b11011, 0b10011, 0b11011, 0b11011, 0b11011, 0b10001, 0b11111};
 
 //2
-const byte SecondaryHeaterSymbol[8] PROGMEM = { 0b00000, 0b00100, 0b01010, 0b00010, 0b00100, 0b01000, 0b01110, 0b00000 };
-const byte RevSecondaryHeaterSymbol[8]PROGMEM = {0b11111, 0b11011, 0b10101, 0b11101, 0b11011, 0b10111, 0b10001, 0b11111};
+const byte _SecondaryHeaterSymbol[8] PROGMEM = { 0b00000, 0b00100, 0b01010, 0b00010, 0b00100, 0b01000, 0b01110, 0b00000 };
+const byte _RevSecondaryHeaterSymbol[8]PROGMEM = {0b11111, 0b11011, 0b10101, 0b11101, 0b11011, 0b10111, 0b10001, 0b11111};
 
 #endif
+const byte* SymbolMaps[]={
+_CelsiusSymbol, //0
+_SetpointSymbol, //1
+_PumpSymbol, //2
+_RevPumpSymbol, //3
+_HeatingSymbol, //4
+_RevHeatingSymbol, //5
+_FahrenheitSymbol, //6
+_WirelessSymbol, //7
+_WirelessAPSymbol //8
+#if SecondaryHeaterSupport == true
+,
+_PrimaryHeaterSymbol, //9
+_RevPrimaryHeaterSymbol, //10
+_SecondaryHeaterSymbol, //11
+_RevSecondaryHeaterSymbol //12
+#endif
+};
+
+
 
 
 #define CreatecCustomChar(buff,idx,bm) uiGetBitmap((byte*)buff,bm); lcd.createChar(idx,(byte*)buff)
@@ -280,11 +322,47 @@ void uiGetBitmap(byte *dst,const byte *addr)
     }
 }
 
+#if UseLcdBuffer
+char _lcdBuffer[4][21];
+void clearLcdBuffer(void){
+	for(int i=0;i<4;i++){
+		int j;
+		for(j=0;j<20;j++) _lcdBuffer[i][j]=' ';
+		_lcdBuffer[i][j]='\0';
+	}
+}
 
-void uiLcdAssignSymbol(byte sid,const byte* symbol)
-{
-	char buffer[10];
-	CreatecCustomChar(buffer,sid,symbol);
+void refreshLcdDisplay(void){
+	lcd.begin(20,4);
+	lcd.clear();
+
+	for(byte i=0;i<4;i++){
+		lcd.setCursor(0,i);
+		for(byte j=0;j<20;j++){
+			if(_lcdBuffer[i][j] & 0xF0)
+				lcd.write(_lcdBuffer[i][j]);
+			else{
+				//symbol.
+				//uiLcdDrawSymbolBmp(j,i,(SymbolId)_lcdBuffer[i][j]);
+
+					char buffer[12];
+					const byte* bitmap= SymbolMaps[(int)_lcdBuffer[i][j]];
+   					CreatecCustomChar(buffer,LcdCharReserved,bitmap);
+					lcd.write(LcdCharReserved);
+			}
+		}	
+	}
+}
+#endif
+
+byte _reservedChar2SymbolId[8];
+
+void uiLcdAssignSymbol(byte sid,const SymbolId symbol){
+	_reservedChar2SymbolId[sid] = symbol;
+
+	char buffer[12];
+	const byte* bitmap=SymbolMaps[symbol];
+	CreatecCustomChar(buffer,sid,bitmap);
 }
 
 void uiScanLcdAddress(void)
@@ -309,7 +387,18 @@ void uiScanLcdAddress(void)
 void uiLcdPrint(byte col,byte row,char* str)
 {
 	lcd.setCursor(col,row);
+	#if UseLcdBuffer
+	char *p=str;
+	int j=col;
+	while(*p && j < 20){
+		lcd.write(*p);
+		_lcdBuffer[row][j]= *p;
+		p++;
+		j++;
+	}
+	#else
 	lcd.print(str);
+	#endif
 }
 
 void uiLcdPrint_P(byte col,byte row,const char* str)
@@ -322,57 +411,83 @@ void uiLcdPrint_P(byte col,byte row,const char* str)
 void uiLcdClear(byte col,byte row,byte space)
 {
 	lcd.setCursor(col,row);
-	for(byte i=0;i<space;i++)
+	for(byte i=0;i<space;i++){
 		lcd.write(' ');
+		#if UseLcdBuffer
+		_lcdBuffer[row][col + i]= ' ';
+		#endif
+	}
 }
 
 void uiLcdClearAll(void)
 {
 	lcd.clear();
+	#if UseLcdBuffer
+	clearLcdBuffer();
+	#endif
+
+}
+
+void uiLcdLine(byte col,byte row,byte num)
+{
+	lcd.setCursor(col,row);
+	for(byte i=0;i<num;i++){
+		lcd.write('-');
+		#if UseLcdBuffer
+		_lcdBuffer[row][col + i]= '-';
+		#endif
+	}
 }
 
 void uiLcdDrawSymbol(byte col,byte row,byte sid)
 {
 	lcd.setCursor(col,row);
 	lcd.write((char)sid);
+	#if UseLcdBuffer
+	_lcdBuffer[row][col]= _reservedChar2SymbolId[sid];
+	#endif
 }
 
-void uiLcdDrawSymbolBmp(byte col,byte row,const byte* symbol)
+void uiLcdDrawSymbolBmp(byte col,byte row,SymbolId symbol)
 {
 	char buffer[12];
-   	CreatecCustomChar(buffer,LcdCharReserved,symbol);
+	const byte* bitmap= SymbolMaps[symbol];
+   	CreatecCustomChar(buffer,LcdCharReserved,bitmap);
 	lcd.setCursor(col,row);
 	lcd.write(LcdCharReserved);
+	
+	#if UseLcdBuffer
+	_lcdBuffer[row][col]= symbol;
+	#endif
+
 }
 
-void uiLcdLine(byte col,byte row,byte num)
-{
-	lcd.setCursor(col,row);
-	for(byte i=0;i<num;i++)
-		lcd.write('-');
-}
 
 void uiLcdInitialize(void)
 {
-	char buffer[12];
 	uiScanLcdAddress();
 	lcd.begin(20,4);
+
     if(gIsUseFahrenheit)
     {
-       	CreatecCustomChar(buffer,LcdCharDegree,FahrenheitSymbol);
+       	uiLcdAssignSymbol(LcdCharDegree,SymbolFahrenheit);
     }
    	else
    	{
-   		CreatecCustomChar(buffer,LcdCharDegree,CelsiusSymbol);
+   		uiLcdAssignSymbol(LcdCharDegree,SymbolCelsius);
    	}
 
-   	CreatecCustomChar(buffer,LcdCharSetpoint,SetpointSymbol);
+   	uiLcdAssignSymbol(LcdCharSetpoint,SymbolSetpoint);
 
-   	CreatecCustomChar(buffer,LcdCharPump,PumpSymbol);
-   	CreatecCustomChar(buffer,LcdCharRevPump,RevPumpSymbol);
-   	CreatecCustomChar(buffer,LcdCharHeating,HeatingSymbol);
-   	CreatecCustomChar(buffer,LcdCharRevHeating,RevHeatingSymbol);
-   	CreatecCustomChar(buffer,LcdCharRevSpargeHeating,RevSpargeHeatingSymbol);
+   	uiLcdAssignSymbol(LcdCharPump,SymbolPump);
+   	uiLcdAssignSymbol(LcdCharRevPump,SymbolRevPump);
+   	uiLcdAssignSymbol(LcdCharHeating,SymbolHeating);
+   	uiLcdAssignSymbol(LcdCharRevHeating,SymbolRevHeating);
+   	uiLcdAssignSymbol(LcdCharRevSpargeHeating,SymbolRevSpargeHeating);
+
+	#if UseLcdBuffer
+	clearLcdBuffer();
+	#endif
 }
 #endif //#if LCD_USE_SSD1306 == true
 
@@ -435,11 +550,11 @@ void uiDisplayWirelessIcon(void)
 	}
 	else if(_wiStatus == WiStateConnected)
 	{
-		uiLcdDrawSymbolBmp(19,0,WirelessSymbol);
+		uiLcdDrawSymbolBmp(19,0,SymbolWireless);
 	}
 	else
 	{
-		uiLcdDrawSymbolBmp(19,0,WirelessAPSymbol);
+		uiLcdDrawSymbolBmp(19,0,SymbolWirelessAP);
 	}
 }
 
@@ -495,11 +610,11 @@ void uiChangeTemperatureUnit(bool useF)
 {
     if(useF)
     {
-    	uiLcdAssignSymbol(LcdCharDegree,FahrenheitSymbol);
+    	uiLcdAssignSymbol(LcdCharDegree,SymbolFahrenheit);
     }
    	else
    	{
-    	uiLcdAssignSymbol(LcdCharDegree,CelsiusSymbol);
+    	uiLcdAssignSymbol(LcdCharDegree,SymbolCelsius);
    	}
 }
 
@@ -545,16 +660,15 @@ void uiSetMashExtensionStatus(uint8_t status)
 //   other combinations are invalid
 void loadHeatingIcons(byte mask)
 {
-    char buffer[8];
     if(mask == 1){ // primary
-   	    CreatecCustomChar(buffer,LcdCharHeating,PrimaryHeaterSymbol);
-   	    CreatecCustomChar(buffer,LcdCharRevHeating,RevPrimaryHeaterSymbol);
+   	    uiLcdAssignSymbol(LcdCharHeating,PrimaryHeaterSymbol);
+   	    uiLcdAssignSymbol(cdCharRevHeating,RevPrimaryHeaterSymbol);
     }else if(mask == 2){ // secondary
-   	    CreatecCustomChar(buffer,LcdCharHeating,SecondaryHeaterSymbol);
-   	    CreatecCustomChar(buffer,LcdCharRevHeating,RevSecondaryHeaterSymbol);
+   	    uiLcdAssignSymbol(LcdCharHeating,SecondaryHeaterSymbol);
+   	    uiLcdAssignSymbol(LcdCharRevHeating,RevSecondaryHeaterSymbol);
     }else{ // both
-   	    CreatecCustomChar(buffer,LcdCharHeating,HeatingSymbol);
-       	CreatecCustomChar(buffer,LcdCharRevHeating,RevHeatingSymbol);
+   	    uiLcdAssignSymbol(LcdCharHeating,HeatingSymbol);
+       	uiLcdAssignSymbol(LcdCharRevHeating,RevHeatingSymbol);
     }
 }
 
@@ -690,14 +804,14 @@ void uiSettingDisplayTextDynamic(char* text)
 void uiSettingDegreeSymbol(byte value)
 {
 //	uiSettingFieldClear();
-	const byte *bmp;
+	SymbolId bmp;
 	if(value ==0)
 	{
-		bmp=CelsiusSymbol;
+		bmp=SymbolCelsius;
 	}
 	else
 	{
-		bmp=FahrenheitSymbol;
+		bmp=SymbolFahrenheit;
 	}
 	uiLcdDrawSymbolBmp(18,2,bmp);
 }

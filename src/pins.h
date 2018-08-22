@@ -54,25 +54,24 @@
 #endif
 
 #if EnableLevelSensor
-#define LevelSensorOnIoExpander true
+#define LevelSensorOnIoExpander false
 
 #if LevelSensorOnIoExpander
 #define LevelSensorIOExpPin 32 //P5
 #else
-#define LevelSensorPin NODEMCU_PIN_D4
+#define LevelSensorPin NODEMCU_PIN_D7
 #endif
 
 #endif
 
 #if PUMP_USE_EXT != true
-#define PumpControlPin  NODEMCU_PIN_D5
+#define PumpControlPin  NODEMCU_PIN_D8
 #else
 #define ExPumpControlPin  5
 #endif
 
 #if HEATER_USE_EXT != true
-#define HeatControlPin  NODEMCU_PIN_D7
-#else
+#define HeatControlPin  NODEMCU_PIN_D5
 #define ExHeatControlPin  7
 #endif
 
@@ -211,7 +210,7 @@ bool isWaterLevelFull(void){
 }
 #else
 bool isWaterLevelFull(void){
-	return digitalRead(LevelSensorPin) == 0;
+	return digitalRead(LevelSensorPin) != 0;
 }
 #endif
 

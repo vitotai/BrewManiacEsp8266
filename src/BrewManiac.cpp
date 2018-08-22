@@ -2145,11 +2145,14 @@ public:
 	}
 
 	void startMonitor(){
+		DBG_PRINTF("start monitoring level\n");
 		_monitoring= true;
 		_state = WL_IDLE;
 	}
 
 	void stopMonitor(){
+		DBG_PRINTF("stop monitoring level\n");
+
 		_monitoring =false;
 		if(_state == WL_REST_MINIMUM  || _state == WL_REST){
 			pump.setForcedRest(false);
@@ -2209,6 +2212,7 @@ public:
 		// load from EEPROM
 		_sensorMinTriggerTime = readSetting(PS_LevelSensorMinimumTime) * 50; // 100ms unit
 		_pumpExtendedTime = readSetting(PS_PumpRestExtendedTime) * 1000; // 1s
+
 	}
 	void reset(){
 		stopMonitor();
@@ -7090,6 +7094,11 @@ void brewmaniac_loop() {
 		if(isExactButtonsPressed(ButtonUpMask | ButtonDownMask))
 			backToMain();
 		else
+	#if UseLcdBuffer
+		if(isExactButtonsPressed(ButtonUpMask | ButtonDownMask | ButtonStartMask | ButtonEnterMask ))
+			refreshLcdDisplay();
+		else
+	#endif
 		{
 			// if(_currentEventMask & ButtonPressedEventMask) button event is always handled in all
 			// screen!
