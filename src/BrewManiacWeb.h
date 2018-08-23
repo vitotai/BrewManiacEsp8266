@@ -48,9 +48,11 @@ protected:
     uint8_t _buttonLabel;
     uint8_t _lastEvent;
     uint8_t _pwm;
+	uint8_t **_lcdBuffer;
 public:
 
 	BrewManiacWeb(void);
+	void lcdBuffer(uint8_t **buffer){_lcdBuffer = buffer;};
 	/* from BM */
 	void statusChange(void);
 

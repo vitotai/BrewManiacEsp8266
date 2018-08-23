@@ -383,6 +383,7 @@ void BrewManiacWeb::getAutomation(String& json)
 //	json += "}";
     json = automation.json();
 }
+#define HEXCode(a) (((a) < 10)? ('0'+(a)):('A'-10+(a)))
 
 void BrewManiacWeb::getCurrentStatus(String& json,bool initial)
 {
@@ -437,7 +438,23 @@ void BrewManiacWeb::getCurrentStatus(String& json,bool initial)
 	json += String(uiGetDisplayTime());
 	json += ",\"stemp\":" + String(gSettingTemperature);
 	json += ",\"rssi\":" + String(WiFi.RSSI());
-	json += "}";
+// lcd.
+	json += ",\"lcd\":[";
+
+	char lcdcol[41];
+	int idx=0;
+	for(int i=0;i<4;i++){
+		idx=0;
+		for(int j=0;j<20;j++){
+			uint8_t ch=_lcdBuffer[i][j];
+			lcdcol[idx++]=HEXCode(ch >> 8);
+			lcdcol[idx++]=HEXCode(ch&0xF);
+		}
+		lcdcol[40]='\0';
+		if(i!=0) json += String(",");
+		json += String(lcdcol);
+	}
+	json += "]}";
 }
 
 void BrewManiacWeb::loop(void)

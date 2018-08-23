@@ -65,13 +65,13 @@
 #endif
 
 #if PUMP_USE_EXT != true
-#define PumpControlPin  NODEMCU_PIN_D8
+#define PumpControlPin  NODEMCU_PIN_D5
 #else
 #define ExPumpControlPin  5
 #endif
 
 #if HEATER_USE_EXT != true
-#define HeatControlPin  NODEMCU_PIN_D5
+#define HeatControlPin  NODEMCU_PIN_D7
 #define ExHeatControlPin  7
 #endif
 

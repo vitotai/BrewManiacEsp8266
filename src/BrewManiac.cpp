@@ -2665,6 +2665,8 @@ void distillRecipeSetup(void)
 		settingEditor.displayItem(221,100);
 	else
 		settingEditor.displayItem();
+
+	wiPushLcdContent();
 }
 
 void distillRecipeEventHandler(byte)
@@ -2682,6 +2684,7 @@ void distillRecipeEventHandler(byte)
             settingEditor.nextItem();
 
 	}
+	wiPushLcdContent();
 }
 #endif //#if SupportDistilling
 //**************************************************************
@@ -2760,6 +2763,8 @@ void settingPidSetup(void)
 {
 	settingEditor.setup(pidSettingItems,& pidGetValue,& pidSetValue);
 	settingEditor.displayItem();
+
+	wiPushLcdContent();
 }
 
 void settingPidEventHandler(byte)
@@ -2775,6 +2780,7 @@ void settingPidEventHandler(byte)
             _pidSettingAux=0;
             settingEditor.nextItem();
     	    editItemTitleAppendNumber(_pidSettingAux+1);
+			wiPushLcdContent();
     	    return;
         }else
     #endif
@@ -2785,6 +2791,7 @@ void settingPidEventHandler(byte)
 	        if(_pidSettingAux < gSensorNumber){
     	        settingEditor.displayItem();
     	        editItemTitleAppendNumber(_pidSettingAux+1);
+				wiPushLcdContent();
     	        return;
 	        }
 	        #else
@@ -2797,6 +2804,7 @@ void settingPidEventHandler(byte)
 	    }
         settingEditor.nextItem();
     }
+	wiPushLcdContent();
 }
 
 // *************************
@@ -2831,6 +2839,8 @@ void settingUnitSetup(void)
 {
 	settingEditor.setup(unitSettingItems);
 	settingEditor.displayItem();
+	
+	wiPushLcdContent();
 }
 
 void settingUnitEventHandler(byte)
@@ -2853,6 +2863,7 @@ void settingUnitEventHandler(byte)
         }else
             settingEditor.nextItem();
     }
+	wiPushLcdContent();
 }
 
 // *************************
@@ -3029,6 +3040,8 @@ void settingAutoSetup(void)
 	_editingStage=0;
 	_editingStageAux=0;
 	settingAutomationDisplayItem();
+	
+	wiPushLcdContent();
 }
 
 void settingAutoEventHandler(byte)
@@ -3210,6 +3223,7 @@ void settingAutoEventHandler(byte)
 	{
 			editItemChange(-4);
 	}
+	wiPushLcdContent();
 }// end of void settingAutoEventHandler(byte)
 
 // *************************
@@ -3268,6 +3282,8 @@ void miscSettingSetup(void)
 {
 	settingEditor.setup(miscSettingItems);
 	settingEditor.displayItem();
+
+	wiPushLcdContent();
 }
 
 void miscSettingEventHandler(byte)
@@ -3304,6 +3320,7 @@ void miscSettingEventHandler(byte)
 #endif
             settingEditor.nextItem();
     }
+	wiPushLcdContent();
 }
 // *************************
 //*  Sensor setup
@@ -3440,6 +3457,8 @@ void sensorMenuSetup(void)
 
 	resetSelection(gSensorNumber);
 	sensorMenuItem();
+
+	wiPushLcdContent();
 }
 
 void saveSensor(byte idx,byte address[])
@@ -3538,6 +3557,7 @@ void sensorMenuEventHandler(byte)
 			sensorMenuItem();
 		}
 	}
+	wiPushLcdContent();
 }
 #endif //MaximumNumberOfSensors
 
@@ -3608,6 +3628,8 @@ void menuEventHandler(byte event)
 		{
 			_currentLevelOne--;
 			menuDisplayList(_currentLevelOne);
+
+			wiPushLcdContent();
 		}
 	}
 	else if(btnIsDownPressed)
@@ -3619,6 +3641,8 @@ void menuEventHandler(byte event)
 		{
 			_currentLevelOne++;
 			menuDisplayList(_currentLevelOne);
+
+			wiPushLcdContent();
 		}
 	}
 }
@@ -4456,11 +4480,12 @@ void autoModeNextMashingStep(bool resume)
 	if(!resume) {
 		brewLogger.stage(_mashingStep);
 	}
-	wiReportCurrentStage(_mashingStep);
 
 #if EnableExtendedMashStep
 	autoModeResetMashExtension();
 #endif
+	wiReportCurrentStage(_mashingStep);
+
 }
 
 void autoModeGetMashStepNumber(void)
@@ -4941,9 +4966,6 @@ bool _coolingTempReached;
 
 void autoModeCoolingAsk(const char* msg,byte stage)
 {
-
-	wiReportCurrentStage(stage);
-
 	_stageConfirm=false;
 
 	//dismiss Temperature & running time
@@ -4955,6 +4977,8 @@ void autoModeCoolingAsk(const char* msg,byte stage)
 	uiSubTitle(msg);
 
 	uiButtonLabel(ButtonLabel(Continue_Yes_No));
+
+	wiReportCurrentStage(stage);
 }
 
 void autoModeEnterCooling(unsigned long elapsed)
@@ -5170,13 +5194,14 @@ void autoModeEnterHopStandChilling(void)
 	uiAutoModeStage(HopStandChillingStage);
 
 	brewLogger.stage(StageHopStandChill);
-	wiReportCurrentStage(StageHopStandChill);
 	// notify for interaction.
 	uiButtonLabel(ButtonLabel(x_x_Ok_x));
 	buzzPlaySoundRepeat(SoundIdWaitUserInteraction);
 	_stageConfirm=false;
 	uiRunningTimeShowInitial(0);
 	uiRunningTimeStart();
+
+	wiReportCurrentStage(StageHopStandChill);
 }
 
 
@@ -5234,7 +5259,6 @@ void autoModeEnterHopStand(uint32_t elapsed=0)
     setAdjustTemperature(max,min);
     // display Hopstand
 	uiButtonLabel(ButtonLabel(Up_Down_Skip_Pmp));
-	wiReportCurrentStage(StageHopStand);
 
 	uiAutoModeTitle();
     //
@@ -5265,6 +5289,8 @@ void autoModeEnterHopStand(uint32_t elapsed=0)
         // prompt for hop adding
         autoModeShowPostBoilHop();
     }
+
+	wiReportCurrentStage(StageHopStand);
 }
 
 void autoModeEndHopStandSession(void)
@@ -6984,6 +7010,7 @@ void switchApplication(byte screenId)
 	setEventMask(ButtonPressedEventMask);
 
 	(* currentScreen->setup)();
+	// every "setup" will update "stage", so push LCD is not necessary wiPushLcdContent();
 }
 
 void backToMain(void)

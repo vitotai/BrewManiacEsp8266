@@ -160,11 +160,16 @@ void wiUpdateSetting(int address,byte value)
 	}
 #endif
 }
+void wiPushLcdContent(void)
+{
+//	bmWeb.statusChange();	
+}
 
 void wiInitialize(){
 #if	MaximumNumberOfSensors	> 1
 	_wiSensorScanRequest =0;
 #endif
+	bmWeb.lcdBuffer((uint8_t**)_lcdBuffer);
 }
 
 void wiThread()
