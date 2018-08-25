@@ -3,6 +3,7 @@
 #include <EEPROM.h>
 #include <FS.h>
 #include <ESP8266WiFi.h>
+#include <ArduinoJson.h>
 #include "BrewManiacWeb.h"
 #include "automation.h"
 
@@ -25,6 +26,7 @@ extern bool gIsTemperatureReached;
 extern bool uiIsTimerRunning(void);
 extern bool uiIsTimerRunningUp(void);
 extern int  uiGetDisplayTime(void);
+extern char _lcdBuffer[4][21];
 
 extern void virtualButtonPress(byte mask,boolean longPressed);
 
@@ -387,74 +389,61 @@ void BrewManiacWeb::getAutomation(String& json)
 
 void BrewManiacWeb::getCurrentStatus(String& json,bool initial)
 {
-
-   	json = "{\"state\":";
-	json += String(_stage);
-
-	json += ",\"btn\":";
-	json += String(_buttonLabel);
-
-	json += ",\"pump\":";
-	json += String(_pumpStatus);
-	json += ",\"heat\":";
-	json += String(_heaterStatus);
+	const int BUFFER_SIZE = JSON_OBJECT_SIZE(17+3) + JSON_ARRAY_SIZE(5+4+3);
+	StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
+   	JsonObject& root = jsonBuffer.createObject();
+	
+	root["state"]=_stage;
+	root["btn"]=_buttonLabel;
+	root["pump"]=_pumpStatus;
+	root["heat"]=_heaterStatus;
 
 #if SecondaryHeaterSupport == true
-	json += ",\"heat2\":";
-	json += String(_secondaryHeaterStatus);
+	root["heat2"]=_secondaryHeaterStatus;
 #endif
 
 #if SpargeHeaterSupport == true
-	json += ",\"spgw\":";
-	json += String(_auxHeaterStatus);
+	root["spgw"]=_auxHeaterStatus;
 #endif
 
 #if MaximumNumberOfSensors > 1
-	json += ",\"temps\":[";
+	JsonArray& temps = root.createNestedArray("temps");
 	float *ts=gTemperatureReading;
 	for(byte i=0;i< gSensorNumber;i++)
 	{
-		if(i>0) json += ",";
-		json += String(ts[i]);
+		temps.add(ts[i]);
 	}
-	json +="]";
 #else
-	json += ",\"temp\":";
-	json += String(gCurrentTemperature);
+	root["temp"]=gCurrentTemperature;
 #endif
-	json += ",\"tr\":";
-	json += String((gIsTemperatureReached)? 1:0);
-	json += ",\"pwmon\":";
-	json += String((gIsEnterPwm)? 1:0);
+	root["tr"]=gIsTemperatureReached? 1:0;
+	root["pwmon"]=gIsEnterPwm? 1:0;
 
 	if(gIsEnterPwm){
-		json += ",\"pwm\":" + String(_pwm);	
+		root["pwm"]= _pwm;	
 	}
-	json += ",\"paused\":";
-	json += String((!uiIsTimerRunning())? 1:0);
-	json +=",\"counting\":";
-	json += String((uiIsTimerRunningUp())? 1:0);
-	json += ",\"timer\":";
-	json += String(uiGetDisplayTime());
-	json += ",\"stemp\":" + String(gSettingTemperature);
-	json += ",\"rssi\":" + String(WiFi.RSSI());
+	root["paused"]=(!uiIsTimerRunning())? 1:0;
+	root["counting"]=(uiIsTimerRunningUp())? 1:0;
+	root["timer"]=uiGetDisplayTime();
+	root["stemp"]=gSettingTemperature;
+	root["rssi"]=WiFi.RSSI();
 // lcd.
-	json += ",\"lcd\":[";
-
-	char lcdcol[41];
+	JsonArray& lcds = root.createNestedArray("lcd");
+	
+	char lcdcol[4][41];
 	int idx=0;
 	for(int i=0;i<4;i++){
 		idx=0;
 		for(int j=0;j<20;j++){
 			uint8_t ch=_lcdBuffer[i][j];
-			lcdcol[idx++]=HEXCode(ch >> 8);
-			lcdcol[idx++]=HEXCode(ch&0xF);
+			lcdcol[i][idx++]=HEXCode(ch >> 4);
+			lcdcol[i][idx++]=HEXCode(ch&0xF);
 		}
-		lcdcol[40]='\0';
-		if(i!=0) json += String(",");
-		json += String(lcdcol);
+		lcdcol[i][40]='\0';
+		lcds.add(lcdcol[i]);
 	}
-	json += "]}";
+
+	root.printTo(json);
 }
 
 void BrewManiacWeb::loop(void)
