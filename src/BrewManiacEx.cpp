@@ -828,11 +828,12 @@ void greeting(std::function<void(const String&,const char*)> sendFunc){
 	sendFunc(version,NULL);
 
 	// send setting, automation, and network config
-	String json;
-	bmWeb.getSettings(json);
-	sendFunc(json,"setting");
-	bmWeb.getAutomation(json);
-	sendFunc(json,"auto");
+	String settings;
+	bmWeb.getSettings(settings);
+	sendFunc(settings,"setting");
+	String automation;
+	bmWeb.getAutomation(automation);
+	sendFunc(automation,"auto");
 
 	char buf[128];
 	
@@ -842,9 +843,9 @@ void greeting(std::function<void(const String&,const char*)> sendFunc){
 	sprintf(buf,"{\"time\":%ld}",TimeKeeper.getTimeSeconds());
 
     sendFunc(String(buf),"timesync");
-
-	bmWeb.getCurrentStatus(json,true);
-	sendFunc(json,NULL);	
+	String status;
+	bmWeb.getCurrentStatus(status,true);
+	sendFunc(status,NULL);	
 }
 
 #if UseWebSocket == true
