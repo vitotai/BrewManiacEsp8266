@@ -17,6 +17,8 @@
 #include "pins.h"
 #include <Wire.h>
 
+#define UseLcdBuffer true
+
 #if LCD_USE_SSD1306 == true
 
 #include "SSD1306.h"
@@ -970,12 +972,12 @@ void uiShowPwmValue(byte pwm)
 	if(pwm>=100){
 		buffer[0]='H';
 		buffer[1]='H';
-		buffer[2]='H';
 	}else{
 		buffer[0]=(pwm/10)? ('0' +(pwm/10)):' ';
 		buffer[1]=	'0' + (pwm%10);
-		buffer[2]='%';
 	}
+	buffer[2]='%';
+
 	buffer[3]='\0';
 	uiLcdPrint(8,2,buffer);
 #else

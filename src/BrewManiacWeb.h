@@ -48,10 +48,14 @@ protected:
     uint8_t _buttonLabel;
     uint8_t _lastEvent;
     uint8_t _pwm;
+	bool   _holdingStatusUpdate;
 public:
 
 	BrewManiacWeb(void);
 	/* from BM */
+	void holdStatusUpdate(void);
+	void unHoldStatusUpdate(bool update);
+
 	void statusChange(void);
 
 	void setButtonLabel(uint8_t btns);
@@ -74,12 +78,18 @@ public:
 	void setHeaterStatus(uint8_t value,uint8_t sec){ _heaterStatus=value; _secondaryHeaterStatus=sec;  statusChange();}
 
     #else
-	void setHeaterStatus(uint8_t value){ _heaterStatus = value; statusChange(); }
+	void setHeaterStatus(uint8_t value){ 
+			_heaterStatus = value; 
+			statusChange(); 
+		}
     #endif
 
     #endif //#if SpargeHeaterSupport == true
 
-	void setPumpStatus(uint8_t value){ _pumpStatus=value; statusChange(); }
+	void setPumpStatus(uint8_t value){ 
+			_pumpStatus=value; 
+			statusChange(); 
+		}
 
 	void brewEvent(uint8_t event);
 	void updatePwm(uint8_t pwm);

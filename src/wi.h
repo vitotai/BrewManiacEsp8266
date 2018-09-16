@@ -83,19 +83,18 @@ void wiSettingChanged(int address,byte value)
 void wiSetDeviceAddress(byte ip[], bool apmode)
 {
 	// support only IPv4 for now
-	if(	ip[0] != 0 && ip[1] != 0 && ip[2] != 0 && ip[3] != 0){
+	if(	ip[0] == 0 && ip[1] == 0 && ip[2] == 0 && ip[3] == 0){
+		// clear
+		uiSetWirelessStatus(WiStateNotConnected);
+		buzzPlaySound(SoundIdWarnning);
+		uiSetIp(ip);
+		if(_currentStage == StageIdleScreen)
+			uiClearIpAddress();
+	}else{ 
 		uiSetWirelessStatus(apmode? WiStateAccessPoint:WiStateConnected);
 		uiSetIp(ip);
 		if(_currentStage == StageIdleScreen)
 			uiPrintIpAddress();
-
-	}else{ // clear
-		uiSetWirelessStatus(WiStateNotConnected);
-		buzzPlaySound(SoundIdWarnning);
-
-		uiSetIp(ip);
-		if(_currentStage == StageIdleScreen)
-			uiClearIpAddress();
 	}
 }
 
@@ -160,9 +159,14 @@ void wiUpdateSetting(int address,byte value)
 	}
 #endif
 }
-void wiPushLcdContent(void)
+void wiLcdBufferBegin(void)
 {
-	bmWeb.statusChange();
+	bmWeb.holdStatusUpdate();
+}
+
+void wiLcdBufferEnd(bool update=true)
+{
+	bmWeb.unHoldStatusUpdate(update);
 }
 
 void wiInitialize(){

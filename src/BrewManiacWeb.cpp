@@ -60,20 +60,34 @@ extern void saveSensor(byte idx,byte address[]);
 
 
 /* from BM */
+void BrewManiacWeb::holdStatusUpdate(void){
+	_holdingStatusUpdate =true;
+}
+
+void BrewManiacWeb::unHoldStatusUpdate(bool update){
+	_holdingStatusUpdate=false;
+	if(update){
+		if(_eventHandler) _eventHandler(this,BmwEventStatusUpdate);
+	}
+}
+
 void BrewManiacWeb::statusChange(void)
 {
+	if(_holdingStatusUpdate) return;
     if(_eventHandler) _eventHandler(this,BmwEventStatusUpdate);
 }
 
 void BrewManiacWeb::setButtonLabel(byte btns)
 {
 	_buttonLabel=btns;
-
+	// the result is the same as BmwEventStatusUpdate
+	if(_holdingStatusUpdate) return;
 	if(_eventHandler) _eventHandler(this,BmwEventButtonLabel);
 }
 void BrewManiacWeb::setBrewStage(uint8_t stage)
 {
 	_stage=stage;
+	if(_holdingStatusUpdate) return;
 	if(_eventHandler) _eventHandler(this,BmwEventStatusUpdate);
 }
 
@@ -133,6 +147,7 @@ BrewManiacWeb::BrewManiacWeb(void)
 	_lastReportTime=0;
 
 	_eventHandler=NULL;
+	_holdingStatusUpdate=false;
 }
 void BrewManiacWeb::onEvent(BmwEventHandler handler)
 {

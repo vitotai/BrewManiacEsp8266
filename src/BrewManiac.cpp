@@ -126,7 +126,7 @@ bool   gEnableSpargeWaterHeatingControl;
 //*  function declaration
 // *************************
 typedef	void (*SetupFunc)(void);
-typedef	void (*EventHandlerFunc)(byte);
+typedef	bool (*EventHandlerFunc)(byte);
 
 void switchApplication(byte screenId);
 
@@ -136,52 +136,52 @@ void setEventMask(byte);
 
 // main screen
 void mainSetup(void);
-void mainEventHandler(byte);
+bool mainEventHandler(byte);
 
 // setup menu
 void menuSetup(void);
-void menuEventHandler(byte);
+bool menuEventHandler(byte);
 
 void settingPidSetup(void);
-void settingPidEventHandler(byte);
+bool settingPidEventHandler(byte);
 
 void settingUnitSetup(void);
-void settingUnitEventHandler(byte);
+bool settingUnitEventHandler(byte);
 
 void settingAutoSetup(void);
-void settingAutoEventHandler(byte);
+bool settingAutoEventHandler(byte);
 
 // manual mode
 void manualModeSetup(void);
-void manualModeEventHandler(byte);
+bool manualModeEventHandler(byte);
 //auto mode
 void autoModeSetup(void);
-void autoModeEventHandler(byte);
+bool autoModeEventHandler(byte);
 
 void miscSettingSetup(void);
-void miscSettingEventHandler(byte);
+bool miscSettingEventHandler(byte);
 
 
 #if EnablePidAutoTune == true
 void autoTuneMenuSetup(void);
-void autoTuneMenuEventHandler(byte);
+bool autoTuneMenuEventHandler(byte);
 #endif
 
 #if MaximumNumberOfSensors > 1
 void sensorMenuSetup(void);
-void sensorMenuEventHandler(byte);
+bool sensorMenuEventHandler(byte);
 #endif
 
 #if SpargeHeaterSupport == true
 void spargeMenuSetup(void);
-void spargeMenuEventHandler(byte);
+bool spargeMenuEventHandler(byte);
 #endif
 
 #if SupportDistilling
 void distillRecipeSetup(void);
-void distillRecipeEventHandler(byte);
+bool distillRecipeEventHandler(byte);
 void distillingSetup(void);
-void distillingEventHandler(byte);
+bool distillingEventHandler(byte);
 #endif
 
 #define ConvertF2C(d) (((d)-32)/1.8)
@@ -2666,25 +2666,26 @@ void distillRecipeSetup(void)
 	else
 		settingEditor.displayItem();
 
-	wiPushLcdContent();
 }
 
-void distillRecipeEventHandler(byte)
+bool distillRecipeEventHandler(byte)
 {
+
 	if(settingEditor.buttonHandler()){
 	    int index = settingEditor.index();
 		if(index  >= (sizeof(distillRecipeItems)/sizeof(SettingItem) -1)){
 			distillRecipe.save();
 	        switchApplication(SETUP_SCREEN);
-            return;
+            return true;
 	    }
+
 		if(gIsUseFahrenheit && ((index +1) & 1)==0){ // %2 == 0, temperature
 			settingEditor.nextItem(221,100);
         }else
             settingEditor.nextItem();
 
 	}
-	wiPushLcdContent();
+	return true;
 }
 #endif //#if SupportDistilling
 //**************************************************************
@@ -2763,11 +2764,9 @@ void settingPidSetup(void)
 {
 	settingEditor.setup(pidSettingItems,& pidGetValue,& pidSetValue);
 	settingEditor.displayItem();
-
-	wiPushLcdContent();
 }
 
-void settingPidEventHandler(byte)
+bool settingPidEventHandler(byte)
 {
 	if(settingEditor.buttonHandler())
 	{
@@ -2775,13 +2774,12 @@ void settingPidEventHandler(byte)
     	if(settingEditor.index() == (sizeof(pidSettingItems)/sizeof(SettingItem) -2)){
             if (0 == gSensorNumber){
 	            switchApplication(SETUP_SCREEN);
-                return;
+                return true;
             }
             _pidSettingAux=0;
             settingEditor.nextItem();
     	    editItemTitleAppendNumber(_pidSettingAux+1);
-			wiPushLcdContent();
-    	    return;
+    	    return true;
         }else
     #endif
 	    if(settingEditor.index() == (sizeof(pidSettingItems)/sizeof(SettingItem) -1)){
@@ -2791,20 +2789,19 @@ void settingPidEventHandler(byte)
 	        if(_pidSettingAux < gSensorNumber){
     	        settingEditor.displayItem();
     	        editItemTitleAppendNumber(_pidSettingAux+1);
-				wiPushLcdContent();
-    	        return;
+    	        return true;
 	        }
 	        #else
 	        gSensorCalibration= ((float)(readSetting(PS_Offset) - 50) / 10.0);
             #endif
 
 	        switchApplication(SETUP_SCREEN);
-            return;
+            return true;
 
 	    }
         settingEditor.nextItem();
     }
-	wiPushLcdContent();
+	return true;
 }
 
 // *************************
@@ -2840,17 +2837,16 @@ void settingUnitSetup(void)
 	settingEditor.setup(unitSettingItems);
 	settingEditor.displayItem();
 	
-	wiPushLcdContent();
 }
 
-void settingUnitEventHandler(byte)
+bool settingUnitEventHandler(byte)
 {
 	if(settingEditor.buttonHandler())
 	{
 	    int index = settingEditor.index();
 		if(index  >=(int) (sizeof(unitSettingItems)/sizeof(SettingItem) -1)){
 	        switchApplication(SETUP_SCREEN);
-            return;
+            return true;
 	    }
 		if( index == 0 ){ // degree setting
 			temperatureUnitChange(readSetting(PS_TempUnit)  );
@@ -2863,7 +2859,7 @@ void settingUnitEventHandler(byte)
         }else
             settingEditor.nextItem();
     }
-	wiPushLcdContent();
+	return true;
 }
 
 // *************************
@@ -3040,11 +3036,9 @@ void settingAutoSetup(void)
 	_editingStage=0;
 	_editingStageAux=0;
 	settingAutomationDisplayItem();
-	
-	wiPushLcdContent();
 }
 
-void settingAutoEventHandler(byte)
+bool settingAutoEventHandler(byte)
 {
 	if(btnIsEnterPressed)
 	{
@@ -3097,7 +3091,7 @@ void settingAutoEventHandler(byte)
 
 				//uiClearSettingRow();
 				switchApplication(SETUP_SCREEN);
-				return;
+				return true;
 			}
 		}
 		else if(_editingStage == 10)
@@ -3129,7 +3123,7 @@ void settingAutoEventHandler(byte)
 		    if(value ==0){
 				finishAutomationEdit();
 				switchApplication(SETUP_SCREEN);
-				return;
+				return true;
 
 		    }else{
     		    _editingStageAux =0;
@@ -3160,7 +3154,7 @@ void settingAutoEventHandler(byte)
 		        automation.setNumberOfHopStandSession(_editingStageAux +1);
 		        finishAutomationEdit();
 				switchApplication(SETUP_SCREEN);
-				return;
+				return true;
 		    }
 		    if(_postBoilHopIndex >= MAXIMUM_HOP_IN_HSSESSION){
 		        // next session
@@ -3198,7 +3192,7 @@ void settingAutoEventHandler(byte)
 		        // finish
 		        finishAutomationEdit();
 				switchApplication(SETUP_SCREEN);
-				return;
+				return true;
 		    }else{
 		        // next
 		        _postBoilHopIndex=0;
@@ -3223,7 +3217,7 @@ void settingAutoEventHandler(byte)
 	{
 			editItemChange(-4);
 	}
-	wiPushLcdContent();
+	return true;
 }// end of void settingAutoEventHandler(byte)
 
 // *************************
@@ -3282,11 +3276,9 @@ void miscSettingSetup(void)
 {
 	settingEditor.setup(miscSettingItems);
 	settingEditor.displayItem();
-
-	wiPushLcdContent();
 }
 
-void miscSettingEventHandler(byte)
+bool miscSettingEventHandler(byte)
 {
 	if(settingEditor.buttonHandler())
 	{
@@ -3305,7 +3297,7 @@ void miscSettingEventHandler(byte)
 #endif
 	    if(index >=(int)(sizeof(miscSettingItems)/sizeof(SettingItem) -1)){
 	        switchApplication(SETUP_SCREEN);
-            return;
+            return true;
 	    }
 #if SpargeHeaterSupport == true
 #if MaximumNumberOfSensors >1
@@ -3320,7 +3312,7 @@ void miscSettingEventHandler(byte)
 #endif
             settingEditor.nextItem();
     }
-	wiPushLcdContent();
+	return true;
 }
 // *************************
 //*  Sensor setup
@@ -3457,8 +3449,6 @@ void sensorMenuSetup(void)
 
 	resetSelection(gSensorNumber);
 	sensorMenuItem();
-
-	wiPushLcdContent();
 }
 
 void saveSensor(byte idx,byte address[])
@@ -3476,15 +3466,16 @@ void saveSensor(byte idx,byte address[])
 }
 
 
-void sensorMenuEventHandler(byte)
+bool sensorMenuEventHandler(byte)
 {
 	if(_sensorSettingIndex==0  && gSensorNumber==0)
 	{
 		if(btnIsEnterPressed){
 			//uiClearSettingRow();
 			switchApplication(SETUP_SCREEN);
+			return true;
 		}
-		return;
+		return false;
 	}
 
 	if(_sensorSettingIndex==0)
@@ -3552,12 +3543,12 @@ void sensorMenuEventHandler(byte)
 				commitSetting();
 				// reaload sensor
 				loadSensorSetting();
-				return;
+				return true;
 			}
 			sensorMenuItem();
 		}
 	}
-	wiPushLcdContent();
+	return true;
 }
 #endif //MaximumNumberOfSensors
 
@@ -3610,7 +3601,7 @@ void menuSetup(void)
 	wiReportCurrentStage(StageSetting);
 }
 
-void menuEventHandler(byte event)
+bool menuEventHandler(byte event)
 {
 	if(btnIsEnterPressed)
 	{
@@ -3629,7 +3620,6 @@ void menuEventHandler(byte event)
 			_currentLevelOne--;
 			menuDisplayList(_currentLevelOne);
 
-			wiPushLcdContent();
 		}
 	}
 	else if(btnIsDownPressed)
@@ -3642,9 +3632,9 @@ void menuEventHandler(byte event)
 			_currentLevelOne++;
 			menuDisplayList(_currentLevelOne);
 
-			wiPushLcdContent();
 		}
-	}
+	} else return false;
+	return true;
 }
 
 // ***************************************************************************
@@ -3655,7 +3645,7 @@ void menuEventHandler(byte event)
 float _maxAdjustTemp;
 float _minAdjustTemp;
 
-void togglePwmInput(void)
+bool togglePwmInput(void)
 {
 			//turn on/off PWM
 	if(gCurrentTemperature >= gSettingTemperature
@@ -3670,6 +3660,7 @@ void togglePwmInput(void)
 
 			wiReportPwm();
 			wiTogglePwm();
+			return true;
 		}
 	}
 	else
@@ -3682,8 +3673,10 @@ void togglePwmInput(void)
 			gIsEnterPwm = false;
 
 			wiTogglePwm();
+			return true;
 		}
 	}
+	return false;
 }
 
 void setAdjustTemperature(float max, float min)
@@ -3877,7 +3870,7 @@ void finishAutoTuneBackToManual(void)
 	wiReportCurrentStage(StageManualMode);
 }
 
-void manualModeEventHandler(byte event)
+bool manualModeEventHandler(byte event)
 {
 
 	if(_state == MSAskWater)
@@ -3911,23 +3904,26 @@ void manualModeEventHandler(byte event)
 			#else
 			brewLogger.temperature(gCurrentTemperature);
 			#endif
+			return true;
 		}
 		else if(btnIsEnterPressed)
 		{
 			// NO. back to main
 			switchApplication(MAIN_SCREEN);
+			return true;
 		}
 	}
 #if	EnablePidAutoTune == true
 	else if(_state == MSAskAutoTune)
 	{
-		if(event != ButtonPressedEventMask) return;
+		if(event != ButtonPressedEventMask) return false;
 
 		if(btnIsStartPressed)
 		{
 			// NO, back to manual mode
 			_state = MSManualMode;
 			uiButtonLabel(ButtonLabel(Up_Down_Heat_Pmp));
+			return true;
 		}
 		else if(btnIsEnterPressed)
 		{
@@ -3947,6 +3943,7 @@ void manualModeEventHandler(byte event)
 			brewLogger.stage(StagePIDAutoTune);
 
 			wiReportCurrentStage(StagePIDAutoTune);
+			return true;
 		}
 	}
 	else if(_state == MSRunningAutoTune)
@@ -3958,11 +3955,13 @@ void manualModeEventHandler(byte event)
 				//Exit
 				_state = MSAskExitingAutoTune;
 				uiButtonLabel(ButtonLabel(Stop_No_Yes));
+				return true;
 			}
 			else if(btnIsEnterPressed)
 			{
 				// Pump
 				pump.toggle();
+				return true;
 			}
 		}
 		if(!_isRunningAutoTune)
@@ -3970,17 +3969,19 @@ void manualModeEventHandler(byte event)
 			// auto tuning finished
 			buzzPlaySound(SoundIdAutoTuneFinished);
 			finishAutoTuneBackToManual();
+			return true;
 		}
 	}
 	else if(_state == MSAskExitingAutoTune)
 	{
-		if(event != ButtonPressedEventMask) return;
+		if(event != ButtonPressedEventMask) return false;
 
 		if(btnIsStartPressed)
 		{
 			//No
 			_state = MSRunningAutoTune;
 			uiButtonLabel(ButtonLabel(x_x_Exit_Pmp));
+			return true;
 		}
 		else if(btnIsEnterPressed)
 		{
@@ -3988,6 +3989,7 @@ void manualModeEventHandler(byte event)
 			// back to Manual Mode.
 			cancelAutoTune();
 			finishAutoTuneBackToManual();
+			return true;
 		}
 	}
 #endif //#if	EnablePidAutoTune == true
@@ -4115,9 +4117,11 @@ void manualModeEventHandler(byte event)
 					}
 				}
 			}
-		}
+			return true;
+		} // end of button presss
 		else if(event == TemperatureEventMask)
 		{
+			bool ret=false;
 			// Handle temperature change or other states
 			//
 			if (! gIsTemperatureReached)
@@ -4142,12 +4146,12 @@ void manualModeEventHandler(byte event)
 
 					brewLogger.event(RemoteEventTemperatureReached);
 					wiReportEvent(RemoteEventTemperatureReached);
+					ret =true;
 				}
 			}
 			// Temperate Reached state
-
-			togglePwmInput();
-
+			bool toggled = togglePwmInput();
+			return ret || toggled;
 		} // end of temperature handling
 		else if(event == PumpRestEventMask)
 		{
@@ -4174,6 +4178,7 @@ void manualModeEventHandler(byte event)
 
 				wiReportEvent(RemoteEventPumpRestEnd);
 			}
+			return true;
 		}
 		#if SupportManualModeCountDown == true
 		else if(event == TimeoutEventMask)
@@ -4181,9 +4186,11 @@ void manualModeEventHandler(byte event)
 			buzzPlaySound(SoundIdCountDown);
 			isManualModeCountDownMode=false;
 			uiRunningTimeStart();
+			return true;
 		}
 		#endif
 	} // else of if(_state == MSAskWater)
+	return false;
 }//void manualModeEventHandler(byte event)
 
 // *************************
@@ -5557,64 +5564,122 @@ void autoModeResumeProcess(void)
 
 //******************************
 // Auto Mode Event Handling
-void autoModeEventHandler(byte event)
-{
-	// switch-case uses more memory, though it looks better
-	//
-	if(AutoStateIs( AS_AskResume))
-	{
-		if(btnIsStartPressed)
-		{
-			// YES
-			autoModeResumeProcess();
-		}
-		else if(btnIsEnterPressed)
-		{
-			// clear the flag
-			brewLogger.clearRecovery();
 
-			autoModeSetup();
-		}
+bool autoModeAskResumeHandler(byte event)
+{
+
+	if(btnIsStartPressed){
+		// YES
+		autoModeResumeProcess();
+		return true;
+	}else if(btnIsEnterPressed){
+		// clear the flag
+		brewLogger.clearRecovery();
+		autoModeSetup();
+		return true;
 	}
-	else
+	return false;
+}
 
 #if NoDelayStart == false
-	if(AutoStateIs( AS_AskDelayStart))
-	{
+bool autoModeAskDelayStartHandler(byte event){
 		// initially only Button Event will come
-		if(btnIsStartPressed)
-		{
-			// NO
-			_delayRequested=false;
+	if(btnIsStartPressed)
+	{
+		// NO
+		_delayRequested=false;
 			// next state
-			_state = AS_AskWaterAdded;
-		}
-		else if(btnIsEnterPressed)
-		{
-			// YES
-			_delayRequested=true;
+		_state = AS_AskWaterAdded;
+	}
+	else if(btnIsEnterPressed)
+	{
+		// YES
+		_delayRequested=true;
 
-			_state = AS_AskWaterAdded;
-		}
-
-		// if state changed.
-		if (_state == AS_AskWaterAdded)
-		{
-			// ask resume, just ignore this for now
-			uiSubTitle(STR(Water_Added));
-			uiButtonLabel(ButtonLabel(Continue_Yes_No));
-		}
-	}//if(_state == AS_AskDelayStart)
-	else
+		_state = AS_AskWaterAdded;
+	}
+	// if state changed.
+	if (_state == AS_AskWaterAdded)
+	{
+		// ask resume, just ignore this for now
+		uiSubTitle(STR(Water_Added));
+		uiButtonLabel(ButtonLabel(Continue_Yes_No));
+		return true;
+	}
+	return false;
+}
 #endif
 
-	if(AutoStateIs(AS_AskWaterAdded))
+
+#if SpargeHeaterSupport == true
+bool autoModeAskSpargeWaterAddedHandler(byte event)
+{
+	if(btnIsStartPressed)
 	{
-		if(btnIsStartPressed)
-		{
-			#if SpargeHeaterSupport == true
-			// ask sparge water if sparge water is enable.
-			if(readSetting(PS_SpargeWaterEnableAddress)){
+		gEnableSpargeWaterHeatingControl = false;
+		#if UsePaddleInsteadOfPump
+		autoModeStartWithoutPumpPrimming();
+		#else
+		autoModeEnterPumpPriming();
+		#endif
+		return true;
+	}
+	else if(btnIsEnterPressed)
+	{
+		// no sparge
+		gEnableSpargeWaterHeatingControl = true;
+		#if UsePaddleInsteadOfPump
+		autoModeStartWithoutPumpPrimming();
+		#else
+		autoModeEnterPumpPriming();
+		#endif
+		return true;
+	} 
+	return false;
+}  //end of state AS_AskWaterAdded
+
+#endif
+
+
+
+bool autoModePumpPrimingHandler(byte event)
+{
+	if(event == TimeoutEventMask){
+		if(pump.isOn()){
+			pump.off();
+			tmSetTimeoutAfter((uint32_t)readSetting(PS_PumpPrimeOffTime) * 250);
+		}else{
+			_primePumpCount++;
+
+			if(_primePumpCount < readSetting(PS_PumpPrimeCount)){
+				pump.on();
+				tmSetTimeoutAfter((uint32_t)readSetting(PS_PumpPrimeOnTime) * 250);
+
+			}else{
+					// next stage is setting delay or mash start
+				#if NoDelayStart == false
+				if(_delayRequested){
+					autoModeEnterDelayTimeInput();
+				}else{
+					//_state = AS_DoughIn;
+					autoModeEnterDoughIn();
+				}
+				#else
+				autoModeEnterDoughIn();
+				#endif
+			} // else of prime pump < 5
+		} // end of else if pump on
+		return true;
+	} // end of handling of TimeoutEventMask
+	return false;
+} // end of state AS_PumpPrime
+
+bool autoModeAskWaterAddedHandler(byte event){
+	if(btnIsStartPressed)
+	{
+		#if SpargeHeaterSupport == true
+		// ask sparge water if sparge water is enable.
+		if(readSetting(PS_SpargeWaterEnableAddress)){
 				_state = AS_AskSpargeWaterAdded;
 				uiSubTitle(STR(SpargeWater_Added));
 				uiButtonLabel(ButtonLabel(No_Yes));
@@ -5626,847 +5691,761 @@ void autoModeEventHandler(byte event)
 				autoModeEnterPumpPriming();
 				#endif
 			}
-			#else
-				#if UsePaddleInsteadOfPump
-				autoModeStartWithoutPumpPrimming();
-				#else
-				autoModeEnterPumpPriming();
-				#endif
-			#endif
-		}
-		else if(btnIsEnterPressed)
-		{
-			// NO; before heat & pump are used, it is safe to switch directly
-			// instead of "backToMain"
-			switchApplication(MAIN_SCREEN);
-			return; // good bye
-		}
-	}  //end of state AS_AskWaterAdded
-#if SpargeHeaterSupport == true
-	else if(AutoStateIs(AS_AskSpargeWaterAdded))
-	{
-		if(btnIsStartPressed)
-		{
-			gEnableSpargeWaterHeatingControl = false;
+		#else
 			#if UsePaddleInsteadOfPump
 			autoModeStartWithoutPumpPrimming();
 			#else
 			autoModeEnterPumpPriming();
 			#endif
-		}
-		else if(btnIsEnterPressed)
-		{
-			// no sparge
-			gEnableSpargeWaterHeatingControl = true;
-			#if UsePaddleInsteadOfPump
-			autoModeStartWithoutPumpPrimming();
-			#else
-			autoModeEnterPumpPriming();
-			#endif
-		}
-	}  //end of state AS_AskWaterAdded
-
-#endif
-	else if(AutoStateIs(AS_PumpPrime))
-	{
-		if(event == TimeoutEventMask)
-		{
-			if(pump.isOn())
-			{
-				pump.off();
-				tmSetTimeoutAfter((uint32_t)readSetting(PS_PumpPrimeOffTime) * 250);
-			}
-			else
-			{
-				_primePumpCount++;
-
-				if(_primePumpCount < readSetting(PS_PumpPrimeCount))
-				{
-					pump.on();
-					tmSetTimeoutAfter((uint32_t)readSetting(PS_PumpPrimeOnTime) * 250);
-				}
-				else
-				{
-					// next stage is setting delay or mash start
-#if NoDelayStart == false
-					if(_delayRequested)
-					{
-						autoModeEnterDelayTimeInput();
-					}
-					else
-					{
-						//_state = AS_DoughIn;
-						autoModeEnterDoughIn();
-					}
-#else
-						autoModeEnterDoughIn();
-#endif
-				} // else of prime pump < 5
-
-			} // end of else if pump on
-		} // end of handling of TimeoutEventMask
-	} // end of state AS_PumpPrime
-#if NoDelayStart == false
-	else if(AutoStateIs(AS_DelayTimeInput))
-	{
-		// input delay timer
-		if(event != ButtonPressedEventMask) return;
-
-		if(btnIsUpPressed)
-		{
-			if( (_delayTime +1) < MAX_DELAY_TIME )
-			{
-				_delayTime ++;
-				uiRunningTimeShowInitial(_delayTime * 15 * 60);
-			}
-		}
-		else if(btnIsDownPressed)
-		{
-			if(_delayTime > 1)
-			{
-				_delayTime --;
-				uiRunningTimeShowInitial(_delayTime * 15 * 60);
-			}
-		}
-		else if(btnIsStartPressed)
-		{
-			// quit
-			backToMain();
-		}
-		else if(btnIsEnterPressed)
-		{
-			_state = AS_DelayTimeConfirm;
-			uiButtonLabel(ButtonLabel(Continue_Yes_No));
-		}
-	} // state AS_DelayTimeInput
-	else if(AutoStateIs(AS_DelayTimeConfirm))
-	{
-		if(event != ButtonPressedEventMask) return;
-
-		if(btnIsStartPressed)
-		{
-			// YES
-			_state = AS_DelayWaiting;
-			uiClearSubTitleRow();
-			uiSubTitle(STR(To_be_started_in));
-			uiButtonLabel(ButtonLabel(x_x_Quit_Go));
-
-			tmSetTimeoutAfter(_delayTime * 15 * 60 * 1000);
-			uiRunningTimeStartCountDown(_delayTime * 15 * 60);
-			setEventMask(TimeoutEventMask | ButtonPressedEventMask );
-
-			wiReportCurrentStage(StageDelayStart);
-		}
-		else if(btnIsEnterPressed)
-		{
-			//NO
-			backToMain();
-		}
-
-	} //AS_DelayTimeConfirm
-	else if(AutoStateIs(AS_DelayWaiting))
-	{
-		if(event == ButtonPressedEventMask)
-		{
-			if(btnIsStartPressed)
-			{
-				// Quit
-				uiRunningTimeStop();
-				tmPauseTimer();
-				backToMain();
-			}
-			else if(btnIsEnterPressed)
-			{
-				//GO
-				// cancel timer
-				uiRunningTimeStop();
-				tmPauseTimer();
-				uiClearSettingRow();
-				//_state = AS_DoughIn;
-				autoModeEnterDoughIn();
-			}
-		}
-		else if(event == TimeoutEventMask)
-		{
-			buzzPlaySound(SoundIdDelayTimeout);
-			uiRunningTimeStop();
-			uiClearSettingRow();
-			autoModeEnterDoughIn();
-		}
-	}//AS_DelayWaiting
-#endif
-	else if(AutoStateIs(AS_DoughIn))
-	{
-		if(event == TemperatureEventMask)
-		{
-			if(gCurrentTemperature >=gSettingTemperature)
-			{
-				// temp reached. ask continue & malt in
-				_state = AS_MashInAskContinue;
-				_mashingTemperatureReached = true;
-
-				uiPrompt(STR(TemperatureReached));
-				//{ADD_MALT_MOD
-				#if 1
-				uiButtonLabel(ButtonLabel(Continue_Yes_No));
-				#else
-				uiButtonLabel(ButtonLabel(Continue_Yes_x));
-				#endif
-				//}ADD_MALT_MOD
-
-				setEventMask(ButtonPressedEventMask);
-
-				buzzPlaySoundRepeat(SoundIdWaitUserInteraction);
-
-				brewLogger.event(RemoteEventTemperatureReached);
-				wiReportEvent(RemoteEventTemperatureReached);
-
-			}
-		}//TemperatureEventMask
-		else if(event == ButtonPressedEventMask)
-		{
-			// up/down/pause
-			if(btnIsStartPressed)
-			{
-				autoModePause(0);
-			}
-#if MANUAL_PUMP_MASH == true
-			else if(btnIsEnterPressed)
-			{
-				pump.toggle();
-			}
-#endif
-			else
-			{
-				//for up/down
-				processAdjustButtons();
-			}
-		}//ButtonPressedEventMask
-		#if EnableLevelSensor
-		else if(event == PumpRestEventMask)
-		{
-			togglePumpRest();
-		}
 		#endif
-
-	} // endof state AS_DoughIn
-	else if(AutoStateIs(AS_Pause))
+		return true;
+	}
+	else if(btnIsEnterPressed)
 	{
-		if(event == ButtonPressedEventMask
-			&& btnIsStartPressed)
-		{
-			autoModeExitPause();
+		// NO; before heat & pump are used, it is safe to switch directly
+		// instead of "backToMain"
+		switchApplication(MAIN_SCREEN);
+		return true;
+	}
+	return false;
+}
+
+#if NoDelayStart == false
+
+bool autoModeDelayTimerInputHandler(byte event)
+{
+	// input delay timer
+	if(event != ButtonPressedEventMask) return false;
+
+	if(btnIsUpPressed){
+		if( (_delayTime +1) < MAX_DELAY_TIME ){
+			_delayTime ++;
+			uiRunningTimeShowInitial(_delayTime * 15 * 60);
 		}
-	} //AS_Pause
-	else if(AutoStateIs(AS_MashInAskContinue))
-	{
-		if(btnIsStartPressed)
-		{
-			buzzMute();
-			if(readSetting(PS_PID_DoughIn)){
-			}else{
-				heatOff(); // turn off heat. during "dough-in"
-			}
-			// goto next stage, Mashing or ask MaltADD
-			if(readSetting(PS_SkipAddMalt))
-			{
-				uiClearPrompt();
-				// skip Add Malt , enter mashing state
-				autoModeEnterMashing();
-			}
-			else
-			{
-				pump.off();
-				// ask Add Malt
-				//uiClearPrompt();
-				uiPrompt(STR(Add_Malt));
-				//{ADD_MALT_MOD
-				//uiButtonLabel(ButtonLabel(Continue_Yes_No));
-				uiButtonLabel(ButtonLabel(Continue_Yes_Pmp));
-				//}ADD_MALT_MOD
-
-				_state = AS_AskAddMalt;
-
-				wiReportEvent(RemoteEventAddMalt);
-
-			}
+	}else if(btnIsDownPressed){
+		if(_delayTime > 1){
+			_delayTime --;
+			uiRunningTimeShowInitial(_delayTime * 15 * 60);
 		}
-		//{ADD_MALT_MOD
-		else if(btnIsEnterPressed)
-		{
-			// NO
-			// heater & pump might started, so use back to main
+	}else if(btnIsStartPressed){
+		// quit
+		backToMain();
+	}else if(btnIsEnterPressed){
+		_state = AS_DelayTimeConfirm;
+		uiButtonLabel(ButtonLabel(Continue_Yes_No));
+	}
+	return true;
+} 
+
+bool autoModeDelayTimerConfirmHandler(byte event)
+{
+	if(event != ButtonPressedEventMask) return false;
+
+	if(btnIsStartPressed){
+		// YES
+		_state = AS_DelayWaiting;
+		uiClearSubTitleRow();
+		uiSubTitle(STR(To_be_started_in));
+		uiButtonLabel(ButtonLabel(x_x_Quit_Go));
+
+		tmSetTimeoutAfter(_delayTime * 15 * 60 * 1000);
+		uiRunningTimeStartCountDown(_delayTime * 15 * 60);
+		setEventMask(TimeoutEventMask | ButtonPressedEventMask );
+
+		wiReportCurrentStage(StageDelayStart);
+		return true;
+	}else if(btnIsEnterPressed){
+		//NO
+		backToMain();
+		return true;
+	}
+	return false;
+} 
+
+bool autoModeDelayWaitingHandler(byte event)
+{
+	if(event == ButtonPressedEventMask){
+		if(btnIsStartPressed){
+			// Quit
+			uiRunningTimeStop();
+			tmPauseTimer();
 			backToMain();
+			return true;
+		}else if(btnIsEnterPressed){
+			//GO
+			// cancel timer
+			uiRunningTimeStop();
+			tmPauseTimer();
+			uiClearSettingRow();
+			//_state = AS_DoughIn;
+			autoModeEnterDoughIn();
+			return true;
 		}
-		//}ADD_MALT_MOD
-	} /// AS_MashInAskContinue
-	else if(AutoStateIs(AS_AskAddMalt))
-	{
-		if(btnIsStartPressed)
-		{
-			// YES
+	}else if(event == TimeoutEventMask){
+		buzzPlaySound(SoundIdDelayTimeout);
+		uiRunningTimeStop();
+		uiClearSettingRow();
+		autoModeEnterDoughIn();
+		return true;
+	}
+	return false;
+}//AS_DelayWaiting
+
+#endif
+
+bool autoModeDoughInHandler(byte event)
+{
+	if(event == TemperatureEventMask){
+		if(gCurrentTemperature >=gSettingTemperature){
+			// temp reached. ask continue & malt in
+			_state = AS_MashInAskContinue;
+			_mashingTemperatureReached = true;
+
+			uiPrompt(STR(TemperatureReached));
+			//{ADD_MALT_MOD
+			#if 1
+			uiButtonLabel(ButtonLabel(Continue_Yes_No));
+			#else
+			uiButtonLabel(ButtonLabel(Continue_Yes_x));
+			#endif
+			//}ADD_MALT_MOD
+
+			setEventMask(ButtonPressedEventMask);
+
+			buzzPlaySoundRepeat(SoundIdWaitUserInteraction);
+
+			brewLogger.event(RemoteEventTemperatureReached);
+			wiReportEvent(RemoteEventTemperatureReached);
+			return true;
+		}
+	}//TemperatureEventMask
+	else if(event == ButtonPressedEventMask){
+		// up/down/pause
+		if(btnIsStartPressed){
+			autoModePause(0);
+		}
+#if MANUAL_PUMP_MASH == true
+		else if(btnIsEnterPressed){
+				pump.toggle();
+		}
+#endif
+		else{
+			//for up/down
+			processAdjustButtons();
+		}
+		return true;
+	}//ButtonPressedEventMask
+	#if EnableLevelSensor
+	else if(event == PumpRestEventMask){
+		togglePumpRest();
+		return true;
+	}
+	#endif
+	return false;
+} // endof state AS_DoughIn
+
+bool autoModePauseHandler(byte event)
+{
+	if(event == ButtonPressedEventMask){
+		if(btnIsStartPressed){
+			autoModeExitPause();
+			return true;
+		}
+	}
+	return false;
+}
+
+bool autoModeMashInAskContinueHandler(byte event)
+{
+	if(btnIsStartPressed){
+
+		buzzMute();
+		if(readSetting(PS_PID_DoughIn)){
+		}else{
+			heatOff(); // turn off heat. during "dough-in"
+		}
+		// goto next stage, Mashing or ask MaltADD
+		if(readSetting(PS_SkipAddMalt)){
 			uiClearPrompt();
+			// skip Add Malt , enter mashing state
 			autoModeEnterMashing();
+		}else{
+			pump.off();
+			// ask Add Malt
+			//uiClearPrompt();
+			uiPrompt(STR(Add_Malt));
+			//{ADD_MALT_MOD
+			//uiButtonLabel(ButtonLabel(Continue_Yes_No));
+			uiButtonLabel(ButtonLabel(Continue_Yes_Pmp));
+			//}ADD_MALT_MOD
+
+			_state = AS_AskAddMalt;
+
+			wiReportEvent(RemoteEventAddMalt);
+
 		}
-		else if(btnIsEnterPressed)
-		{
-			pump.toggle();
-		}
-	} // AS_AskAddMalt
-	else if(AutoStateIs(AS_Mashing))
+		return true;
+	}else if(btnIsEnterPressed){
+		// NO
+		// heater & pump might started, so use back to main
+		backToMain();
+		return true;
+	}
+	return false;
+} /// AS_MashInAskContinue
+
+bool autoModeAskAddMaltHandler(byte event)
+{
+	if(btnIsStartPressed)
 	{
-		// handle key event together.
-		// the same way reached or not.
-		if(event == ButtonPressedEventMask)
-		{
-			if(_askingSkipMashingStage)
-			{
-#if EnableExtendedMashStep
-				if(btnIsUpPressed)
-				{
-					autoModeToggleMashExtension();
-				} else
-#endif //#if EnableExtendedMashStep
-				if(btnIsStartPressed)
-				{
-					// YES.
-					// undone _askingSkipMashingStage
-					uiClearPrompt();
-					// not necessary , autoModeMashingStageFinished()
-					// will print eht menu againuiButtonLabel(ButtonLabel(Up_Down_Pause_STP));
-					// unwind the change
-					uiRunningTimeHide(false);
-					_askingSkipMashingStage = false;
-					tmPauseTimer(); // cancel timer, if any
-					// go to next stage
-					autoModeMashingStageFinished();
-				}
-				else if(btnIsEnterPressed)
-				{
-					// NO
-					uiClearPrompt();
-					#if	MANUAL_PUMP_MASH == true
-					uiButtonLabel(ButtonLabel(Up_Down_PmPus_STP));
-					#else
-					uiButtonLabel(ButtonLabel(Up_Down_Pause_STP));
-					#endif
-					// unwind the change
-					uiRunningTimeHide(false);
-					_askingSkipMashingStage = false;
-				}
-				return;
+		// YES
+		uiClearPrompt();
+		autoModeEnterMashing();
+		return true;
+	}
+	else if(btnIsEnterPressed)
+	{
+		pump.toggle();
+		return true;
+	}
+	return false;
+}
+
+bool autoModeMashingHandler(byte event)
+{
+	// handle key event together.
+	// the same way reached or not.
+	if(event == ButtonPressedEventMask){
+		if(_askingSkipMashingStage){
+			#if EnableExtendedMashStep
+			if(btnIsUpPressed){
+				autoModeToggleMashExtension();
+			} else
+			#endif //#if EnableExtendedMashStep
+			if(btnIsStartPressed){
+				// YES.
+				// undone _askingSkipMashingStage
+				uiClearPrompt();
+				// not necessary , autoModeMashingStageFinished()
+				// will print eht menu againuiButtonLabel(ButtonLabel(Up_Down_Pause_STP));
+				// unwind the change
+				uiRunningTimeHide(false);
+				_askingSkipMashingStage = false;
+				tmPauseTimer(); // cancel timer, if any
+				// go to next stage
+				autoModeMashingStageFinished();
+			}else if(btnIsEnterPressed){
+				// NO
+				uiClearPrompt();
+				#if	MANUAL_PUMP_MASH == true
+				uiButtonLabel(ButtonLabel(Up_Down_PmPus_STP));
+				#else
+				uiButtonLabel(ButtonLabel(Up_Down_Pause_STP));
+				#endif
+				// unwind the change
+				uiRunningTimeHide(false);
+				_askingSkipMashingStage = false;
 			}
-			// else
-			if(btnIsStartPressed)
-			{
+			return true;
+		}
+		// else, not asking skipe mashing
+		if(btnIsStartPressed){
 
 			#if	MANUAL_PUMP_MASH == true
-				if(btnIsStartLongPressed)
-				{
+			if(btnIsStartLongPressed){
 			#endif
-
 				// if in
-				if(_mashingTemperatureReached)
-				{
+				if(_mashingTemperatureReached){
 					buzzMute();
 					autoModePause(tmPauseTimer());
-
-				}
-				else
-				{
+				}else{
 					autoModePause(0);
 				}
 			#if	MANUAL_PUMP_MASH == true
-				}
-				else
-				{
-					pump.toggle();
-					gManualPump = true;
-				}
-			#endif
-			}
-			else if(btnIsEnterPressed)
-			{
-				#if EnableExtendedMashStep
-
-				if(_mashingStageExtending)
-				{
-					// go to next step.
-					autoModeMashingStageFinished();
-				}
-				else
-				#endif // #if EnableExtendedMashStep
-
-				// Skip, go to next stage
-				if(btnIsEnterLongPressed)  // long pressed is "cover" in normal pressed
-				{
-					if(_mashingTemperatureReached)
-						buzzMute();
-					uiRunningTimeHide(true);
-					_askingSkipMashingStage = true;
-					//uiClearPrompt();
-					#if EnableExtendedMashStep
-					uiPrompt(STR(Skip_Or_Extend));
-					uiButtonLabel(ButtonLabel(Extend_Skip_Back));
-					#else //#if EnableExtendedMashStep
-					uiPrompt(STR(Go_to_next_step));
-					uiButtonLabel(ButtonLabel(Continue_Yes_No));
-					#endif //#if EnableExtendedMashStep
-				}
-			}
-			else
-			{
-				//up, down etc.
-				if(_askingSkipMashingStage) return; // ignore
-
-				processAdjustButtons();
-			}
-
-		}
-		else if(event == PumpRestEventMask)
-		{
-			togglePumpRest();
-		}
-		else // else of PumpRestEvent & Button,
-		{
-			//DBG_PRINTF("reach:%d, setting:%d\n",_mashingTemperatureReached,(int)gSettingTemperature);
-			if(_mashingTemperatureReached)
-			{
-				if(event == TimeoutEventMask)
-				{
-					// counting time
-					// except button, we care also two timer
-					// one for 10  or 5 seconds before time out
-					// the other for end of phase timeout
-					if(IsAuxTimeout)
-					{
-						buzzPlaySound(SoundIdCountDown);
-					}
-					else
-					{
-
-						// next stage
-						if(_askingSkipMashingStage)
-						{
-							uiClearPrompt();
-							uiRunningTimeHide(false);
-							_askingSkipMashingStage = false;
-						}
-
-						#if EnableExtendedMashStep
-						if(_mashingStageExtendEnable)
-						{
-							autoModeEnterMashingExtension();
-						}
-						else
-						#endif //#if EnableExtendedMashStep
-						{
-							autoModeMashingStageFinished();
-						}
-					}
-				}
-			}
-			else // of if(_mashingTemperatureReached)
-			{
-				if(event == TemperatureEventMask)
-				{
-					// rising temperature
-					if(gCurrentTemperature >= gSettingTemperature)
-					{
-						brewLogger.event(RemoteEventTemperatureReached);
-
-						_mashingTemperatureReached = true;
-						unsigned long seconds=(unsigned long)automation.stageTime(_mashingStep) * 60;
-
-						tmSetTimeoutAfter( seconds *1000);
-						tmSetAuxTimeoutAfter((seconds-ADVANCE_BEEP_TIME) *1000);
-
-						uiRunningTimeStartCountDown(seconds);
-
-						buzzPlaySound(SoundIdTemperatureReached);
-
-						pump.setRestEnabled(true);
-
-						wiReportEvent(RemoteEventTemperatureReached);
-
-					}
-				}
-			} 	// end of else if(_mashingTemperatureReached)
-		}		// end of temperature and timeout handling
-	}//AS_Mashing
-	else if(AutoStateIs(AS_IodineTest))
-	{
-		// timeout or user press ok
-		if(event ==ButtonPressedEventMask)
-		{
-		    if(btnIsStartPressed)
-		    {
-			    uiClearPrompt();
-			    // back to next mashing step: Mashout
-			    autoModeIodineTestToMashout();
-			}
-			else  if(btnIsEnterPressed)
-			{
-			    // extend mash
-			    autoModeIodineTestToMashExtension();
-			}
-		}
-		else if(event ==TimeoutEventMask)
-		{
-			uiClearPrompt();
-			//[TODO:] make sure not other timeout event
-			autoModeIodineTestToMashout();
-		}
-	}//AS_IodineTest
-	else if(AutoStateIs(AS_AskMaltRemove))
-	{
-		if(event ==ButtonPressedEventMask)
-		{
-			if(btnIsStartPressed)
-			{
-				buzzMute();
-
-				// yes
-				uiClearPrompt();
-				autoModeEnterBoiling();
-			}
-			else if(btnIsEnterPressed)
-			{
-				// back to main
-				backToMain();
-			}
-		}
-	}//AS_AskMaltRemove
-	else if(AutoStateIs(AS_Boiling))
-	{
-		if(event ==ButtonPressedEventMask)
-		{
-				if (btnIsEnterPressed)
-				{
-					// pump control
-					pump.toggle();
-				}
-				else if(btnIsStartPressed)
-				{
-					if(_isBoilTempReached)
-					{
-						autoModeBoilingPauseHandler();
-					}
-				}
-				else
-				{
-					processAdjustButtons();
-				}
-		}
-		else if(event ==TimeoutEventMask)
-		{
-//#ifdef AUX_TIMER_HOP
-			if(IsAuxTimeout)
-			{
-				// start next timer to end notice of hop adding
-				if(recoveryTimer)
-				{
-					uiAutoModeStage(BoilingStage);
-					autoModeStartNextHopTimer();
-				}
-				else
-				{
-					// start next timer
-					autoModeAddHopNotice();
-				}
-			}
-			else
-			{
-
-					// next stage
-					heatOff(); // heat OFF
-					// switch to post boil for next starts.
-#if SecondaryHeaterSupport
-					setHeatingElementForStage(HeatingStagePostBoil);
-#endif
-					pump.off();
-
-					brewLogger.event(RemoteEventBoilFinished);
-					wiReportEvent(RemoteEventBoilFinished);
-
-					buzzPlaySoundRepeat(SoundIdWaitUserInteraction);
-
-					if(automation.numberOfHopStandSession() ==0)
-    					autoModeCoolingOrWhirlpool();
-    				else
-    				    autoModeStartHopStand();
-			}
-
-//#endif
-		}
-		else // if(event ==TemperatureMask)
-		{
-			togglePwmInput();
-
-			if(gCurrentTemperature >= gBoilStageTemperature)
-			{
-				if(_isBoilTempReached == false)
-				{
-					brewLogger.event(RemoteEventTemperatureReached);
-					_isBoilTempReached=true;
-
-					//buzz temperature reach first
-					// because later "add hop" buzz may interrupt
-					// it
-					wiReportEvent(RemoteEventTemperatureReached);
-					buzzPlaySound(SoundIdBoil);
-					// start counting down
-					byte boilTime=automation.boilTime();
-					uiRunningTimeStartCountDown((unsigned long)boilTime *60);
-					// start hop & boiling out timer
-					autoModeStartBoilingTimer();
-
-					uiButtonLabel(ButtonLabel(Up_Down_Pause_Pmp));
-				}
-			}
-		}
-	} //AS_Boiling
-	else if(AutoStateIs(AS_HopStandChilling))
-	{
-	    if(event == ButtonPressedEventMask){
-	        if(!_stageConfirm){
-	            if (btnIsStartPressed){
-	                _stageConfirm=true;
-	                buzzMute();
-	                uiButtonLabel(ButtonLabel(Up_Down_Skip_Pmp));
-	            }
-	            return;
-	        }
-	        // else stageConfirm
-			if (btnIsEnterPressed)
-			{
-				// pump control
+			}else{
 				pump.toggle();
+				gManualPump = true;
 			}
-			else if (btnIsStartPressed)
-			{
-				// skip
-    		    if(btnIsStartLongPressed) {
-    		        _state = AS_HopStand;
-    		        brewLogger.stage(StageHopStand);
-		            autoModeEnterHopStand();
-		        }
+			#endif
+		}else if(btnIsEnterPressed){
+			#if EnableExtendedMashStep
+			if(_mashingStageExtending){
+					// go to next step.
+				autoModeMashingStageFinished();
+			}else
+			#endif // #if EnableExtendedMashStep
+
+			// Skip, go to next stage
+			// long pressed is "cover" in normal pressed
+			if(btnIsEnterLongPressed)  {
+
+				if(_mashingTemperatureReached) buzzMute();
+				
+				uiRunningTimeHide(true);
+				_askingSkipMashingStage = true;
+				//uiClearPrompt();
+				#if EnableExtendedMashStep
+				uiPrompt(STR(Skip_Or_Extend));
+				uiButtonLabel(ButtonLabel(Extend_Skip_Back));
+				#else //#if EnableExtendedMashStep
+				uiPrompt(STR(Go_to_next_step));
+				uiButtonLabel(ButtonLabel(Continue_Yes_No));
+				#endif //#if EnableExtendedMashStep
 			}
-			else
-			{
-				processAdjustButtons();
+		}else{
+			//up, down etc.
+			if(_askingSkipMashingStage) return false; // ignore
+
+			processAdjustButtons();
+		}
+		return true;
+	}else if(event == PumpRestEventMask){
+		togglePumpRest();
+		return true;
+	}else {
+		// else of PumpRestEvent & Button,
+		//DBG_PRINTF("reach:%d, setting:%d\n",_mashingTemperatureReached,(int)gSettingTemperature);
+		if(_mashingTemperatureReached){
+			if(event == TimeoutEventMask){
+				// counting time
+				// except button, we care also two timer
+				// one for 10  or 5 seconds before time out
+				// the other for end of phase timeout
+				if(IsAuxTimeout){
+					buzzPlaySound(SoundIdCountDown);
+				}else{
+					// next stage
+					if(_askingSkipMashingStage){
+						uiClearPrompt();
+						uiRunningTimeHide(false);
+						_askingSkipMashingStage = false;
+					}
+
+					#if EnableExtendedMashStep
+					if(_mashingStageExtendEnable){
+						autoModeEnterMashingExtension();
+					}else
+					#endif //#if EnableExtendedMashStep
+					{
+						autoModeMashingStageFinished();
+					}
+				}
+				return true;
+			} // end of event == TimeoutEventMask
+		}else {
+			// else of if(_mashingTemperatureReached)
+			if(event == TemperatureEventMask){
+				// rising temperature
+				if(gCurrentTemperature >= gSettingTemperature){
+					brewLogger.event(RemoteEventTemperatureReached);
+
+					_mashingTemperatureReached = true;
+					unsigned long seconds=(unsigned long)automation.stageTime(_mashingStep) * 60;
+
+					tmSetTimeoutAfter( seconds *1000);
+					tmSetAuxTimeoutAfter((seconds-ADVANCE_BEEP_TIME) *1000);
+
+					uiRunningTimeStartCountDown(seconds);
+
+					buzzPlaySound(SoundIdTemperatureReached);
+
+					pump.setRestEnabled(true);
+
+					wiReportEvent(RemoteEventTemperatureReached);
+					return true;
+				}
 			}
-		}else if(event == TemperatureEventMask) {
-		    if(gCurrentTemperature <= gSettingTemperature){
+		} 	// end of else if(_mashingTemperatureReached)
+	}		// end of temperature and timeout handling
+	return false;
+}//AS_Mashing
+
+bool autoModeIodineTestHandler(byte event)
+{
+	// timeout or user press ok
+	if(event ==ButtonPressedEventMask){
+		if(btnIsStartPressed){
+			uiClearPrompt();
+			// back to next mashing step: Mashout
+			autoModeIodineTestToMashout();
+			return true;
+		}else  if(btnIsEnterPressed){
+			// extend mash
+			autoModeIodineTestToMashExtension();
+			return true;
+		}
+	}else if(event ==TimeoutEventMask){
+		uiClearPrompt();
+		//[TODO:] make sure not other timeout event
+		autoModeIodineTestToMashout();
+		return true;
+	}
+	return false;
+}//AS_IodineTest
+
+bool autoModeAskMaltRemoveHandler(byte event)
+{
+	if(event ==ButtonPressedEventMask){
+		if(btnIsStartPressed){
+			buzzMute();
+			// yes
+			uiClearPrompt();
+			autoModeEnterBoiling();
+			return true;
+		}else if(btnIsEnterPressed){
+			// back to main
+			backToMain();
+			return true;
+		}
+	}
+	return false;
+}
+
+bool autoModeBoilingHandler(byte event)
+{
+	if(event ==ButtonPressedEventMask){
+		if (btnIsEnterPressed){
+			// pump control
+			pump.toggle();
+		}else if(btnIsStartPressed){
+			if(_isBoilTempReached){
+				autoModeBoilingPauseHandler();
+			}
+		}else{
+			processAdjustButtons();
+		}
+		return true;
+	}else if(event ==TimeoutEventMask){
+		if(IsAuxTimeout){
+			// start next timer to end notice of hop adding
+			if(recoveryTimer){
+				uiAutoModeStage(BoilingStage);
+				autoModeStartNextHopTimer();
+			}else{
+				// start next timer
+				autoModeAddHopNotice();
+			}
+		}else{
+			//boiling timer timeout
+			// next stage
+			heatOff(); // heat OFF
+			// switch to post boil for next starts.
+			#if SecondaryHeaterSupport
+			setHeatingElementForStage(HeatingStagePostBoil);
+			#endif
+			pump.off();
+
+			brewLogger.event(RemoteEventBoilFinished);
+			wiReportEvent(RemoteEventBoilFinished);
+
+			buzzPlaySoundRepeat(SoundIdWaitUserInteraction);
+
+			if(automation.numberOfHopStandSession() ==0) autoModeCoolingOrWhirlpool();
+    		else autoModeStartHopStand();
+		}
+		return true;
+	}else{ // if(event ==TemperatureMask)
+		bool ret=false;
+		if(gCurrentTemperature >= gBoilStageTemperature){
+			if(_isBoilTempReached == false){
+				brewLogger.event(RemoteEventTemperatureReached);
+				_isBoilTempReached=true;
+
+				//buzz temperature reach first
+				// because later "add hop" buzz may interrupt
+				// it
+				wiReportEvent(RemoteEventTemperatureReached);
+				buzzPlaySound(SoundIdBoil);
+				// start counting down
+				byte boilTime=automation.boilTime();
+				uiRunningTimeStartCountDown((unsigned long)boilTime *60);
+				// start hop & boiling out timer
+				autoModeStartBoilingTimer();
+
+				uiButtonLabel(ButtonLabel(Up_Down_Pause_Pmp));
+				ret=true;
+			}
+		}
+		bool toggled=togglePwmInput();
+		return ret || toggled;
+	}
+	return false;
+} //AS_Boiling
+
+bool autoModeHopStandChillingHandler(byte event)
+{
+	if(event == ButtonPressedEventMask){
+	    if(!_stageConfirm){
+	        if (btnIsStartPressed){
+            	_stageConfirm=true;
+            	buzzMute();
+	            uiButtonLabel(ButtonLabel(Up_Down_Skip_Pmp));
+				return true;
+	        }
+	        return false;
+	    }
+	    // else stageConfirm
+		if (btnIsEnterPressed){
+			// pump control
+			pump.toggle();
+		}else if (btnIsStartPressed){
+			// skip
+    		if(btnIsStartLongPressed) {
     		    _state = AS_HopStand;
-    		     brewLogger.stage(StageHopStand);
+    		    brewLogger.stage(StageHopStand);
 		        autoModeEnterHopStand();
 		    }
+		}else{
+			processAdjustButtons();
 		}
-	} //AS_HopStandChilling
-	else if(AutoStateIs(AS_HopStand))
-	{
-	    if(event == ButtonPressedEventMask){
-			if (btnIsEnterPressed)
-			{
+		return true;
+	}else if(event == TemperatureEventMask) {
+		if(gCurrentTemperature <= gSettingTemperature){
+    		_state = AS_HopStand;
+    		brewLogger.stage(StageHopStand);
+		    autoModeEnterHopStand();
+			return true;
+		}
+	}
+	return false;
+} //AS_HopStandChilling
+
+bool autoModeHopStandHandler(byte event)
+{
+	if(event == ButtonPressedEventMask){
+		if (btnIsEnterPressed){
+			// pump control
+			pump.toggle();
+		}else if (btnIsStartPressed){
+			// Skip
+    		if(btnIsStartLongPressed) {
+    			 autoModeEndHopStandSession();
+    		}
+		}else{
+			processAdjustButtons();
+		}
+		return true;
+    }else if(event == TimeoutEventMask) {
+    	if(IsAuxTimeout){
+           	autoModeAuxTimeout();
+		}else{
+		    autoModeHopStandTimeout();
+		}
+		return true;
+    }
+	return false;
+} //AS_HopStand
+
+bool autoModeCoolingHandler(byte event)
+{
+	if(_stageConfirm){
+		if(event == ButtonPressedEventMask){
+			if (btnIsEnterPressed){
 				// pump control
 				pump.toggle();
-			}
-			else if (btnIsStartPressed)
-			{
-				// Skip
-    		    if(btnIsStartLongPressed) {
-    				 autoModeEndHopStandSession();
-    		    }
-			}
-			else
-			{
+			}else if (btnIsStartPressed){
+				// next stage
+				autoModeCoolingFinish();
+			}else{
 				processAdjustButtons();
 			}
-        }else if(event == TimeoutEventMask) {
-        	if(IsAuxTimeout){
-            	autoModeAuxTimeout();
-			}else{
-			    autoModeHopStandTimeout();
-			}
-        }
-	} //AS_HopStand
-	else if(AutoStateIs(AS_Cooling))
-	{
-		if(_stageConfirm)
-		{
-			if(event == ButtonPressedEventMask)
-			{
-				if (btnIsEnterPressed)
-				{
-					// pump control
-					pump.toggle();
-				}
-				else if (btnIsStartPressed)
-				{
-					// next stage
-					autoModeCoolingFinish();
-				}
-				else
-				{
-					processAdjustButtons();
-				}
-			}
-			else if(event == TemperatureEventMask)
-			{
-				// if temperature drop to desire temp
-				// end this phase
-				if(gCurrentTemperature <= gSettingTemperature )
-				{
-					// next stage
-					//Manual END. no Auto end
-					// autoModeCoolingFinish();
-					if(!_coolingTempReached){
-						buzzPlaySound(SoundIdTemperatureReached);
-						wiReportEvent(RemoteEventTemperatureReached);
-						_coolingTempReached=true;
-					}
+			return true;
+		}else if(event == TemperatureEventMask){
+			// if temperature drop to desire temp
+			// end this phase
+			if(gCurrentTemperature <= gSettingTemperature ){
+				// next stage
+				//Manual END. no Auto end
+				// autoModeCoolingFinish();
+				if(!_coolingTempReached){
+					buzzPlaySound(SoundIdTemperatureReached);
+					wiReportEvent(RemoteEventTemperatureReached);
+					_coolingTempReached=true;
+					return true;
 				}
 			}
 		}
-		else // of if(_stageConfirm), in state of asking Enter Cooling
-		{
-			// wait confirm
-			if(event != ButtonPressedEventMask) return;
-			buzzMute();
-			if(btnIsStartPressed)
-			{
-				brewLogger.stage(StageCooling);
-				// yes
-				_stageConfirm=true;
-				autoModeEnterCooling(0);
-				brewLogger.setPoint(gSettingTemperature);
-			}
-			else if (btnIsEnterPressed)
-			{
-				// no
-				autoModeCoolingFinish();
-			}
-		} // end of else of if(_stageConfirm)
-	} //AS_Cooling
-//#if NoWhirlpool != true
-	else if(AutoStateIs(AS_Whirlpool))
-	{
-		if(_stageConfirm)
-		{
-			if(_whirlpoolInput)
-			{
-				// input screen of Whirlpool time
-				if(event != ButtonPressedEventMask) return;
-
-				if(btnIsUpPressed)
-				{
-					//up
-					if((_whirlpoolTime + 1) <= MAX_WHIRLPOOL_TIME)
-					{
-						_whirlpoolTime++;
-						uiRunningTimeShowInitial(_whirlpoolTime * 60);
-					}
-				}
-				else if (btnIsDownPressed)
-				{
-					// down
-					if((_whirlpoolTime - 1) >= MIN_WHIRLPOOL_TIME)
-					{
-						_whirlpoolTime--;
-						uiRunningTimeShowInitial(_whirlpoolTime * 60);
-					}
-				}
-				else if (btnIsStartPressed)
-				{
-					//Quit
-					autoModeWhirlpoolFinish();
-				}
-				else if (btnIsEnterPressed)
-				{
-					//OK
-					_whirlpoolInput=false;
-					autoModeWhirlpool(0);
-				}
-			}
-			else // of _whirlpoolInput
-			{
-				// Whirlpool stage running
-				// counting time & running pump
-				if(event == ButtonPressedEventMask)
-				{
-
-					if(btnIsStartPressed)
-					{
-						if(!_pumpRunning)
-						{
-							// time, back to time setting
-							autoModeWhirlpoolInputTime();
-						}
-					}
-					else if(btnIsEnterPressed)
-					{
-						if(_pumpRunning)
-						{
-							// stop pump ,and stop & reset time
-							_pumpRunning = false;
-							pump.off();
-							uiRunningTimeShowInitial(_whirlpoolTime * 60);
-							tmPauseTimer();
-
-							uiButtonLabel(ButtonLabel(x_x_Time_Pmp));
-						}
-						else
-						{
-							_pumpRunning = true;
-							pump.on();
-							uiRunningTimeStartCountDown(_whirlpoolTime * 60);
-							tmSetTimeoutAfter((unsigned long)_whirlpoolTime*60*1000);
-
-							uiButtonLabel(ButtonLabel(x_x_x_Pmp));
-
-						}
-					}
-				}else if(event == TemperatureEventMask)
-				{
-					//[TODO:] temperature control
-				}
-				else if(event == TimeoutEventMask)
-				{
-					autoModeWhirlpoolFinish();
-				}
-			}
+	}else{
+		// of if(_stageConfirm), in state of asking Enter Cooling
+		// wait confirm
+		if(event != ButtonPressedEventMask) return false;
+		
+		buzzMute();
+		if(btnIsStartPressed){
+			brewLogger.stage(StageCooling);
+			// yes
+			_stageConfirm=true;
+			autoModeEnterCooling(0);
+			brewLogger.setPoint(gSettingTemperature);
+			return true;
+		}else if (btnIsEnterPressed){
+			// no
+			autoModeCoolingFinish();
+			return true;
 		}
-		else // if(_stageConfirm)
-		{
-			// wait confirm
-			if(event != ButtonPressedEventMask) return;
+	} // end of else of if(_stageConfirm)
+	return false;
+} //AS_Cooling
 
-			buzzMute();
 
-			if(btnIsStartPressed)
-			{
-				brewLogger.stage(StageWhirlpool);
-				// yes
-				_stageConfirm=true;
-				autoModeWhirlpoolInputTime();
-			}
-			else if (btnIsEnterPressed)
-			{
-				// no
+bool autoModeWhirlpoolHandler(byte event)
+{
+	if(_stageConfirm){
+		if(_whirlpoolInput){
+			// input screen of Whirlpool time
+			if(event != ButtonPressedEventMask) return false;
+
+			if(btnIsUpPressed){
+				//up
+				if((_whirlpoolTime + 1) <= MAX_WHIRLPOOL_TIME){
+					_whirlpoolTime++;
+					uiRunningTimeShowInitial(_whirlpoolTime * 60);
+				}
+			}else if (btnIsDownPressed){
+				// down
+				if((_whirlpoolTime - 1) >= MIN_WHIRLPOOL_TIME){
+					_whirlpoolTime--;
+					uiRunningTimeShowInitial(_whirlpoolTime * 60);
+				}
+			}else if (btnIsStartPressed){
+				//Quit
 				autoModeWhirlpoolFinish();
+			}else if (btnIsEnterPressed){
+				//OK
+				_whirlpoolInput=false;
+				autoModeWhirlpool(0);
 			}
-		} // of else // if(_stageConfirm)
+			return true;
+		}else{
+			 // of _whirlpoolInput
+			// Whirlpool stage running
+			// counting time & running pump
+			if(event == ButtonPressedEventMask){
 
-	}//AS_Whirlpool
-//#endif
-	else if(AutoStateIs(AS_Finished))
-	{
-		if(event == TimeoutEventMask)
-		{
-			backToMain();
+				if(btnIsStartPressed){
+					if(!_pumpRunning){
+						// time, back to time setting
+						autoModeWhirlpoolInputTime();
+					}
+				}else if(btnIsEnterPressed){
+					if(_pumpRunning){
+							// stop pump ,and stop & reset time
+						_pumpRunning = false;
+						pump.off();
+						uiRunningTimeShowInitial(_whirlpoolTime * 60);
+						tmPauseTimer();
+
+						uiButtonLabel(ButtonLabel(x_x_Time_Pmp));
+					}else{
+						_pumpRunning = true;
+						pump.on();
+						uiRunningTimeStartCountDown(_whirlpoolTime * 60);
+						tmSetTimeoutAfter((unsigned long)_whirlpoolTime*60*1000);
+
+						uiButtonLabel(ButtonLabel(x_x_x_Pmp));
+
+					}
+				}
+				return true;
+			}else if(event == TemperatureEventMask){
+					//[TODO:] temperature control
+			}
+			else if(event == TimeoutEventMask){
+					autoModeWhirlpoolFinish();
+					return true;
+			}
 		}
+	}else{ // if(_stageConfirm)
+			// wait confirm
+		if(event != ButtonPressedEventMask) return false;
+
+		buzzMute();
+
+		if(btnIsStartPressed){
+			brewLogger.stage(StageWhirlpool);
+			// yes
+			_stageConfirm=true;
+			autoModeWhirlpoolInputTime();
+		}else if (btnIsEnterPressed){
+			// no
+			autoModeWhirlpoolFinish();
+		}
+		return true;
+	} // of else // if(_stageConfirm)
+	return false;
+}//AS_Whirlpool
+
+bool autoModeFinishedHandler(byte event)
+{
+	if(event == TimeoutEventMask)
+	{
+		backToMain();
+		return true;
+	}
+	return false;
+}
+
+bool autoModeEventHandler(byte event)
+{
+	// switch-case uses more memory, though it looks better
+	//
+	if(AutoStateIs( AS_AskResume)){
+		return autoModeAskResumeHandler(event);
+	}else
+
+#if NoDelayStart == false
+	if(AutoStateIs( AS_AskDelayStart)){
+		return autoModeAskDelayStartHandler(event);
+	}else
+#endif
+	if(AutoStateIs(AS_AskWaterAdded)){
+		return autoModeAskWaterAddedHandler(event);
+	}  //end of state AS_AskWaterAdded
+#if SpargeHeaterSupport == true
+	else if(AutoStateIs(AS_AskSpargeWaterAdded)){
+		return autoModeAskSpargeWaterAdded();
+	}  //end of state AS_AskWaterAdded
+#endif
+	else if(AutoStateIs(AS_PumpPrime)){
+		return autoModePumpPrimingHandler(event);
+	} // end of state AS_PumpPrime
+#if NoDelayStart == false
+	else if(AutoStateIs(AS_DelayTimeInput)){
+		return autoModeDelayTimerInputHandler(event);
+	}else if(AutoStateIs(AS_DelayTimeConfirm)){
+		return autoModeDelayTimerConfirmHandler(event);
+	}else if(AutoStateIs(AS_DelayWaiting)){
+		return autoModeDelayWaitingHandler(event);
+	}//AS_DelayWaiting
+#endif
+	else if(AutoStateIs(AS_DoughIn)){
+		return autoModeDoughInHandler(event);
+	}else if(AutoStateIs(AS_Pause)){
+		return autoModePauseHandler(event);
+	}else if(AutoStateIs(AS_MashInAskContinue)){
+		return autoModeMashInAskContinueHandler(event);
+	}else if(AutoStateIs(AS_AskAddMalt)){
+		return autoModeAskAddMaltHandler(event);
+	} else if(AutoStateIs(AS_Mashing)){
+		return autoModeMashingHandler(event);
+	}else if(AutoStateIs(AS_IodineTest)){
+		return autoModeIodineTestHandler(event);
+	}else if(AutoStateIs(AS_AskMaltRemove)){
+		return autoModeAskMaltRemoveHandler(event);
+	}else if(AutoStateIs(AS_Boiling)){
+		return autoModeBoilingHandler(event);
+	}else if(AutoStateIs(AS_HopStandChilling)){
+		return autoModeHopStandChillingHandler(event);
+	}else if(AutoStateIs(AS_HopStand)){
+		return autoModeHopStandHandler(event);
+	}else if(AutoStateIs(AS_Cooling)){
+		return autoModeCoolingHandler(event);
+	}else if(AutoStateIs(AS_Whirlpool)){
+		return autoModeWhirlpoolHandler(event);
+	}else if(AutoStateIs(AS_Finished)){
+		return autoModeFinishedHandler(event);
 	}//AS_Finished
+	return false;
 } // end of autoModeEventHandler
 
 
@@ -6499,15 +6478,16 @@ public:
 		uiPrompt(STR(StartDistilling));
 		uiButtonLabel(ButtonLabel(DistillConfirm));
 	}
-	void eventHanlder(byte event){
-		if(_state == DistillingStateConfirmation)  eventHanlderConfirmation(event);
-		else if(_state == DistillingStateBeforeHead) eventHanlderBeforeHead(event);
-		else if(_state == DistillingStateHeadConfirmation) eventHanlderHeadConfirmation(event);
-		else if(_state == DistillingStateHead) eventHanlderHead(event);
-		else if(_state == DistillingStateHeart) eventHanlderHeart(event);
-		else if(_state == DistillingStateTail) eventHanlderTail(event);
-		else if(_state == DistillingStateEnd) eventHanlderEnd(event);
-		else if(_state == DistillingStateManual) eventHanlderManualDistilling(event);
+	bool eventHanlder(byte event){
+		if(_state == DistillingStateConfirmation)  return eventHanlderConfirmation(event);
+		else if(_state == DistillingStateBeforeHead) return eventHanlderBeforeHead(event);
+		else if(_state == DistillingStateHeadConfirmation) return eventHanlderHeadConfirmation(event);
+		else if(_state == DistillingStateHead) return eventHanlderHead(event);
+		else if(_state == DistillingStateHeart) return eventHanlderHeart(event);
+		else if(_state == DistillingStateTail) return eventHanlderTail(event);
+		else if(_state == DistillingStateEnd) return eventHanlderEnd(event);
+		else if(_state == DistillingStateManual) return eventHanlderManualDistilling(event);
+		return false;
 	}
 
 protected:
@@ -6566,7 +6546,7 @@ protected:
 		wiReportCurrentStage(StageManualMode);
 	}
 
-	void eventHanlderManualDistilling(byte event){
+	bool eventHanlderManualDistilling(byte event){
 		if(event == ButtonPressedEventMask)
 		{
 			if(btnIsStartPressed)
@@ -6675,6 +6655,7 @@ protected:
 			{
 				handleAdjustPwm();
 			}
+			return true;
 		}
 		else if(event == TemperatureEventMask)
 		{
@@ -6699,6 +6680,7 @@ protected:
 	
 					brewLogger.event(RemoteEventTemperatureReached);
 					wiReportEvent(RemoteEventTemperatureReached);
+					return true;
 				}
 			}
 				// Temperate Reached state	
@@ -6708,7 +6690,9 @@ protected:
 			buzzPlaySound(SoundIdCountDown);
 			isManualModeCountDownMode=false;
 			uiRunningTimeStart();
+			return true;
 		}
+		return false;
 	}
 
 	void enterAutomaticDistilling(void){
@@ -6756,7 +6740,7 @@ protected:
 		wiReportCurrentStage(StageDistillingPreHeat);
 	}
 
-	void eventHanlderConfirmation(byte event){
+	bool eventHanlderConfirmation(byte event){
 		if(btnIsStartPressed){
 			enterAutomaticDistilling();
 		}else if(btnIsDownPressed){
@@ -6764,7 +6748,8 @@ protected:
 		}else if(btnIsEnterPressed){
 			// back to main
 			backToMain();
-		}
+		}else return false;
+		return true;
 	}
 
 	void automaticDistillFinished(void)
@@ -6789,11 +6774,13 @@ protected:
 		wiReportEvent(RemoteEventBrewFinished);
 	}
 
-	void eventHanlderEnd(byte event){
+	bool eventHanlderEnd(byte event){
 		if(event == TimeoutEventMask){
 			buzzMute();
 			backToMain();
+			return true;
 		}
+		return false;
 	}
 	
 	void changePwmValue(uint8_t pwm){
@@ -6833,15 +6820,16 @@ protected:
 			else
 			{
 				pump.toggle();
-			}
+			}			
 		}else{
 			handleAdjustPwm();
 		}
+		return true;
 	}
 
-	void eventHanlderBeforeHead(byte event){
+	bool eventHanlderBeforeHead(byte event){
 		if(event == ButtonPressedEventMask){
-			autoDistillerButtonHandler();
+			return autoDistillerButtonHandler();
 		} else if(event == TemperatureEventMask){
 			if(gCurrentTemperature >= gSettingTemperature ){
 				// stop heating
@@ -6855,11 +6843,13 @@ protected:
 				_state = DistillingStateHeadConfirmation;
 
 				buzzPlaySoundRepeat(SoundIdConfirmUser);
+				return true;
 			}
 		} // TemperatureEventMask
+		return false;
 	}
 
-	void eventHanlderHeadConfirmation(byte event){
+	bool eventHanlderHeadConfirmation(byte event){
 		if(event == ButtonPressedEventMask){
 			if(btnIsEnterPressed){
 				buzzMute();
@@ -6876,14 +6866,16 @@ protected:
 
 				brewLogger.stage(StageDistillingHead);
 				wiReportCurrentStage(StageDistillingHead);
-
+				return true;
 			}
-		} // TemperatureEventMask
+		} 
+		return false;
 	}
 
-	void eventHanlderHead(byte event){
+	bool eventHanlderHead(byte event){
 		if(event == ButtonPressedEventMask){
-			autoDistillerButtonHandler();
+			return autoDistillerButtonHandler();
+
 		} else if(event == TemperatureEventMask){
 			if(gCurrentTemperature >= gSettingTemperature ){
 				_state = DistillingStateHeart;
@@ -6895,13 +6887,15 @@ protected:
 				wiReportCurrentStage(StageDistillingHeart);
 
 				buzzPlaySound(SoundIdTemperatureReached);
+				return true;
 			}
 		} // TemperatureEventMask
+		return false;
 	}
 
-	void eventHanlderHeart(byte event){
+	bool eventHanlderHeart(byte event){
 		if(event == ButtonPressedEventMask){
-			autoDistillerButtonHandler();
+			return autoDistillerButtonHandler();
 		} else if(event == TemperatureEventMask){
 			if(gCurrentTemperature >= gSettingTemperature ){
 				_state = DistillingStateTail;
@@ -6912,19 +6906,23 @@ protected:
 				brewLogger.stage(StageDistillingTail);
 				wiReportCurrentStage(StageDistillingTail);
 				buzzPlaySound(SoundIdTemperatureReached);
+				return true;
 			}
 		} // TemperatureEventMask
+		return false;
 	}
 
-	void eventHanlderTail(byte event){
+	bool eventHanlderTail(byte event){
 		if(event == ButtonPressedEventMask){
-			autoDistillerButtonHandler();
+			return autoDistillerButtonHandler();
 		} else if(event == TemperatureEventMask){
 			if(gCurrentTemperature >= gSettingTemperature ){
 				_state = DistillingStateEnd;
-				automaticDistillFinished();					
+				automaticDistillFinished();	
+				return true;				
 			}
 		} // TemperatureEventMask
+		return false;
 	}
 
 
@@ -6936,9 +6934,9 @@ void distillingSetup(void)
 	distiller.setup();
 }
 
-void distillingEventHandler(byte event)
+bool distillingEventHandler(byte event)
 {
-	distiller.eventHanlder(event);
+	return distiller.eventHanlder(event);
 }
 #endif
 
@@ -6967,7 +6965,7 @@ void mainSetup(void)
 //  -start button->auto
 //  -ener button ->setup
 
-void mainEventHandler(byte event)
+bool mainEventHandler(byte event)
 {
 	if(btnIsEnterPressed)
 	{
@@ -6987,7 +6985,10 @@ void mainEventHandler(byte event)
   	{
       	switchApplication(DISTILLING_MODE_SCREEN);
   	}
+#else
+	else return false;
 #endif
+	return true;
 }
 
 // *************************
@@ -7010,7 +7011,7 @@ void switchApplication(byte screenId)
 	setEventMask(ButtonPressedEventMask);
 
 	(* currentScreen->setup)();
-	// every "setup" will update "stage", so push LCD is not necessary wiPushLcdContent();
+
 }
 
 void backToMain(void)
@@ -7105,22 +7106,29 @@ void brewmaniac_loop() {
 	//  Event: BUTTON,  TEMP Reach, TimeOut.
 
 	tpReadTemperature();
-
+	bool updateLcd;
 	// let the handler compare the temperatures themselves if they request it.
-	if(_currentEventMask & TemperatureEventMask)
-		(*currentScreen->eventHandler)(TemperatureEventMask);
-
+	if(_currentEventMask & TemperatureEventMask){
+		wiLcdBufferBegin();
+		updateLcd=(*currentScreen->eventHandler)(TemperatureEventMask);
+		wiLcdBufferEnd(updateLcd);
+	}
 	if(tmTiming())
 	{
-		if(_currentEventMask & TimeoutEventMask)
-			(*currentScreen->eventHandler)(TimeoutEventMask);
+		if(_currentEventMask & TimeoutEventMask){
+			wiLcdBufferBegin();
+			updateLcd=(*currentScreen->eventHandler)(TimeoutEventMask);
+			wiLcdBufferEnd(updateLcd);
+		}
 	}
 
 	if(btnReadButtons())
 	{
-		if(isExactButtonsPressed(ButtonUpMask | ButtonDownMask))
+		if(isExactButtonsPressed(ButtonUpMask | ButtonDownMask)){
+			wiLcdBufferBegin();
 			backToMain();
-		else
+			wiLcdBufferEnd(true);
+		}else
 	#if UseLcdBuffer
 		if(isExactButtonsPressed(ButtonUpMask | ButtonDownMask | ButtonStartMask | ButtonEnterMask ))
 			refreshLcdDisplay();
@@ -7129,14 +7137,19 @@ void brewmaniac_loop() {
 		{
 			// if(_currentEventMask & ButtonPressedEventMask) button event is always handled in all
 			// screen!
+			wiLcdBufferBegin();
 			(*currentScreen->eventHandler)(ButtonPressedEventMask);
+			wiLcdBufferEnd(true);
 		}
 	}
 
 	if(pump.restEvent())
 	{
-		if(_currentEventMask & PumpRestEventMask)
+		if(_currentEventMask & PumpRestEventMask){
+			wiLcdBufferBegin();
 			(*currentScreen->eventHandler)(PumpRestEventMask);
+			wiLcdBufferEnd(true);
+		}
 	}
 
 	#if MaximumNumberOfSensors > 1

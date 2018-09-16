@@ -1165,9 +1165,15 @@ unsigned long _profileLoopBegin;
 void displayIP(bool apmode){
 	IPV4Address ip;
 	if(apmode){
+	  	DebugOut("AP IP: ");
+  		DebugOut(WiFi.softAPIP());
+
 		ip.dword = WiFi.softAPIP();
 		bmWeb.setIp(ip.bytes,true);
 	}else{
+	  	DebugOut("local IP: ");
+  		DebugOut(WiFi.localIP());
+
 		ip.dword = WiFi.localIP();
 		bmWeb.setIp(ip.bytes);
 	}
