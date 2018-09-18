@@ -36,7 +36,7 @@
 //#define PS_SensorType     11      // Sensor Type
 #define PS_NoDelayStart  11      // delaystart
 #define PS_BoilTemp     12       //Temp Boil °C
-//     13       Temp Boil °F
+#define PS_HeatOnPump  13
 #define PS_PumpCycle     14  //     Time Pump Cycle
 #define PS_PumpRest     15   //    Time Pump Rest
 #define PS_PumpPreMash     16  //     Pump PreMash
@@ -123,7 +123,7 @@ const unsigned char  DEFAULT_EEPROM[] PROGMEM={
 0, //#define PS_TempUnit   10     //  Scale Temp
 0,  //#define NoDelay Start     11      //
 99, //#define PS_BoilTemp     12       //Temp Boil °C
-0, //     13       Temp Boil °F
+0, //    #define PS_HeatOnPump
 15, //#define PS_PumpCycle     14  //     Time Pump Cycle
 0, //#define PS_PumpRest     15   //    Time Pump Rest
 0, //#define PS_PumpPreMash     16  //     Pump PreMash

@@ -2708,8 +2708,8 @@ const SettingItem pidSettingItems[] PROGMEM=
 /*1*/{STR(kI),          & displayOffset100,  PS_kI, 255,0},
 /*2*/{STR(kD),          & displayOffset100,  PS_kD, 200,0},
 #endif
-/*3,9*/{STR(SampleTime),  & displayMultiply250,PS_SampleTime,3500/250,1500/250},
-/*4,10*/{STR(WindowSet_ms),& displayMultiply250,PS_WindowSize,7500/250,4000/250},
+/*3,9*/{STR(SampleTime),  & displayMultiply250,PS_SampleTime,8000/250 /*3500/250*/,1500/250},
+/*4,10*/{STR(WindowSet_ms),& displayMultiply250,PS_WindowSize,40000/250 /*7500/250*/,4000/250},
 /*5,11*/{STR(Heat_in_Boil),& displayPercentage, PS_BoilHeat,100,0},
 /*6,12*/{STR(Start_PID_In),& displayTempDivide10,   PS_PID_Start,35,10},
 /*7,13*/{STR(SensorResolution),&displayResolution, 0 ,12,9,},
@@ -2831,6 +2831,7 @@ const SettingItem unitSettingItems[] PROGMEM={
 /* 13 */{STR(Skip_Iodine),  &displayYesNo,              PS_SkipIodineTest,1,0},
 /* 14 */{STR(IodineTime),   &displayTimeOff,            PS_IodineTime,90,0},
 /* 15 */{STR(Whirlpool),    &displayHotColdOff,         PS_Whirlpool,2,0}};
+/* 16 {STR(HeatOnPump),    &displayYesNo,         PS_HeatOnPump,1,0}}; */
 
 void settingUnitSetup(void)
 {
