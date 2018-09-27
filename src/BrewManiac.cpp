@@ -2644,6 +2644,7 @@ int distillGetValue(int index)
     else if(index == 4) return distillRecipe.tempOf(DistillTailTemp);
     else if(index == 5) return distillRecipe.pwmOf(DistillTailPwm);
     else if(index == 6) return distillRecipe.tempOf(DistillEndTemp);
+	return 0;
 }
 
 void distillSetValue(int index, int value)
@@ -2672,7 +2673,7 @@ bool distillRecipeEventHandler(byte)
 {
 
 	if(settingEditor.buttonHandler()){
-	    int index = settingEditor.index();
+	    size_t index =(size_t) settingEditor.index();
 		if(index  >= (sizeof(distillRecipeItems)/sizeof(SettingItem) -1)){
 			distillRecipe.save();
 	        switchApplication(SETUP_SCREEN);
@@ -6404,8 +6405,8 @@ bool autoModeEventHandler(byte event)
 	}  //end of state AS_AskWaterAdded
 #if SpargeHeaterSupport == true
 	else if(AutoStateIs(AS_AskSpargeWaterAdded)){
-		return autoModeAskSpargeWaterAdded();
-	}  //end of state AS_AskWaterAdded
+		return autoModeAskSpargeWaterAddedHandler(event);
+	}  //end of state AS_AskSpargeWaterAdded
 #endif
 	else if(AutoStateIs(AS_PumpPrime)){
 		return autoModePumpPrimingHandler(event);
@@ -6633,8 +6634,8 @@ protected:
 			}
 			else if(_blinkingSettingTemperature)
 			{
-				bool update=false;
-				long value=(long)manualModeChangeCountDownTime;
+				//bool update=false;
+				//long value=(long)manualModeChangeCountDownTime;
 				if(btnIsUpPressed)
 				{
 					adjustSp(1);

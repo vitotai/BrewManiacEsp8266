@@ -41,9 +41,18 @@
 #endif
 
 #define UsePaddleInsteadOfPump false
-#define SecondaryHeaterSupport false
-#define SpargeHeaterSupport false
 
+#if SecondaryHeaterSupportEnabled
+#define SecondaryHeaterSupport true
+#else
+#define SecondaryHeaterSupport false
+#endif
+
+#if SpargeHeaterSupportEnabled
+#define SpargeHeaterSupport true
+#else
+#define SpargeHeaterSupport false
+#endif
 
 #define LCD_USE_SSD1306 false
 

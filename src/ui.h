@@ -64,7 +64,7 @@ SymbolRevSpargeHeating =9
 ,
 SymbolPrimaryHeater=10,
 SymbolRevPrimaryHeater=11,
-SymbolSecondaryHeaterS=12,
+SymbolSecondaryHeater=12,
 SymbolRevSecondaryHeater=13
 #endif
 } SymbolId;
@@ -663,14 +663,14 @@ void uiSetMashExtensionStatus(uint8_t status)
 void loadHeatingIcons(byte mask)
 {
     if(mask == 1){ // primary
-   	    uiLcdAssignSymbol(LcdCharHeating,PrimaryHeaterSymbol);
-   	    uiLcdAssignSymbol(cdCharRevHeating,RevPrimaryHeaterSymbol);
+   	    uiLcdAssignSymbol(LcdCharHeating,SymbolPrimaryHeater);
+   	    uiLcdAssignSymbol(LcdCharRevHeating,SymbolRevPrimaryHeater);
     }else if(mask == 2){ // secondary
-   	    uiLcdAssignSymbol(LcdCharHeating,SecondaryHeaterSymbol);
-   	    uiLcdAssignSymbol(LcdCharRevHeating,RevSecondaryHeaterSymbol);
+   	    uiLcdAssignSymbol(LcdCharHeating,SymbolSecondaryHeater);
+   	    uiLcdAssignSymbol(LcdCharRevHeating,SymbolRevSecondaryHeater);
     }else{ // both
-   	    uiLcdAssignSymbol(LcdCharHeating,HeatingSymbol);
-       	uiLcdAssignSymbol(LcdCharRevHeating,RevHeatingSymbol);
+   	    uiLcdAssignSymbol(LcdCharHeating,SymbolHeating);
+       	uiLcdAssignSymbol(LcdCharRevHeating,SymbolRevHeating);
     }
 }
 
@@ -1172,7 +1172,7 @@ void uiDistillingModeStage(byte idx)
 	if(idx ==DistillStageStart) str = STR( Start);
 	else if(idx ==DistillStageHead)  str=STR( Head);
 	else if(idx ==DistillStageHeart)  str=STR( Heart);
-	else if(idx ==DistillStageTail)  str=STR( Tail);
+	else /*if(idx ==DistillStageTail)*/  str=STR( Tail);
 
 	uiLcdClear(10,0,9);
 	uiLcdPrint_P(10,0,str);
