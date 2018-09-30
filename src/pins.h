@@ -62,6 +62,8 @@
 #define LevelSensorPin NODEMCU_PIN_D7
 #endif
 
+#define SensorNormalCloseOnNotFull true
+
 #endif
 
 #if PUMP_USE_EXT != true
@@ -202,7 +204,7 @@ void initIOPins(void)
 #if EnableLevelSensor
 // close/connected/ground: not full
 // open/disconnected/V+: full
-
+#if SensorNormalCloseOnNotFull
 #if LevelSensorOnIoExpander
 bool isWaterLevelFull(void){
 	// _portvalue is read for button every loop cycle
@@ -214,6 +216,20 @@ bool isWaterLevelFull(void){
 }
 #endif
 
+#else
+
+#if LevelSensorOnIoExpander
+bool isWaterLevelFull(void){
+	// _portvalue is read for button every loop cycle
+	return (_portvalue & LevelSensorIOExpPin) ==0;
+}
+#else
+bool isWaterLevelFull(void){
+	return digitalRead(LevelSensorPin) == 0;
+}
+#endif
+
+#endif //#if SensorNormalCloseOnNotFull
 #endif // EnableLevelSensor
 
 

@@ -1198,6 +1198,266 @@ void tpReadTemperature(void)
 
 #endif // #if MaximumNumberOfSensors > 1
 
+// *************************
+//*  pump related function
+// *************************
+
+class RestableDevice
+{
+    bool _isDeviceOn;
+    bool _physicalOn;
+    unsigned long _lastSwitchOnTime;
+    float _stopTemp;
+
+    unsigned long _restTime;
+    unsigned long _cycleTime;
+    bool _isRestStateChanged;
+    bool _restEnabled;
+
+#if EnableLevelSensor
+	bool _forcedRest;
+#endif
+
+    void virtual deviceOn(void)=0;
+    void virtual deviceOff(bool)=0;
+public:
+    RestableDevice(void)
+    {
+	    _physicalOn=false;
+	    _isDeviceOn=false;
+	    _isRestStateChanged = false;
+	    _restEnabled=false;
+#if EnableLevelSensor
+		_forcedRest = false;
+#endif
+
+    }
+
+    void turnPhysicalOn(void)
+    {
+	    if(_physicalOn) return;
+    	deviceOn();
+	    _physicalOn=true;
+	    _lastSwitchOnTime = gCurrentTimeInMS;
+    }
+
+    void turnPhysicalOff(void)
+    {
+        deviceOff(_isDeviceOn);
+		_physicalOn=false;
+    }
+
+    void setCycle(unsigned long cycle, unsigned long rest)
+    {
+    	_restTime =rest;
+	    _cycleTime=cycle;
+    }
+
+    void resetRest(void)
+    {
+	    _restEnabled=false;
+    	_isRestStateChanged = false;
+    }
+
+    void setStopTemp(float temp)
+    {
+        _stopTemp = temp;
+    }
+
+    void off(void)
+    {
+	    if(!_isDeviceOn) return;
+	    _isDeviceOn=false;
+	    turnPhysicalOff();
+    }
+
+    void on(void)
+    {
+	    if(_isDeviceOn) return;
+	    _isDeviceOn=true;
+
+	    turnPhysicalOn();
+    }
+
+    void toggle(void)
+    {
+	    if(_isDeviceOn)
+		    off();
+	    else
+		    on();
+    }
+
+    bool isRestEnabled(void)
+    {
+	    return _restEnabled;
+    }
+    bool isOn(void)
+    {
+        return _isDeviceOn;
+    }
+
+    bool isRest(void)
+    {
+	    return ! _physicalOn;
+    }
+	bool isPhysicalOn(void)
+	{
+		return  _physicalOn;
+	}
+#if EnableLevelSensor
+	void setForcedRest(bool rest){
+		_forcedRest = rest;
+		
+		if(!_forcedRest){
+			// end of forced Rest, 
+			// reset the time. so that the pump will be turned on in run()
+			_lastSwitchOnTime = gCurrentTimeInMS;
+			if(_isDeviceOn) _isRestStateChanged = true;
+		}
+	}
+#endif
+
+    void setRestEnabled(boolean enable)
+    {
+	    _restEnabled=enable;
+
+    	if(_restEnabled && _physicalOn) // restart counting time
+	    	_lastSwitchOnTime = gCurrentTimeInMS;
+
+    	if(!_restEnabled && _isDeviceOn)
+	    {
+            if(!_physicalOn)
+            {
+			    turnPhysicalOn();
+		    }
+	    }
+    }
+
+    boolean restEvent(void)
+    {
+	    if(_isRestStateChanged)
+	    {
+		    _isRestStateChanged = false;
+		    return true;
+	    }
+	    return false;
+    }
+
+    void run(void)
+    {
+	    if(!_isDeviceOn) return;
+
+#if EnableLevelSensor
+		if(_forcedRest){
+      	    if(_physicalOn)
+      	    {
+			    turnPhysicalOff();
+        	    _isRestStateChanged = true;
+		    }
+			return;
+		}
+#endif
+
+	    // overheat temperature protection
+	    if(!IS_TEMP_INVALID(gCurrentTemperature) &&  (gCurrentTemperature >= _stopTemp))
+	    {
+      	    if(_physicalOn)
+      	    {
+			    turnPhysicalOff();
+        	    _isRestStateChanged = true;
+		    }
+		    return;
+  	    }
+  	    else // of if(gCurrentTemperature >= _pumpStopTemp)
+  	    {
+			// if under pump stop temperature
+
+			// device is "ON" (or it returns at beginning of this function)
+		    if(!_restEnabled)
+		    {
+      		    if(!_physicalOn) turnPhysicalOn();
+			    return;
+		    }
+         	if((gCurrentTimeInMS - _lastSwitchOnTime) < (unsigned long)_cycleTime)
+          	{
+      	    	if(!_physicalOn)
+      		    {
+	      		    DBG_PRINTF("-End Pump Rest-");
+      			    turnPhysicalOn();
+        		    _isRestStateChanged = true;
+        	    }
+      	    }
+      	    else
+      	    {
+	  		    if(_restTime>0)
+	  		    {
+      		        // pump rest state, heat will be off!
+      			    if(_physicalOn)
+      			    {
+      				    DBG_PRINTF("-Pump Rest-");
+      				    turnPhysicalOff();
+        			    _isRestStateChanged = true;
+        		    }
+        	    }
+        	    if ((gCurrentTimeInMS - _lastSwitchOnTime) >= (_cycleTime + _restTime))
+        	    {
+        		    _lastSwitchOnTime = gCurrentTimeInMS;
+					// pump will be truned-on on next "run()" call.
+        		    //Serial.println("on time start");
+        	    }
+      	    }
+        } // end of else //if if(gCurrentTemperature >= _pumpStopTemp)
+
+    }//pumpThread()
+};
+
+class PumpControl: public RestableDevice
+{
+    public:
+    PumpControl(){}
+
+    void virtual deviceOn(void)
+    {
+	    setPumpOut(HIGH);
+	    uiPumpStatus(PumpStatus_On);
+	    wiReportPump(PumpStatus_On);
+    }
+
+    void virtual deviceOff(bool programOff)
+    {
+        setPumpOut(LOW);
+	    if(programOff){
+		    uiPumpStatus(PumpStatus_On_PROGRAM_OFF);
+		    wiReportPump(PumpStatus_On_PROGRAM_OFF);
+	    }else{
+		    uiPumpStatus(PumpStatus_Off);
+		    wiReportPump(PumpStatus_Off);
+	    }
+    }
+    void loadParameters(void)
+    {
+	    setStopTemp( (float) readSetting(PS_TempPumpRest));
+	    resetRest();
+
+    #if UsePaddleInsteadOfPump
+        setCycle((unsigned long) readSetting(PS_PumpCycle) *1000,(unsigned long) readSetting(PS_PumpRest) *1000);
+    #else
+        setCycle((unsigned long) readSetting(PS_PumpCycle) *60*1000,(unsigned long) readSetting(PS_PumpRest)*60 *1000);
+    #endif
+    }
+
+	void updateUI() {
+		if ( isOn() ) {
+			uiPumpStatus(PumpStatus_On);
+		    wiReportPump(PumpStatus_On);
+		} else {
+			uiPumpStatus(PumpStatus_Off);
+			wiReportPump(PumpStatus_Off);
+		}
+	}
+};
+
+PumpControl pump;
 
 // *************************
 //*  heating related function
@@ -1701,6 +1961,7 @@ void heaterControl(void)
 {
 	if(! gIsHeatOn) return;
 
+	// heat is ON by requested following.
 	if(IS_TEMP_INVALID(gCurrentTemperature)) {
 		if(_physicalHeattingOn) {
 #if SpargeHeaterSupport
@@ -1710,6 +1971,20 @@ void heaterControl(void)
 #endif
 		}
 		return;
+	}
+
+	if(readSetting(PS_HeatOnPump)){
+		if(! pump.isPhysicalOn()){
+			if(_physicalHeattingOn) {
+
+				#if SpargeHeaterSupport
+				requestHeaterOff();
+				#else
+				heatPhysicalOff();
+				#endif
+			}
+			return;
+		}
 	}
 
  	pidInput = gCurrentTemperature;
@@ -1858,264 +2133,6 @@ void setSettingTemperature(float temp)
     wiReportSettingTemperature();
 }
 
-
-// *************************
-//*  pump related function
-// *************************
-
-class RestableDevice
-{
-    bool _isDeviceOn;
-    bool _physicalOn;
-    unsigned long _lastSwitchOnTime;
-    float _stopTemp;
-
-    unsigned long _restTime;
-    unsigned long _cycleTime;
-    bool _isRestStateChanged;
-    bool _restEnabled;
-
-#if EnableLevelSensor
-	bool _forcedRest;
-#endif
-
-    void virtual deviceOn(void)=0;
-    void virtual deviceOff(bool)=0;
-public:
-    RestableDevice(void)
-    {
-	    _physicalOn=false;
-	    _isDeviceOn=false;
-	    _isRestStateChanged = false;
-	    _restEnabled=false;
-#if EnableLevelSensor
-		_forcedRest = false;
-#endif
-
-    }
-
-    void turnPhysicalOn(void)
-    {
-	    if(_physicalOn) return;
-    	deviceOn();
-	    _physicalOn=true;
-	    _lastSwitchOnTime = gCurrentTimeInMS;
-    }
-
-    void turnPhysicalOff(void)
-    {
-        deviceOff(_isDeviceOn);
-		_physicalOn=false;
-    }
-
-    void setCycle(unsigned long cycle, unsigned long rest)
-    {
-    	_restTime =rest;
-	    _cycleTime=cycle;
-    }
-
-    void resetRest(void)
-    {
-	    _restEnabled=false;
-    	_isRestStateChanged = false;
-    }
-
-    void setStopTemp(float temp)
-    {
-        _stopTemp = temp;
-    }
-
-    void off(void)
-    {
-	    if(!_isDeviceOn) return;
-	    _isDeviceOn=false;
-	    turnPhysicalOff();
-    }
-
-    void on(void)
-    {
-	    if(_isDeviceOn) return;
-	    _isDeviceOn=true;
-
-	    turnPhysicalOn();
-    }
-
-    void toggle(void)
-    {
-	    if(_isDeviceOn)
-		    off();
-	    else
-		    on();
-    }
-
-    bool isRestEnabled(void)
-    {
-	    return _restEnabled;
-    }
-    bool isOn(void)
-    {
-        return _isDeviceOn;
-    }
-
-    bool isRest(void)
-    {
-	    return ! _physicalOn;
-    }
-
-#if EnableLevelSensor
-	void setForcedRest(bool rest){
-		_forcedRest = rest;
-		
-		if(!_forcedRest){
-			// end of forced Rest, 
-			// reset the time. so that the pump will be turned on in run()
-			_lastSwitchOnTime = gCurrentTimeInMS;
-			if(_isDeviceOn) _isRestStateChanged = true;
-		}
-	}
-#endif
-
-    void setRestEnabled(boolean enable)
-    {
-	    _restEnabled=enable;
-
-    	if(_restEnabled && _physicalOn) // restart counting time
-	    	_lastSwitchOnTime = gCurrentTimeInMS;
-
-    	if(!_restEnabled && _isDeviceOn)
-	    {
-            if(!_physicalOn)
-            {
-			    turnPhysicalOn();
-		    }
-	    }
-    }
-
-    boolean restEvent(void)
-    {
-	    if(_isRestStateChanged)
-	    {
-		    _isRestStateChanged = false;
-		    return true;
-	    }
-	    return false;
-    }
-
-    void run(void)
-    {
-	    if(!_isDeviceOn) return;
-
-#if EnableLevelSensor
-		if(_forcedRest){
-      	    if(_physicalOn)
-      	    {
-			    turnPhysicalOff();
-        	    _isRestStateChanged = true;
-		    }
-			return;
-		}
-#endif
-
-	    // overheat temperature protection
-	    if(!IS_TEMP_INVALID(gCurrentTemperature) &&  (gCurrentTemperature >= _stopTemp))
-	    {
-      	    if(_physicalOn)
-      	    {
-			    turnPhysicalOff();
-        	    _isRestStateChanged = true;
-		    }
-		    return;
-  	    }
-  	    else // of if(gCurrentTemperature >= _pumpStopTemp)
-  	    {
-			// if under pump stop temperature
-
-			// device is "ON" (or it returns at beginning of this function)
-		    if(!_restEnabled)
-		    {
-      		    if(!_physicalOn) turnPhysicalOn();
-			    return;
-		    }
-         	if((gCurrentTimeInMS - _lastSwitchOnTime) < (unsigned long)_cycleTime)
-          	{
-      	    	if(!_physicalOn)
-      		    {
-	      		    DBG_PRINTF("-End Pump Rest-");
-      			    turnPhysicalOn();
-        		    _isRestStateChanged = true;
-        	    }
-      	    }
-      	    else
-      	    {
-	  		    if(_restTime>0)
-	  		    {
-      		        // pump rest state, heat will be off!
-      			    if(_physicalOn)
-      			    {
-      				    DBG_PRINTF("-Pump Rest-");
-      				    turnPhysicalOff();
-        			    _isRestStateChanged = true;
-        		    }
-        	    }
-        	    if ((gCurrentTimeInMS - _lastSwitchOnTime) >= (_cycleTime + _restTime))
-        	    {
-        		    _lastSwitchOnTime = gCurrentTimeInMS;
-					// pump will be truned-on on next "run()" call.
-        		    //Serial.println("on time start");
-        	    }
-      	    }
-        } // end of else //if if(gCurrentTemperature >= _pumpStopTemp)
-
-    }//pumpThread()
-};
-
-class PumpControl: public RestableDevice
-{
-    public:
-    PumpControl(){}
-
-    void virtual deviceOn(void)
-    {
-	    setPumpOut(HIGH);
-	    uiPumpStatus(PumpStatus_On);
-	    wiReportPump(PumpStatus_On);
-    }
-
-    void virtual deviceOff(bool programOff)
-    {
-        setPumpOut(LOW);
-	    if(programOff){
-		    uiPumpStatus(PumpStatus_On_PROGRAM_OFF);
-		    wiReportPump(PumpStatus_On_PROGRAM_OFF);
-	    }else{
-		    uiPumpStatus(PumpStatus_Off);
-		    wiReportPump(PumpStatus_Off);
-	    }
-    }
-    void loadParameters(void)
-    {
-	    setStopTemp( (float) readSetting(PS_TempPumpRest));
-	    resetRest();
-
-    #if UsePaddleInsteadOfPump
-        setCycle((unsigned long) readSetting(PS_PumpCycle) *1000,(unsigned long) readSetting(PS_PumpRest) *1000);
-    #else
-        setCycle((unsigned long) readSetting(PS_PumpCycle) *60*1000,(unsigned long) readSetting(PS_PumpRest)*60 *1000);
-    #endif
-    }
-
-	void updateUI() {
-		if ( isOn() ) {
-			uiPumpStatus(PumpStatus_On);
-		    wiReportPump(PumpStatus_On);
-		} else {
-			uiPumpStatus(PumpStatus_Off);
-			wiReportPump(PumpStatus_Off);
-		}
-	}
-};
-
-PumpControl pump;
 
 
 // *************************
@@ -2831,8 +2848,8 @@ const SettingItem unitSettingItems[] PROGMEM={
 /* 12 */{STR(Skip_Remove),  &displayYesNo,              PS_SkipRemoveMalt,1,0},
 /* 13 */{STR(Skip_Iodine),  &displayYesNo,              PS_SkipIodineTest,1,0},
 /* 14 */{STR(IodineTime),   &displayTimeOff,            PS_IodineTime,90,0},
-/* 15 */{STR(Whirlpool),    &displayHotColdOff,         PS_Whirlpool,2,0}};
-/* 16 {STR(HeatOnPump),    &displayYesNo,         PS_HeatOnPump,1,0}}; */
+/* 15 */{STR(Whirlpool),    &displayHotColdOff,         PS_Whirlpool,2,0},
+/* 16 */{STR(HeatOnPump),    &displayYesNo,         PS_HeatOnPump,1,0}}; 
 
 void settingUnitSetup(void)
 {
@@ -3758,6 +3775,41 @@ void loadBrewParameters(void)
 	#endif
 
 }
+
+
+void togglePumpRest(void){
+				//
+			if(pump.isRest())
+			{
+				// into rest
+				//no special manual uiButtonLabel(ButtonLabel(_Pump_Rest_));
+				// stop heat
+				#if !UsePaddleInsteadOfPump
+				heatProgramOff();
+				buzzPlaySound(PumpRestSoundId);
+				#endif
+
+				wiReportEvent(RemoteEventPumpRest);
+			}
+			else
+			{
+				#if 0
+				// back from rest
+				#if MANUAL_PUMP_MASH == true
+				uiButtonLabel(ButtonLabel(Up_Down_PmPus_STP));
+				#else
+				uiButtonLabel(ButtonLabel(Up_Down_Pause_STP));
+				#endif
+				#endif
+
+				#if !UsePaddleInsteadOfPump
+				heatOn();
+				buzzPlaySound(PumpRestEndSoundId);
+				#endif
+
+				wiReportEvent(RemoteEventPumpRestEnd);
+			}
+}
 // ***************************************************************************
 //*  Manual Mode Screen
 //*
@@ -4157,29 +4209,7 @@ bool manualModeEventHandler(byte event)
 		} // end of temperature handling
 		else if(event == PumpRestEventMask)
 		{
-			//
-			if(pump.isRest())
-			{
-				// into rest
-				//no special manual uiButtonLabel(ButtonLabel(_Pump_Rest_));
-				// stop heat
-				#if !UsePaddleInsteadOfPump
-				heatProgramOff();
-				buzzPlaySound(PumpRestSoundId);
-				#endif
-
-				wiReportEvent(RemoteEventPumpRest);
-			}
-			else
-			{
-
-				#if !UsePaddleInsteadOfPump
-				heatOn();
-				buzzPlaySound(PumpRestEndSoundId);
-				#endif
-
-				wiReportEvent(RemoteEventPumpRestEnd);
-			}
+			togglePumpRest();
 			return true;
 		}
 		#if SupportManualModeCountDown == true
@@ -4453,11 +4483,8 @@ void autoModeNextMashingStep(bool resume)
 	#endif
 	_mashingTemperatureReached=false;
 
-	//if(pump.isRest())
-	//{
-		heatOn();
-	//}
 	pump.setRestEnabled(false);
+	heatOn();
 
 #if	MANUAL_PUMP_MASH == true
 	if(!gManualPump)
@@ -5366,39 +5393,7 @@ void autoModeStartHopStand(void)
     }
 }
 
-void togglePumpRest(void){
-				//
-			if(pump.isRest())
-			{
-				// into rest
-				//no special manual uiButtonLabel(ButtonLabel(_Pump_Rest_));
-				// stop heat
-				#if !UsePaddleInsteadOfPump
-				heatProgramOff();
-				buzzPlaySound(PumpRestSoundId);
-				#endif
 
-				wiReportEvent(RemoteEventPumpRest);
-			}
-			else
-			{
-				#if 0
-				// back from rest
-				#if MANUAL_PUMP_MASH == true
-				uiButtonLabel(ButtonLabel(Up_Down_PmPus_STP));
-				#else
-				uiButtonLabel(ButtonLabel(Up_Down_Pause_STP));
-				#endif
-				#endif
-
-				#if !UsePaddleInsteadOfPump
-				heatOn();
-				buzzPlaySound(PumpRestEndSoundId);
-				#endif
-
-				wiReportEvent(RemoteEventPumpRestEnd);
-			}
-}
 //************************************
 // for recovery
 //

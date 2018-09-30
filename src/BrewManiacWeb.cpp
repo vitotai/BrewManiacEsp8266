@@ -180,8 +180,8 @@ static const char* SettingMap[]={
   	"s_nodelay",
 //#define PS_BoilTemp     12       //Temp Boil °C
 	"s_boil",
-//     13       Temp Boil °F
-	NULL,
+//     13       
+	"s_hop",
 //#define PS_PumpCycle     14  //     Time Pump Cycle
 	"s_pumpcycle",
 //#define PS_PumpRest     15   //    Time Pump Rest

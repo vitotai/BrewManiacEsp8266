@@ -293,6 +293,7 @@ StringConst( Pump_Stop, "Pump Stop");
 StringConst( PID_MaltOut, "PID Malt Out");
 StringConst( Active, "Active");
 StringConst( Passive, "Passive");
+StringConst( HeatOnPump,"Heat@Pump");
 
 StringConst( Skip_Add, "Skip Add");
 StringConst( Yes, "Yes");

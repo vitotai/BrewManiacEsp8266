@@ -29,7 +29,7 @@
 */
 
 
-#ifdef EnableMultiSensor
+#if MultipleSensorEnabled
 #define MaximumNumberOfSensors 5
 #else
 #define MaximumNumberOfSensors 1
@@ -40,7 +40,11 @@
 #error "MaximumNumberOfSensors should not exceed 5"
 #endif
 
+#if UsePaddleInsteadOfPumpEnabled
+#define UsePaddleInsteadOfPump true
+#else
 #define UsePaddleInsteadOfPump false
+#endif
 
 #if SecondaryHeaterSupportEnabled
 #define SecondaryHeaterSupport true
@@ -59,6 +63,11 @@
 #if SupportDistilling
 #define PwmHeatingSupport true
 #endif
+
+#ifndef EnableLevelSensor
+#define EnableLevelSensor false
+#endif
+
 /**************************************************************************************/
 /*  BrewManiac Related settings                                                       */
 /**************************************************************************************/
@@ -104,9 +113,6 @@
 
 #define SensorDiscGuardTime 10000
 
-#ifndef EnableLevelSensor
-#define EnableLevelSensor false
-#endif
 
 #define LevelSensorMinimumTriggerTime 200 // in ms
 #define MinimumPumpOnOffSwitch 5000 // in ms
@@ -169,7 +175,7 @@
 /*  version information     														  */
 /**************************************************************************************/
 
-#define BME8266_VERSION "0.4.5"
+#define BME8266_VERSION "0.4.6"
 
 #if MaximumNumberOfSensors >  1
 	#if LCD_USE_SSD1306 == true
