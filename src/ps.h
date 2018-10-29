@@ -99,15 +99,16 @@
 #define PS_AuxSensorAddressOf(i)    (PS_SensorAuxBase+(i))
 // 80-86
 
-//[90- 129] [104-143] sensor addresses
+// 8 bytes for each sensor addresses
+// maximum 5 sensors. so its 40bytes
 #define PS_SensorAddressBase    112
 #define PS_SensorAddressOf(i) ((i)*8 + PS_SensorAddressBase)
 
-//[130-135] multi-sensor calibration
-#define PS_SensorCalibrationAddressBase    130
+// 152 multi-sensor calibration
+#define PS_SensorCalibrationAddressBase    152
 #define CalibrationAddressOf(i) ((i) + PS_SensorCalibrationAddressBase)
 
-#define EEPROM_SIZE 140
+#define EEPROM_SIZE 160
 
 const unsigned char  DEFAULT_EEPROM[] PROGMEM={
 0, //#define PS_UseGas   0  //	space
