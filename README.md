@@ -27,13 +27,30 @@ PWM controlled heating instead of PID controlled. Customized 4 stages: pre-heat,
 
 
 ## Update History
- * 0.4 [pre-release]
+ * 0.4.6
+    * multi sensor calibration error fixed
+    * enable dragging on mobile platform
+    * Heat@Pump option to stop heating if pump is not running.
+
+ * 0.4.5
+    * new web fontend
+    * LCD mirror on web pages
+
+ * 0.4.2 
+    * AP only mode fixes
+    * HopStand support for exported beerXML from BeerSmith and Brewersfriend.com
+    * Settings survive through formatting file system
+    * Low pass filtered applied to temperature sensor readings.
+    * (untested, unverified, not enabled by default) Level sensor(float ball) support for Kettle-RIMS
+
+ * 0.4 
     * update ESPAsyncTCP and ESPAsyncWebServer library
     * Websocket instead of Server Side Event(EventSource)
     * Continuously Up/Down button action
     * Bug fixed, no temperature chart in Manual and Distilling mode.
     * Bug fixed, setting temperature udpate when changed
     * Bug fixed, No PUMP control in distilling auto mode
+
  * 0.3.3 [12/06/2017]
     * bugs fixed.
     * Moveable control panel, progress table, and temperature chart.
