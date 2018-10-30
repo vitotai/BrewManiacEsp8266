@@ -491,7 +491,7 @@ void virtualButtonPress(byte mask,boolean longPressed)
        gLongPressed = longPressed;
        _virtualButtonPressed=true;
 //      #if BUTTON_DEBUG == true
-//      Serial.println("virutal key");
+      DBG_PRINTF("virutal key:%d\n",mask);
 //      #endif
 }
 
