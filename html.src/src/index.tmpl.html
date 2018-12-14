@@ -1,0 +1,5270 @@
+<!doctype html>
+<html lang="<%= page_lang %>">
+
+<head>
+    <meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>BrewManiac</title>
+    <script>
+        var BMLIB_VERSION = "0.4.7";
+    </script>
+
+    <script type="text/javascript" src="bm.047.js" ignore></script>
+    <!--
+    <script type="text/javascript" src="js/lib.js" ignore></script>
+    <script type="text/javascript" src="js/lib/RGBColor.js" ignore></script>
+    <script type="text/javascript" src="js/lcd.js" ignore></script>
+
+    <script type="text/javascript" src="js/bm-util.js" ignore></script>
+    <script type="text/javascript" src="js/bm-brewchart.js" ignore></script>
+    <script type="text/javascript" src="js/bm-settings.js" ignore></script>
+    <script type="text/javascript" src="js/bm-automation.js" ignore></script>
+    <script type="text/javascript" src="js/bm-sound.js" ignore></script>
+    <script type="text/javascript" src="js/bm-chart.js" ignore></script>
+    <script type="text/javascript" src="js/bm-control.js" ignore></script>
+    <script type="text/javascript" src="js/bm-main.js" ignore></script>
+    <script type="text/javascript" src="js/bm-netcfg.js" ignore></script>
+    <script type="text/javascript" src="js/bm-log.js" ignore></script>
+    <script type="text/javascript" src="js/bm-cals.js" ignore></script>
+    <script type="text/javascript" src="js/bm-beerxml.js" ignore></script>
+    <script type="text/javascript" src="js/bm-recipe.js" ignore></script>
+    -->
+    <style>
+        /*! jQuery UI - v1.11.4 - 2018-09-19
+* http://jqueryui.com
+* Includes: core.css, draggable.css, resizable.css, selectable.css, sortable.css, accordion.css, autocomplete.css, button.css, datepicker.css, dialog.css, menu.css, progressbar.css, selectmenu.css, slider.css, spinner.css, tabs.css, tooltip.css, theme.css
+* To view and modify this theme, visit http://jqueryui.com/themeroller/?ffDefault=Lucida%20Grande%2CLucida%20Sans%2CArial%2Csans-serif&fwDefault=bold&fsDefault=1.1em&cornerRadius=6px&bgColorHeader=deedf7&bgTextureHeader=highlight_soft&bgImgOpacityHeader=100&borderColorHeader=aed0ea&fcHeader=222222&iconColorHeader=72a7cf&bgColorContent=f2f5f7&bgTextureContent=highlight_hard&bgImgOpacityContent=100&borderColorContent=dddddd&fcContent=362b36&iconColorContent=72a7cf&bgColorDefault=d7ebf9&bgTextureDefault=glass&bgImgOpacityDefault=80&borderColorDefault=aed0ea&fcDefault=2779aa&iconColorDefault=3d80b3&bgColorHover=e4f1fb&bgTextureHover=glass&bgImgOpacityHover=100&borderColorHover=74b2e2&fcHover=0070a3&iconColorHover=2694e8&bgColorActive=3baae3&bgTextureActive=glass&bgImgOpacityActive=50&borderColorActive=2694e8&fcActive=ffffff&iconColorActive=ffffff&bgColorHighlight=ffef8f&bgTextureHighlight=highlight_soft&bgImgOpacityHighlight=25&borderColorHighlight=f9dd34&fcHighlight=363636&iconColorHighlight=2e83ff&bgColorError=cd0a0a&bgTextureError=flat&bgImgOpacityError=15&borderColorError=cd0a0a&fcError=ffffff&iconColorError=ffffff&bgColorOverlay=eeeeee&bgTextureOverlay=diagonals_thick&bgImgOpacityOverlay=90&opacityOverlay=80&bgColorShadow=000000&bgTextureShadow=highlight_hard&bgImgOpacityShadow=70&opacityShadow=30&thicknessShadow=7px&offsetTopShadow=-7px&offsetLeftShadow=-7px&cornerRadiusShadow=8px
+* Copyright jQuery Foundation and other contributors; Licensed MIT */
+        
+        .ui-helper-hidden {
+            display: none
+        }
+        
+        .ui-helper-hidden-accessible {
+            border: 0;
+            clip: rect(0 0 0 0);
+            height: 1px;
+            margin: -1px;
+            overflow: hidden;
+            padding: 0;
+            position: absolute;
+            width: 1px
+        }
+        
+        .ui-helper-reset {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            outline: 0;
+            line-height: 1.3;
+            text-decoration: none;
+            font-size: 100%;
+            list-style: none
+        }
+        
+        .ui-helper-clearfix:before,
+        .ui-helper-clearfix:after {
+            content: "";
+            display: table;
+            border-collapse: collapse
+        }
+        
+        .ui-helper-clearfix:after {
+            clear: both
+        }
+        
+        .ui-helper-clearfix {
+            min-height: 0
+        }
+        
+        .ui-helper-zfix {
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            position: absolute;
+            opacity: 0;
+            filter: Alpha(Opacity=0)
+        }
+        
+        .ui-front {
+            z-index: 100
+        }
+        
+        .ui-state-disabled {
+            cursor: default!important
+        }
+        
+        .ui-icon {
+            display: block;
+            text-indent: -99999px;
+            overflow: hidden;
+            background-repeat: no-repeat
+        }
+        
+        .ui-widget-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%
+        }
+        
+        .ui-draggable-handle {
+            -ms-touch-action: none;
+            touch-action: none
+        }
+        
+        .ui-resizable {
+            position: relative
+        }
+        
+        .ui-resizable-handle {
+            position: absolute;
+            font-size: 0.1px;
+            display: block;
+            -ms-touch-action: none;
+            touch-action: none
+        }
+        
+        .ui-resizable-disabled .ui-resizable-handle,
+        .ui-resizable-autohide .ui-resizable-handle {
+            display: none
+        }
+        
+        .ui-resizable-n {
+            cursor: n-resize;
+            height: 7px;
+            width: 100%;
+            top: -5px;
+            left: 0
+        }
+        
+        .ui-resizable-s {
+            cursor: s-resize;
+            height: 7px;
+            width: 100%;
+            bottom: -5px;
+            left: 0
+        }
+        
+        .ui-resizable-e {
+            cursor: e-resize;
+            width: 7px;
+            right: -5px;
+            top: 0;
+            height: 100%
+        }
+        
+        .ui-resizable-w {
+            cursor: w-resize;
+            width: 7px;
+            left: -5px;
+            top: 0;
+            height: 100%
+        }
+        
+        .ui-resizable-se {
+            cursor: se-resize;
+            width: 12px;
+            height: 12px;
+            right: 1px;
+            bottom: 1px
+        }
+        
+        .ui-resizable-sw {
+            cursor: sw-resize;
+            width: 9px;
+            height: 9px;
+            left: -5px;
+            bottom: -5px
+        }
+        
+        .ui-resizable-nw {
+            cursor: nw-resize;
+            width: 9px;
+            height: 9px;
+            left: -5px;
+            top: -5px
+        }
+        
+        .ui-resizable-ne {
+            cursor: ne-resize;
+            width: 9px;
+            height: 9px;
+            right: -5px;
+            top: -5px
+        }
+        
+        .ui-selectable {
+            -ms-touch-action: none;
+            touch-action: none
+        }
+        
+        .ui-selectable-helper {
+            position: absolute;
+            z-index: 100;
+            border: 1px dotted black
+        }
+        
+        .ui-sortable-handle {
+            -ms-touch-action: none;
+            touch-action: none
+        }
+        
+        .ui-accordion .ui-accordion-header {
+            display: block;
+            cursor: pointer;
+            position: relative;
+            margin: 2px 0 0 0;
+            padding: .5em .5em .5em .7em;
+            min-height: 0;
+            font-size: 100%
+        }
+        
+        .ui-accordion .ui-accordion-icons {
+            padding-left: 2.2em
+        }
+        
+        .ui-accordion .ui-accordion-icons .ui-accordion-icons {
+            padding-left: 2.2em
+        }
+        
+        .ui-accordion .ui-accordion-header .ui-accordion-header-icon {
+            position: absolute;
+            left: .5em;
+            top: 50%;
+            margin-top: -8px
+        }
+        
+        .ui-accordion .ui-accordion-content {
+            padding: 1em 2.2em;
+            border-top: 0;
+            overflow: auto
+        }
+        
+        .ui-autocomplete {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: default
+        }
+        
+        .ui-button {
+            display: inline-block;
+            position: relative;
+            padding: 0;
+            line-height: normal;
+            margin-right: .1em;
+            cursor: pointer;
+            vertical-align: middle;
+            text-align: center;
+            overflow: visible
+        }
+        
+        .ui-button,
+        .ui-button:link,
+        .ui-button:visited,
+        .ui-button:hover,
+        .ui-button:active {
+            text-decoration: none
+        }
+        
+        .ui-button-icon-only {
+            width: 2.2em
+        }
+        
+        button.ui-button-icon-only {
+            width: 2.4em
+        }
+        
+        .ui-button-icons-only {
+            width: 3.4em
+        }
+        
+        button.ui-button-icons-only {
+            width: 3.7em
+        }
+        
+        .ui-button .ui-button-text {
+            display: block;
+            line-height: normal
+        }
+        
+        .ui-button-text-only .ui-button-text {
+            padding: .4em 1em
+        }
+        
+        .ui-button-icon-only .ui-button-text,
+        .ui-button-icons-only .ui-button-text {
+            padding: .4em;
+            text-indent: -9999999px
+        }
+        
+        .ui-button-text-icon-primary .ui-button-text,
+        .ui-button-text-icons .ui-button-text {
+            padding: .4em 1em .4em 2.1em
+        }
+        
+        .ui-button-text-icon-secondary .ui-button-text,
+        .ui-button-text-icons .ui-button-text {
+            padding: .4em 2.1em .4em 1em
+        }
+        
+        .ui-button-text-icons .ui-button-text {
+            padding-left: 2.1em;
+            padding-right: 2.1em
+        }
+        
+        input.ui-button {
+            padding: .4em 1em
+        }
+        
+        .ui-button-icon-only .ui-icon,
+        .ui-button-text-icon-primary .ui-icon,
+        .ui-button-text-icon-secondary .ui-icon,
+        .ui-button-text-icons .ui-icon,
+        .ui-button-icons-only .ui-icon {
+            position: absolute;
+            top: 50%;
+            margin-top: -8px
+        }
+        
+        .ui-button-icon-only .ui-icon {
+            left: 50%;
+            margin-left: -8px
+        }
+        
+        .ui-button-text-icon-primary .ui-button-icon-primary,
+        .ui-button-text-icons .ui-button-icon-primary,
+        .ui-button-icons-only .ui-button-icon-primary {
+            left: .5em
+        }
+        
+        .ui-button-text-icon-secondary .ui-button-icon-secondary,
+        .ui-button-text-icons .ui-button-icon-secondary,
+        .ui-button-icons-only .ui-button-icon-secondary {
+            right: .5em
+        }
+        
+        .ui-buttonset {
+            margin-right: 7px
+        }
+        
+        .ui-buttonset .ui-button {
+            margin-left: 0;
+            margin-right: -.3em
+        }
+        
+        input.ui-button::-moz-focus-inner,
+        button.ui-button::-moz-focus-inner {
+            border: 0;
+            padding: 0
+        }
+        
+        .ui-datepicker {
+            width: 17em;
+            padding: .2em .2em 0;
+            display: none
+        }
+        
+        .ui-datepicker .ui-datepicker-header {
+            position: relative;
+            padding: .2em 0
+        }
+        
+        .ui-datepicker .ui-datepicker-prev,
+        .ui-datepicker .ui-datepicker-next {
+            position: absolute;
+            top: 2px;
+            width: 1.8em;
+            height: 1.8em
+        }
+        
+        .ui-datepicker .ui-datepicker-prev-hover,
+        .ui-datepicker .ui-datepicker-next-hover {
+            top: 1px
+        }
+        
+        .ui-datepicker .ui-datepicker-prev {
+            left: 2px
+        }
+        
+        .ui-datepicker .ui-datepicker-next {
+            right: 2px
+        }
+        
+        .ui-datepicker .ui-datepicker-prev-hover {
+            left: 1px
+        }
+        
+        .ui-datepicker .ui-datepicker-next-hover {
+            right: 1px
+        }
+        
+        .ui-datepicker .ui-datepicker-prev span,
+        .ui-datepicker .ui-datepicker-next span {
+            display: block;
+            position: absolute;
+            left: 50%;
+            margin-left: -8px;
+            top: 50%;
+            margin-top: -8px
+        }
+        
+        .ui-datepicker .ui-datepicker-title {
+            margin: 0 2.3em;
+            line-height: 1.8em;
+            text-align: center
+        }
+        
+        .ui-datepicker .ui-datepicker-title select {
+            font-size: 1em;
+            margin: 1px 0
+        }
+        
+        .ui-datepicker select.ui-datepicker-month,
+        .ui-datepicker select.ui-datepicker-year {
+            width: 45%
+        }
+        
+        .ui-datepicker table {
+            width: 100%;
+            font-size: .9em;
+            border-collapse: collapse;
+            margin: 0 0 .4em
+        }
+        
+        .ui-datepicker th {
+            padding: .7em .3em;
+            text-align: center;
+            font-weight: bold;
+            border: 0
+        }
+        
+        .ui-datepicker td {
+            border: 0;
+            padding: 1px
+        }
+        
+        .ui-datepicker td span,
+        .ui-datepicker td a {
+            display: block;
+            padding: .2em;
+            text-align: right;
+            text-decoration: none
+        }
+        
+        .ui-datepicker .ui-datepicker-buttonpane {
+            background-image: none;
+            margin: .7em 0 0 0;
+            padding: 0 .2em;
+            border-left: 0;
+            border-right: 0;
+            border-bottom: 0
+        }
+        
+        .ui-datepicker .ui-datepicker-buttonpane button {
+            float: right;
+            margin: .5em .2em .4em;
+            cursor: pointer;
+            padding: .2em .6em .3em .6em;
+            width: auto;
+            overflow: visible
+        }
+        
+        .ui-datepicker .ui-datepicker-buttonpane button.ui-datepicker-current {
+            float: left
+        }
+        
+        .ui-datepicker.ui-datepicker-multi {
+            width: auto
+        }
+        
+        .ui-datepicker-multi .ui-datepicker-group {
+            float: left
+        }
+        
+        .ui-datepicker-multi .ui-datepicker-group table {
+            width: 95%;
+            margin: 0 auto .4em
+        }
+        
+        .ui-datepicker-multi-2 .ui-datepicker-group {
+            width: 50%
+        }
+        
+        .ui-datepicker-multi-3 .ui-datepicker-group {
+            width: 33.3%
+        }
+        
+        .ui-datepicker-multi-4 .ui-datepicker-group {
+            width: 25%
+        }
+        
+        .ui-datepicker-multi .ui-datepicker-group-last .ui-datepicker-header,
+        .ui-datepicker-multi .ui-datepicker-group-middle .ui-datepicker-header {
+            border-left-width: 0
+        }
+        
+        .ui-datepicker-multi .ui-datepicker-buttonpane {
+            clear: left
+        }
+        
+        .ui-datepicker-row-break {
+            clear: both;
+            width: 100%;
+            font-size: 0
+        }
+        
+        .ui-datepicker-rtl {
+            direction: rtl
+        }
+        
+        .ui-datepicker-rtl .ui-datepicker-prev {
+            right: 2px;
+            left: auto
+        }
+        
+        .ui-datepicker-rtl .ui-datepicker-next {
+            left: 2px;
+            right: auto
+        }
+        
+        .ui-datepicker-rtl .ui-datepicker-prev:hover {
+            right: 1px;
+            left: auto
+        }
+        
+        .ui-datepicker-rtl .ui-datepicker-next:hover {
+            left: 1px;
+            right: auto
+        }
+        
+        .ui-datepicker-rtl .ui-datepicker-buttonpane {
+            clear: right
+        }
+        
+        .ui-datepicker-rtl .ui-datepicker-buttonpane button {
+            float: left
+        }
+        
+        .ui-datepicker-rtl .ui-datepicker-buttonpane button.ui-datepicker-current,
+        .ui-datepicker-rtl .ui-datepicker-group {
+            float: right
+        }
+        
+        .ui-datepicker-rtl .ui-datepicker-group-last .ui-datepicker-header,
+        .ui-datepicker-rtl .ui-datepicker-group-middle .ui-datepicker-header {
+            border-right-width: 0;
+            border-left-width: 1px
+        }
+        
+        .ui-dialog {
+            overflow: hidden;
+            position: absolute;
+            top: 0;
+            left: 0;
+            padding: .2em;
+            outline: 0
+        }
+        
+        .ui-dialog .ui-dialog-titlebar {
+            padding: .4em 1em;
+            position: relative
+        }
+        
+        .ui-dialog .ui-dialog-title {
+            float: left;
+            margin: .1em 0;
+            white-space: nowrap;
+            width: 90%;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+        
+        .ui-dialog .ui-dialog-titlebar-close {
+            position: absolute;
+            right: .3em;
+            top: 50%;
+            width: 20px;
+            margin: -10px 0 0 0;
+            padding: 1px;
+            height: 20px
+        }
+        
+        .ui-dialog .ui-dialog-content {
+            position: relative;
+            border: 0;
+            padding: .5em 1em;
+            background: none;
+            overflow: auto
+        }
+        
+        .ui-dialog .ui-dialog-buttonpane {
+            text-align: left;
+            border-width: 1px 0 0 0;
+            background-image: none;
+            margin-top: .5em;
+            padding: .3em 1em .5em .4em
+        }
+        
+        .ui-dialog .ui-dialog-buttonpane .ui-dialog-buttonset {
+            float: right
+        }
+        
+        .ui-dialog .ui-dialog-buttonpane button {
+            margin: .5em .4em .5em 0;
+            cursor: pointer
+        }
+        
+        .ui-dialog .ui-resizable-se {
+            width: 12px;
+            height: 12px;
+            right: -5px;
+            bottom: -5px;
+            background-position: 16px 16px
+        }
+        
+        .ui-draggable .ui-dialog-titlebar {
+            cursor: move
+        }
+        
+        .ui-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: block;
+            outline: none
+        }
+        
+        .ui-menu .ui-menu {
+            position: absolute
+        }
+        
+        .ui-menu .ui-menu-item {
+            position: relative;
+            margin: 0;
+            padding: 3px 1em 3px .4em;
+            cursor: pointer;
+            min-height: 0;
+            list-style-image: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
+        }
+        
+        .ui-menu .ui-menu-divider {
+            margin: 5px 0;
+            height: 0;
+            font-size: 0;
+            line-height: 0;
+            border-width: 1px 0 0 0
+        }
+        
+        .ui-menu .ui-state-focus,
+        .ui-menu .ui-state-active {
+            margin: -1px
+        }
+        
+        .ui-menu-icons {
+            position: relative
+        }
+        
+        .ui-menu-icons .ui-menu-item {
+            padding-left: 2em
+        }
+        
+        .ui-menu .ui-icon {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: .2em;
+            margin: auto 0
+        }
+        
+        .ui-menu .ui-menu-icon {
+            left: auto;
+            right: 0
+        }
+        
+        .ui-progressbar {
+            height: 2em;
+            text-align: left;
+            overflow: hidden
+        }
+        
+        .ui-progressbar .ui-progressbar-value {
+            margin: -1px;
+            height: 100%
+        }
+        
+        .ui-progressbar .ui-progressbar-overlay {
+            background: url("data:image/gif;base64,R0lGODlhKAAoAIABAAAAAP///yH/C05FVFNDQVBFMi4wAwEAAAAh+QQJAQABACwAAAAAKAAoAAACkYwNqXrdC52DS06a7MFZI+4FHBCKoDeWKXqymPqGqxvJrXZbMx7Ttc+w9XgU2FB3lOyQRWET2IFGiU9m1frDVpxZZc6bfHwv4c1YXP6k1Vdy292Fb6UkuvFtXpvWSzA+HycXJHUXiGYIiMg2R6W459gnWGfHNdjIqDWVqemH2ekpObkpOlppWUqZiqr6edqqWQAAIfkECQEAAQAsAAAAACgAKAAAApSMgZnGfaqcg1E2uuzDmmHUBR8Qil95hiPKqWn3aqtLsS18y7G1SzNeowWBENtQd+T1JktP05nzPTdJZlR6vUxNWWjV+vUWhWNkWFwxl9VpZRedYcflIOLafaa28XdsH/ynlcc1uPVDZxQIR0K25+cICCmoqCe5mGhZOfeYSUh5yJcJyrkZWWpaR8doJ2o4NYq62lAAACH5BAkBAAEALAAAAAAoACgAAAKVDI4Yy22ZnINRNqosw0Bv7i1gyHUkFj7oSaWlu3ovC8GxNso5fluz3qLVhBVeT/Lz7ZTHyxL5dDalQWPVOsQWtRnuwXaFTj9jVVh8pma9JjZ4zYSj5ZOyma7uuolffh+IR5aW97cHuBUXKGKXlKjn+DiHWMcYJah4N0lYCMlJOXipGRr5qdgoSTrqWSq6WFl2ypoaUAAAIfkECQEAAQAsAAAAACgAKAAAApaEb6HLgd/iO7FNWtcFWe+ufODGjRfoiJ2akShbueb0wtI50zm02pbvwfWEMWBQ1zKGlLIhskiEPm9R6vRXxV4ZzWT2yHOGpWMyorblKlNp8HmHEb/lCXjcW7bmtXP8Xt229OVWR1fod2eWqNfHuMjXCPkIGNileOiImVmCOEmoSfn3yXlJWmoHGhqp6ilYuWYpmTqKUgAAIfkECQEAAQAsAAAAACgAKAAAApiEH6kb58biQ3FNWtMFWW3eNVcojuFGfqnZqSebuS06w5V80/X02pKe8zFwP6EFWOT1lDFk8rGERh1TTNOocQ61Hm4Xm2VexUHpzjymViHrFbiELsefVrn6XKfnt2Q9G/+Xdie499XHd2g4h7ioOGhXGJboGAnXSBnoBwKYyfioubZJ2Hn0RuRZaflZOil56Zp6iioKSXpUAAAh+QQJAQABACwAAAAAKAAoAAACkoQRqRvnxuI7kU1a1UU5bd5tnSeOZXhmn5lWK3qNTWvRdQxP8qvaC+/yaYQzXO7BMvaUEmJRd3TsiMAgswmNYrSgZdYrTX6tSHGZO73ezuAw2uxuQ+BbeZfMxsexY35+/Qe4J1inV0g4x3WHuMhIl2jXOKT2Q+VU5fgoSUI52VfZyfkJGkha6jmY+aaYdirq+lQAACH5BAkBAAEALAAAAAAoACgAAAKWBIKpYe0L3YNKToqswUlvznigd4wiR4KhZrKt9Upqip61i9E3vMvxRdHlbEFiEXfk9YARYxOZZD6VQ2pUunBmtRXo1Lf8hMVVcNl8JafV38aM2/Fu5V16Bn63r6xt97j09+MXSFi4BniGFae3hzbH9+hYBzkpuUh5aZmHuanZOZgIuvbGiNeomCnaxxap2upaCZsq+1kAACH5BAkBAAEALAAAAAAoACgAAAKXjI8By5zf4kOxTVrXNVlv1X0d8IGZGKLnNpYtm8Lr9cqVeuOSvfOW79D9aDHizNhDJidFZhNydEahOaDH6nomtJjp1tutKoNWkvA6JqfRVLHU/QUfau9l2x7G54d1fl995xcIGAdXqMfBNadoYrhH+Mg2KBlpVpbluCiXmMnZ2Sh4GBqJ+ckIOqqJ6LmKSllZmsoq6wpQAAAh+QQJAQABACwAAAAAKAAoAAAClYx/oLvoxuJDkU1a1YUZbJ59nSd2ZXhWqbRa2/gF8Gu2DY3iqs7yrq+xBYEkYvFSM8aSSObE+ZgRl1BHFZNr7pRCavZ5BW2142hY3AN/zWtsmf12p9XxxFl2lpLn1rseztfXZjdIWIf2s5dItwjYKBgo9yg5pHgzJXTEeGlZuenpyPmpGQoKOWkYmSpaSnqKileI2FAAACH5BAkBAAEALAAAAAAoACgAAAKVjB+gu+jG4kORTVrVhRlsnn2dJ3ZleFaptFrb+CXmO9OozeL5VfP99HvAWhpiUdcwkpBH3825AwYdU8xTqlLGhtCosArKMpvfa1mMRae9VvWZfeB2XfPkeLmm18lUcBj+p5dnN8jXZ3YIGEhYuOUn45aoCDkp16hl5IjYJvjWKcnoGQpqyPlpOhr3aElaqrq56Bq7VAAAOw==");
+            height: 100%;
+            filter: alpha(opacity=25);
+            opacity: 0.25
+        }
+        
+        .ui-progressbar-indeterminate .ui-progressbar-value {
+            background-image: none
+        }
+        
+        .ui-selectmenu-menu {
+            padding: 0;
+            margin: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: none
+        }
+        
+        .ui-selectmenu-menu .ui-menu {
+            overflow: auto;
+            overflow-x: hidden;
+            padding-bottom: 1px
+        }
+        
+        .ui-selectmenu-menu .ui-menu .ui-selectmenu-optgroup {
+            font-size: 1em;
+            font-weight: bold;
+            line-height: 1.5;
+            padding: 2px 0.4em;
+            margin: 0.5em 0 0 0;
+            height: auto;
+            border: 0
+        }
+        
+        .ui-selectmenu-open {
+            display: block
+        }
+        
+        .ui-selectmenu-button {
+            display: inline-block;
+            overflow: hidden;
+            position: relative;
+            text-decoration: none;
+            cursor: pointer
+        }
+        
+        .ui-selectmenu-button span.ui-icon {
+            right: 0.5em;
+            left: auto;
+            margin-top: -8px;
+            position: absolute;
+            top: 50%
+        }
+        
+        .ui-selectmenu-button span.ui-selectmenu-text {
+            text-align: left;
+            padding: 0.4em 2.1em 0.4em 1em;
+            display: block;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap
+        }
+        
+        .ui-slider {
+            position: relative;
+            text-align: left
+        }
+        
+        .ui-slider .ui-slider-handle {
+            position: absolute;
+            z-index: 2;
+            width: 1.2em;
+            height: 1.2em;
+            cursor: default;
+            -ms-touch-action: none;
+            touch-action: none
+        }
+        
+        .ui-slider .ui-slider-range {
+            position: absolute;
+            z-index: 1;
+            font-size: .7em;
+            display: block;
+            border: 0;
+            background-position: 0 0
+        }
+        
+        .ui-slider.ui-state-disabled .ui-slider-handle,
+        .ui-slider.ui-state-disabled .ui-slider-range {
+            filter: inherit
+        }
+        
+        .ui-slider-horizontal {
+            height: .8em
+        }
+        
+        .ui-slider-horizontal .ui-slider-handle {
+            top: -.3em;
+            margin-left: -.6em
+        }
+        
+        .ui-slider-horizontal .ui-slider-range {
+            top: 0;
+            height: 100%
+        }
+        
+        .ui-slider-horizontal .ui-slider-range-min {
+            left: 0
+        }
+        
+        .ui-slider-horizontal .ui-slider-range-max {
+            right: 0
+        }
+        
+        .ui-slider-vertical {
+            width: .8em;
+            height: 100px
+        }
+        
+        .ui-slider-vertical .ui-slider-handle {
+            left: -.3em;
+            margin-left: 0;
+            margin-bottom: -.6em
+        }
+        
+        .ui-slider-vertical .ui-slider-range {
+            left: 0;
+            width: 100%
+        }
+        
+        .ui-slider-vertical .ui-slider-range-min {
+            bottom: 0
+        }
+        
+        .ui-slider-vertical .ui-slider-range-max {
+            top: 0
+        }
+        
+        .ui-spinner {
+            position: relative;
+            display: inline-block;
+            overflow: hidden;
+            padding: 0;
+            vertical-align: middle
+        }
+        
+        .ui-spinner-input {
+            border: none;
+            background: none;
+            color: inherit;
+            padding: 0;
+            margin: .2em 0;
+            vertical-align: middle;
+            margin-left: .4em;
+            margin-right: 22px
+        }
+        
+        .ui-spinner-button {
+            width: 16px;
+            height: 50%;
+            font-size: .5em;
+            padding: 0;
+            margin: 0;
+            text-align: center;
+            position: absolute;
+            cursor: default;
+            display: block;
+            overflow: hidden;
+            right: 0
+        }
+        
+        .ui-spinner a.ui-spinner-button {
+            border-top: none;
+            border-bottom: none;
+            border-right: none
+        }
+        
+        .ui-spinner .ui-icon {
+            position: absolute;
+            margin-top: -8px;
+            top: 50%;
+            left: 0
+        }
+        
+        .ui-spinner-up {
+            top: 0
+        }
+        
+        .ui-spinner-down {
+            bottom: 0
+        }
+        
+        .ui-spinner .ui-icon-triangle-1-s {
+            background-position: -65px -16px
+        }
+        
+        .ui-tabs {
+            position: relative;
+            padding: .2em
+        }
+        
+        .ui-tabs .ui-tabs-nav {
+            margin: 0;
+            padding: .2em .2em 0
+        }
+        
+        .ui-tabs .ui-tabs-nav li {
+            list-style: none;
+            float: left;
+            position: relative;
+            top: 0;
+            margin: 1px .2em 0 0;
+            border-bottom-width: 0;
+            padding: 0;
+            white-space: nowrap
+        }
+        
+        .ui-tabs .ui-tabs-nav .ui-tabs-anchor {
+            float: left;
+            padding: .5em 1em;
+            text-decoration: none
+        }
+        
+        .ui-tabs .ui-tabs-nav li.ui-tabs-active {
+            margin-bottom: -1px;
+            padding-bottom: 1px
+        }
+        
+        .ui-tabs .ui-tabs-nav li.ui-tabs-active .ui-tabs-anchor,
+        .ui-tabs .ui-tabs-nav li.ui-state-disabled .ui-tabs-anchor,
+        .ui-tabs .ui-tabs-nav li.ui-tabs-loading .ui-tabs-anchor {
+            cursor: text
+        }
+        
+        .ui-tabs-collapsible .ui-tabs-nav li.ui-tabs-active .ui-tabs-anchor {
+            cursor: pointer
+        }
+        
+        .ui-tabs .ui-tabs-panel {
+            display: block;
+            border-width: 0;
+            padding: 1em 1.4em;
+            background: none
+        }
+        
+        .ui-tooltip {
+            padding: 8px;
+            position: absolute;
+            z-index: 9999;
+            max-width: 300px;
+            -webkit-box-shadow: 0 0 5px #aaa;
+            box-shadow: 0 0 5px #aaa
+        }
+        
+        body .ui-tooltip {
+            border-width: 2px
+        }
+        
+        .ui-widget {
+            font-family: Lucida Grande, Lucida Sans, Arial, sans-serif;
+            font-size: 1.1em
+        }
+        
+        .ui-widget .ui-widget {
+            font-size: 1em
+        }
+        
+        .ui-widget input,
+        .ui-widget select,
+        .ui-widget textarea,
+        .ui-widget button {
+            font-family: Lucida Grande, Lucida Sans, Arial, sans-serif;
+            font-size: 1em
+        }
+        
+        .ui-widget-content {
+            border: 1px solid #ddd;
+            background: #f2f5f7 url("images/bghh100.png") 50% top repeat-x;
+            color: #362b36
+        }
+        
+        .ui-widget-content a {
+            color: #362b36
+        }
+        
+        .ui-widget-header {
+            border: 1px solid #aed0ea;
+            background: #deedf7 url("images/bghs100.png") 50% 50% repeat-x;
+            color: #222;
+            font-weight: bold
+        }
+        
+        .ui-widget-header a {
+            color: #222
+        }
+        
+        .ui-state-default,
+        .ui-widget-content .ui-state-default,
+        .ui-widget-header .ui-state-default {
+            border: 1px solid #aed0ea;
+            background: #d7ebf9 url("images/bggla80.png") 50% 50% repeat-x;
+            font-weight: bold;
+            color: #2779aa
+        }
+        
+        .ui-state-default a,
+        .ui-state-default a:link,
+        .ui-state-default a:visited {
+            color: #2779aa;
+            text-decoration: none
+        }
+        
+        .ui-state-hover,
+        .ui-widget-content .ui-state-hover,
+        .ui-widget-header .ui-state-hover,
+        .ui-state-focus,
+        .ui-widget-content .ui-state-focus,
+        .ui-widget-header .ui-state-focus {
+            border: 1px solid #74b2e2;
+            background: #e4f1fb url("images/bggla100.png") 50% 50% repeat-x;
+            font-weight: bold;
+            color: #0070a3
+        }
+        
+        .ui-state-hover a,
+        .ui-state-hover a:hover,
+        .ui-state-hover a:link,
+        .ui-state-hover a:visited,
+        .ui-state-focus a,
+        .ui-state-focus a:hover,
+        .ui-state-focus a:link,
+        .ui-state-focus a:visited {
+            color: #0070a3;
+            text-decoration: none
+        }
+        
+        .ui-state-active,
+        .ui-widget-content .ui-state-active,
+        .ui-widget-header .ui-state-active {
+            border: 1px solid #2694e8;
+            background: #3baae3 url("images/bggla50.png") 50% 50% repeat-x;
+            font-weight: bold;
+            color: #fff
+        }
+        
+        .ui-state-active a,
+        .ui-state-active a:link,
+        .ui-state-active a:visited {
+            color: #fff;
+            text-decoration: none
+        }
+        
+        .ui-state-highlight,
+        .ui-widget-content .ui-state-highlight,
+        .ui-widget-header .ui-state-highlight {
+            border: 1px solid #f9dd34;
+            background: #ffef8f url("images/bghs25.png") 50% top repeat-x;
+            color: #363636
+        }
+        
+        .ui-state-highlight a,
+        .ui-widget-content .ui-state-highlight a,
+        .ui-widget-header .ui-state-highlight a {
+            color: #363636
+        }
+        
+        .ui-state-error,
+        .ui-widget-content .ui-state-error,
+        .ui-widget-header .ui-state-error {
+            border: 1px solid #cd0a0a;
+            background: #cd0a0a;
+            color: #fff
+        }
+        
+        .ui-state-error a,
+        .ui-widget-content .ui-state-error a,
+        .ui-widget-header .ui-state-error a {
+            color: #fff
+        }
+        
+        .ui-state-error-text,
+        .ui-widget-content .ui-state-error-text,
+        .ui-widget-header .ui-state-error-text {
+            color: #fff
+        }
+        
+        .ui-priority-primary,
+        .ui-widget-content .ui-priority-primary,
+        .ui-widget-header .ui-priority-primary {
+            font-weight: bold
+        }
+        
+        .ui-priority-secondary,
+        .ui-widget-content .ui-priority-secondary,
+        .ui-widget-header .ui-priority-secondary {
+            opacity: .7;
+            filter: Alpha(Opacity=70);
+            font-weight: normal
+        }
+        
+        .ui-state-disabled,
+        .ui-widget-content .ui-state-disabled,
+        .ui-widget-header .ui-state-disabled {
+            opacity: .35;
+            filter: Alpha(Opacity=35);
+            background-image: none
+        }
+        
+        .ui-state-disabled .ui-icon {
+            filter: Alpha(Opacity=35)
+        }
+        
+        .ui-icon {
+            width: 16px;
+            height: 16px
+        }
+        
+        .ui-icon,
+        .ui-widget-content .ui-icon {
+            background-image: url("images/icn72.png")
+        }
+        
+        .ui-widget-header .ui-icon {
+            background-image: url("images/icn72.png")
+        }
+        
+        .ui-state-default .ui-icon {
+            background-image: url("images/icn3d.png")
+        }
+        
+        .ui-state-hover .ui-icon,
+        .ui-state-focus .ui-icon {
+            background-image: url("images/icn26.png")
+        }
+        
+        .ui-state-active .ui-icon {
+            background-image: url("images/icnff.png")
+        }
+        
+        .ui-state-highlight .ui-icon {
+            background-image: url("images/icn2e.png")
+        }
+        
+        .ui-state-error .ui-icon,
+        .ui-state-error-text .ui-icon {
+            background-image: url("images/icnff.png")
+        }
+        
+        .ui-icon-blank {
+            background-position: 16px 16px
+        }
+        
+        .ui-icon-carat-1-n {
+            background-position: 0 0
+        }
+        
+        .ui-icon-carat-1-ne {
+            background-position: -16px 0
+        }
+        
+        .ui-icon-carat-1-e {
+            background-position: -32px 0
+        }
+        
+        .ui-icon-carat-1-se {
+            background-position: -48px 0
+        }
+        
+        .ui-icon-carat-1-s {
+            background-position: -64px 0
+        }
+        
+        .ui-icon-carat-1-sw {
+            background-position: -80px 0
+        }
+        
+        .ui-icon-carat-1-w {
+            background-position: -96px 0
+        }
+        
+        .ui-icon-carat-1-nw {
+            background-position: -112px 0
+        }
+        
+        .ui-icon-carat-2-n-s {
+            background-position: -128px 0
+        }
+        
+        .ui-icon-carat-2-e-w {
+            background-position: -144px 0
+        }
+        
+        .ui-icon-triangle-1-n {
+            background-position: 0 -16px
+        }
+        
+        .ui-icon-triangle-1-ne {
+            background-position: -16px -16px
+        }
+        
+        .ui-icon-triangle-1-e {
+            background-position: -32px -16px
+        }
+        
+        .ui-icon-triangle-1-se {
+            background-position: -48px -16px
+        }
+        
+        .ui-icon-triangle-1-s {
+            background-position: -64px -16px
+        }
+        
+        .ui-icon-triangle-1-sw {
+            background-position: -80px -16px
+        }
+        
+        .ui-icon-triangle-1-w {
+            background-position: -96px -16px
+        }
+        
+        .ui-icon-triangle-1-nw {
+            background-position: -112px -16px
+        }
+        
+        .ui-icon-triangle-2-n-s {
+            background-position: -128px -16px
+        }
+        
+        .ui-icon-triangle-2-e-w {
+            background-position: -144px -16px
+        }
+        
+        .ui-icon-arrow-1-n {
+            background-position: 0 -32px
+        }
+        
+        .ui-icon-arrow-1-ne {
+            background-position: -16px -32px
+        }
+        
+        .ui-icon-arrow-1-e {
+            background-position: -32px -32px
+        }
+        
+        .ui-icon-arrow-1-se {
+            background-position: -48px -32px
+        }
+        
+        .ui-icon-arrow-1-s {
+            background-position: -64px -32px
+        }
+        
+        .ui-icon-arrow-1-sw {
+            background-position: -80px -32px
+        }
+        
+        .ui-icon-arrow-1-w {
+            background-position: -96px -32px
+        }
+        
+        .ui-icon-arrow-1-nw {
+            background-position: -112px -32px
+        }
+        
+        .ui-icon-arrow-2-n-s {
+            background-position: -128px -32px
+        }
+        
+        .ui-icon-arrow-2-ne-sw {
+            background-position: -144px -32px
+        }
+        
+        .ui-icon-arrow-2-e-w {
+            background-position: -160px -32px
+        }
+        
+        .ui-icon-arrow-2-se-nw {
+            background-position: -176px -32px
+        }
+        
+        .ui-icon-arrowstop-1-n {
+            background-position: -192px -32px
+        }
+        
+        .ui-icon-arrowstop-1-e {
+            background-position: -208px -32px
+        }
+        
+        .ui-icon-arrowstop-1-s {
+            background-position: -224px -32px
+        }
+        
+        .ui-icon-arrowstop-1-w {
+            background-position: -240px -32px
+        }
+        
+        .ui-icon-arrowthick-1-n {
+            background-position: 0 -48px
+        }
+        
+        .ui-icon-arrowthick-1-ne {
+            background-position: -16px -48px
+        }
+        
+        .ui-icon-arrowthick-1-e {
+            background-position: -32px -48px
+        }
+        
+        .ui-icon-arrowthick-1-se {
+            background-position: -48px -48px
+        }
+        
+        .ui-icon-arrowthick-1-s {
+            background-position: -64px -48px
+        }
+        
+        .ui-icon-arrowthick-1-sw {
+            background-position: -80px -48px
+        }
+        
+        .ui-icon-arrowthick-1-w {
+            background-position: -96px -48px
+        }
+        
+        .ui-icon-arrowthick-1-nw {
+            background-position: -112px -48px
+        }
+        
+        .ui-icon-arrowthick-2-n-s {
+            background-position: -128px -48px
+        }
+        
+        .ui-icon-arrowthick-2-ne-sw {
+            background-position: -144px -48px
+        }
+        
+        .ui-icon-arrowthick-2-e-w {
+            background-position: -160px -48px
+        }
+        
+        .ui-icon-arrowthick-2-se-nw {
+            background-position: -176px -48px
+        }
+        
+        .ui-icon-arrowthickstop-1-n {
+            background-position: -192px -48px
+        }
+        
+        .ui-icon-arrowthickstop-1-e {
+            background-position: -208px -48px
+        }
+        
+        .ui-icon-arrowthickstop-1-s {
+            background-position: -224px -48px
+        }
+        
+        .ui-icon-arrowthickstop-1-w {
+            background-position: -240px -48px
+        }
+        
+        .ui-icon-arrowreturnthick-1-w {
+            background-position: 0 -64px
+        }
+        
+        .ui-icon-arrowreturnthick-1-n {
+            background-position: -16px -64px
+        }
+        
+        .ui-icon-arrowreturnthick-1-e {
+            background-position: -32px -64px
+        }
+        
+        .ui-icon-arrowreturnthick-1-s {
+            background-position: -48px -64px
+        }
+        
+        .ui-icon-arrowreturn-1-w {
+            background-position: -64px -64px
+        }
+        
+        .ui-icon-arrowreturn-1-n {
+            background-position: -80px -64px
+        }
+        
+        .ui-icon-arrowreturn-1-e {
+            background-position: -96px -64px
+        }
+        
+        .ui-icon-arrowreturn-1-s {
+            background-position: -112px -64px
+        }
+        
+        .ui-icon-arrowrefresh-1-w {
+            background-position: -128px -64px
+        }
+        
+        .ui-icon-arrowrefresh-1-n {
+            background-position: -144px -64px
+        }
+        
+        .ui-icon-arrowrefresh-1-e {
+            background-position: -160px -64px
+        }
+        
+        .ui-icon-arrowrefresh-1-s {
+            background-position: -176px -64px
+        }
+        
+        .ui-icon-arrow-4 {
+            background-position: 0 -80px
+        }
+        
+        .ui-icon-arrow-4-diag {
+            background-position: -16px -80px
+        }
+        
+        .ui-icon-extlink {
+            background-position: -32px -80px
+        }
+        
+        .ui-icon-newwin {
+            background-position: -48px -80px
+        }
+        
+        .ui-icon-refresh {
+            background-position: -64px -80px
+        }
+        
+        .ui-icon-shuffle {
+            background-position: -80px -80px
+        }
+        
+        .ui-icon-transfer-e-w {
+            background-position: -96px -80px
+        }
+        
+        .ui-icon-transferthick-e-w {
+            background-position: -112px -80px
+        }
+        
+        .ui-icon-folder-collapsed {
+            background-position: 0 -96px
+        }
+        
+        .ui-icon-folder-open {
+            background-position: -16px -96px
+        }
+        
+        .ui-icon-document {
+            background-position: -32px -96px
+        }
+        
+        .ui-icon-document-b {
+            background-position: -48px -96px
+        }
+        
+        .ui-icon-note {
+            background-position: -64px -96px
+        }
+        
+        .ui-icon-mail-closed {
+            background-position: -80px -96px
+        }
+        
+        .ui-icon-mail-open {
+            background-position: -96px -96px
+        }
+        
+        .ui-icon-suitcase {
+            background-position: -112px -96px
+        }
+        
+        .ui-icon-comment {
+            background-position: -128px -96px
+        }
+        
+        .ui-icon-person {
+            background-position: -144px -96px
+        }
+        
+        .ui-icon-print {
+            background-position: -160px -96px
+        }
+        
+        .ui-icon-trash {
+            background-position: -176px -96px
+        }
+        
+        .ui-icon-locked {
+            background-position: -192px -96px
+        }
+        
+        .ui-icon-unlocked {
+            background-position: -208px -96px
+        }
+        
+        .ui-icon-bookmark {
+            background-position: -224px -96px
+        }
+        
+        .ui-icon-tag {
+            background-position: -240px -96px
+        }
+        
+        .ui-icon-home {
+            background-position: 0 -112px
+        }
+        
+        .ui-icon-flag {
+            background-position: -16px -112px
+        }
+        
+        .ui-icon-calendar {
+            background-position: -32px -112px
+        }
+        
+        .ui-icon-cart {
+            background-position: -48px -112px
+        }
+        
+        .ui-icon-pencil {
+            background-position: -64px -112px
+        }
+        
+        .ui-icon-clock {
+            background-position: -80px -112px
+        }
+        
+        .ui-icon-disk {
+            background-position: -96px -112px
+        }
+        
+        .ui-icon-calculator {
+            background-position: -112px -112px
+        }
+        
+        .ui-icon-zoomin {
+            background-position: -128px -112px
+        }
+        
+        .ui-icon-zoomout {
+            background-position: -144px -112px
+        }
+        
+        .ui-icon-search {
+            background-position: -160px -112px
+        }
+        
+        .ui-icon-wrench {
+            background-position: -176px -112px
+        }
+        
+        .ui-icon-gear {
+            background-position: -192px -112px
+        }
+        
+        .ui-icon-heart {
+            background-position: -208px -112px
+        }
+        
+        .ui-icon-star {
+            background-position: -224px -112px
+        }
+        
+        .ui-icon-link {
+            background-position: -240px -112px
+        }
+        
+        .ui-icon-cancel {
+            background-position: 0 -128px
+        }
+        
+        .ui-icon-plus {
+            background-position: -16px -128px
+        }
+        
+        .ui-icon-plusthick {
+            background-position: -32px -128px
+        }
+        
+        .ui-icon-minus {
+            background-position: -48px -128px
+        }
+        
+        .ui-icon-minusthick {
+            background-position: -64px -128px
+        }
+        
+        .ui-icon-close {
+            background-position: -80px -128px
+        }
+        
+        .ui-icon-closethick {
+            background-position: -96px -128px
+        }
+        
+        .ui-icon-key {
+            background-position: -112px -128px
+        }
+        
+        .ui-icon-lightbulb {
+            background-position: -128px -128px
+        }
+        
+        .ui-icon-scissors {
+            background-position: -144px -128px
+        }
+        
+        .ui-icon-clipboard {
+            background-position: -160px -128px
+        }
+        
+        .ui-icon-copy {
+            background-position: -176px -128px
+        }
+        
+        .ui-icon-contact {
+            background-position: -192px -128px
+        }
+        
+        .ui-icon-image {
+            background-position: -208px -128px
+        }
+        
+        .ui-icon-video {
+            background-position: -224px -128px
+        }
+        
+        .ui-icon-script {
+            background-position: -240px -128px
+        }
+        
+        .ui-icon-alert {
+            background-position: 0 -144px
+        }
+        
+        .ui-icon-info {
+            background-position: -16px -144px
+        }
+        
+        .ui-icon-notice {
+            background-position: -32px -144px
+        }
+        
+        .ui-icon-help {
+            background-position: -48px -144px
+        }
+        
+        .ui-icon-check {
+            background-position: -64px -144px
+        }
+        
+        .ui-icon-bullet {
+            background-position: -80px -144px
+        }
+        
+        .ui-icon-radio-on {
+            background-position: -96px -144px
+        }
+        
+        .ui-icon-radio-off {
+            background-position: -112px -144px
+        }
+        
+        .ui-icon-pin-w {
+            background-position: -128px -144px
+        }
+        
+        .ui-icon-pin-s {
+            background-position: -144px -144px
+        }
+        
+        .ui-icon-play {
+            background-position: 0 -160px
+        }
+        
+        .ui-icon-pause {
+            background-position: -16px -160px
+        }
+        
+        .ui-icon-seek-next {
+            background-position: -32px -160px
+        }
+        
+        .ui-icon-seek-prev {
+            background-position: -48px -160px
+        }
+        
+        .ui-icon-seek-end {
+            background-position: -64px -160px
+        }
+        
+        .ui-icon-seek-start {
+            background-position: -80px -160px
+        }
+        
+        .ui-icon-seek-first {
+            background-position: -80px -160px
+        }
+        
+        .ui-icon-stop {
+            background-position: -96px -160px
+        }
+        
+        .ui-icon-eject {
+            background-position: -112px -160px
+        }
+        
+        .ui-icon-volume-off {
+            background-position: -128px -160px
+        }
+        
+        .ui-icon-volume-on {
+            background-position: -144px -160px
+        }
+        
+        .ui-icon-power {
+            background-position: 0 -176px
+        }
+        
+        .ui-icon-signal-diag {
+            background-position: -16px -176px
+        }
+        
+        .ui-icon-signal {
+            background-position: -32px -176px
+        }
+        
+        .ui-icon-battery-0 {
+            background-position: -48px -176px
+        }
+        
+        .ui-icon-battery-1 {
+            background-position: -64px -176px
+        }
+        
+        .ui-icon-battery-2 {
+            background-position: -80px -176px
+        }
+        
+        .ui-icon-battery-3 {
+            background-position: -96px -176px
+        }
+        
+        .ui-icon-circle-plus {
+            background-position: 0 -192px
+        }
+        
+        .ui-icon-circle-minus {
+            background-position: -16px -192px
+        }
+        
+        .ui-icon-circle-close {
+            background-position: -32px -192px
+        }
+        
+        .ui-icon-circle-triangle-e {
+            background-position: -48px -192px
+        }
+        
+        .ui-icon-circle-triangle-s {
+            background-position: -64px -192px
+        }
+        
+        .ui-icon-circle-triangle-w {
+            background-position: -80px -192px
+        }
+        
+        .ui-icon-circle-triangle-n {
+            background-position: -96px -192px
+        }
+        
+        .ui-icon-circle-arrow-e {
+            background-position: -112px -192px
+        }
+        
+        .ui-icon-circle-arrow-s {
+            background-position: -128px -192px
+        }
+        
+        .ui-icon-circle-arrow-w {
+            background-position: -144px -192px
+        }
+        
+        .ui-icon-circle-arrow-n {
+            background-position: -160px -192px
+        }
+        
+        .ui-icon-circle-zoomin {
+            background-position: -176px -192px
+        }
+        
+        .ui-icon-circle-zoomout {
+            background-position: -192px -192px
+        }
+        
+        .ui-icon-circle-check {
+            background-position: -208px -192px
+        }
+        
+        .ui-icon-circlesmall-plus {
+            background-position: 0 -208px
+        }
+        
+        .ui-icon-circlesmall-minus {
+            background-position: -16px -208px
+        }
+        
+        .ui-icon-circlesmall-close {
+            background-position: -32px -208px
+        }
+        
+        .ui-icon-squaresmall-plus {
+            background-position: -48px -208px
+        }
+        
+        .ui-icon-squaresmall-minus {
+            background-position: -64px -208px
+        }
+        
+        .ui-icon-squaresmall-close {
+            background-position: -80px -208px
+        }
+        
+        .ui-icon-grip-dotted-vertical {
+            background-position: 0 -224px
+        }
+        
+        .ui-icon-grip-dotted-horizontal {
+            background-position: -16px -224px
+        }
+        
+        .ui-icon-grip-solid-vertical {
+            background-position: -32px -224px
+        }
+        
+        .ui-icon-grip-solid-horizontal {
+            background-position: -48px -224px
+        }
+        
+        .ui-icon-gripsmall-diagonal-se {
+            background-position: -64px -224px
+        }
+        
+        .ui-icon-grip-diagonal-se {
+            background-position: -80px -224px
+        }
+        
+        .ui-corner-all,
+        .ui-corner-top,
+        .ui-corner-left,
+        .ui-corner-tl {
+            border-top-left-radius: 6px
+        }
+        
+        .ui-corner-all,
+        .ui-corner-top,
+        .ui-corner-right,
+        .ui-corner-tr {
+            border-top-right-radius: 6px
+        }
+        
+        .ui-corner-all,
+        .ui-corner-bottom,
+        .ui-corner-left,
+        .ui-corner-bl {
+            border-bottom-left-radius: 6px
+        }
+        
+        .ui-corner-all,
+        .ui-corner-bottom,
+        .ui-corner-right,
+        .ui-corner-br {
+            border-bottom-right-radius: 6px
+        }
+        
+        .ui-widget-overlay {
+            background: #eee url("images/bgdia90.png") 50% 50% repeat;
+            opacity: .8;
+            filter: Alpha(Opacity=80)
+        }
+        
+        .ui-widget-shadow {
+            margin: -7px 0 0 -7px;
+            padding: 7px;
+            background: #000 url("images/bghh70.png") 50% top repeat-x;
+            opacity: .3;
+            filter: Alpha(Opacity=30);
+            border-radius: 8px
+        }
+        /* Slidebars 0.10.3 (http://plugins.adchsm.me/slidebars/) written by Adam Smith (http://www.adchsm.me/) released under MIT License (http://plugins.adchsm.me/slidebars/license.txt) */
+        
+        #sb-site,
+        .sb-site-container,
+        .sb-slidebar,
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box
+        }
+        
+        body,
+        html {
+            width: 100%;
+            overflow-x: hidden
+        }
+        
+        html {
+            height: 100%
+        }
+        
+        body {
+            min-height: 100%;
+            height: auto;
+            position: relative
+        }
+        
+        html.sb-scroll-lock.sb-active:not(.sb-static) {
+            overflow: hidden
+        }
+        
+        #sb-site,
+        .sb-site-container {
+            width: 100%;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+            background-color: #fff
+        }
+        
+        #sb-site:after,
+        #sb-site:before,
+        .sb-site-container:after,
+        .sb-site-container:before {
+            content: ' ';
+            display: table;
+            clear: both
+        }
+        
+        .sb-slidebar {
+            height: 100%;
+            overflow-y: auto;
+            position: fixed;
+            top: 0;
+            z-index: 0;
+            display: none;
+            background-color: #42C7DA
+        }
+        
+        .sb-slidebar,
+        .sb-slidebar * {
+            -webkit-transform: translateZ(0px)
+        }
+        
+        .sb-left {
+            left: 0
+        }
+        
+        .sb-right {
+            right: 0
+        }
+        
+        .sb-slidebar.sb-static,
+        html.sb-static .sb-slidebar {
+            position: absolute
+        }
+        
+        .sb-slidebar.sb-active {
+            display: block
+        }
+        
+        .sb-style-overlay {
+            z-index: 9999
+        }
+        
+        .sb-momentum-scrolling {
+            -webkit-overflow-scrolling: touch
+        }
+        
+        .sb-slidebar {
+            width: 30%
+        }
+        
+        .sb-width-thin {
+            width: 15%
+        }
+        
+        .sb-width-wide {
+            width: 45%
+        }
+        
+        @media (max-width:480px) {
+            .sb-slidebar {
+                width: 70%
+            }
+            .sb-width-thin {
+                width: 55%
+            }
+            .sb-width-wide {
+                width: 85%
+            }
+        }
+        
+        @media (min-width:481px) {
+            .sb-slidebar {
+                width: 55%
+            }
+            .sb-width-thin {
+                width: 40%
+            }
+            .sb-width-wide {
+                width: 70%
+            }
+        }
+        
+        @media (min-width:768px) {
+            .sb-slidebar {
+                width: 40%
+            }
+            .sb-width-thin {
+                width: 25%
+            }
+            .sb-width-wide {
+                width: 55%
+            }
+        }
+        
+        @media (min-width:992px) {
+            .sb-slidebar {
+                width: 30%
+            }
+            .sb-width-thin {
+                width: 15%
+            }
+            .sb-width-wide {
+                width: 45%
+            }
+        }
+        
+        @media (min-width:1200px) {
+            .sb-slidebar {
+                width: 20%
+            }
+            .sb-width-thin {
+                width: 5%
+            }
+            .sb-width-wide {
+                width: 35%
+            }
+        }
+        
+        #sb-site,
+        .sb-site-container,
+        .sb-slide,
+        .sb-slidebar {
+            -webkit-transform: translate(0px);
+            -moz-transform: translate(0px);
+            -o-transform: translate(0px);
+            transform: translate(0px);
+            -webkit-transition: -webkit-transform 400ms ease;
+            -moz-transition: -moz-transform 400ms ease;
+            -o-transition: -o-transform 400ms ease;
+            transition: transform 400ms ease;
+            -webkit-transition-property: -webkit-transform, left, right;
+            -webkit-backface-visibility: hidden
+        }
+        
+        .sb-hide {
+            display: none
+        }
+        
+        .switch-button-label {
+            float: left;
+            font-size: 10pt;
+            cursor: pointer
+        }
+        
+        .switch-button-label.off {
+            color: #adadad
+        }
+        
+        .switch-button-label.on {
+            color: #08C
+        }
+        
+        .switch-button-background {
+            float: left;
+            position: relative;
+            background: #ccc;
+            border: 1px solid #aaa;
+            margin: 1px 10px;
+            -webkit-border-radius: 4px;
+            -moz-border-radius: 4px;
+            border-radius: 4px;
+            cursor: pointer
+        }
+        
+        .switch-button-button {
+            position: absolute;
+            left: -1px;
+            top: -1px;
+            background: #FAFAFA;
+            border: 1px solid #aaa;
+            -webkit-border-radius: 4px;
+            -moz-border-radius: 4px;
+            border-radius: 4px
+        }
+        
+        body {
+            text-align: center;
+        }
+        
+        .ui-button,
+        .ui-button-text .ui-button {
+            font-size: 10px !important;
+        }
+        /* navi-bar */
+        
+        #sb-site {
+            background-color: #EFEFEF;
+        }
+        
+        .navicon-line {
+            width: 24px;
+            height: 4px;
+            border-radius: 1px;
+            margin-bottom: 3px;
+            background-color: #FFFFFF;
+        }
+        
+        .top-bar-block {
+            display: inline-block;
+            color: white;
+            font-style: italic;
+            font-family: Georgia, serif;
+        }
+        
+        #menubar {
+            position: absolute;
+            left: 10px;
+        }
+        
+        #menu .ui-selecting {
+            background: #FECA40;
+        }
+        
+        #menu .ui-selected {
+            background: #F39814;
+            color: white;
+        }
+        
+        #menu {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+        }
+        
+        #menu li {
+            margin: 3px;
+            padding: 0.4em;
+            font-size: 1em;
+            height: 18px;
+        }
+        
+        #menupane {
+            width: 120px;
+        }
+        
+        #top-bar {
+            background-color: #15AFC9;
+        }
+        /* general */
+        
+        .setting-category {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            background-color: yellow;
+        }
+        
+        .setting-subcategory {
+            background-color: lightgoldenrodyellow;
+        }
+        
+        #settings-p,
+        #automation-p,
+        #sensors-p,
+        #about-p,
+        #top-bar {
+            margin: auto;
+            padding: 10px;
+            width: 100%
+        }
+        
+        #status-p {
+            margin: auto;
+            width: 100%
+        }
+        
+        #about-p {
+            text-align: left;
+        }
+        
+        ul {
+            text-align: left;
+        }
+        
+        .tmp_unit {
+            font-family: Tahoma, Geneva, sans-serif;
+        }
+        
+        .editbtn {
+            height: 20px;
+        }
+        
+        .section {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        table {
+            border-collapse: collapse;
+        }
+        
+        table,
+        tr,
+        td,
+        th {
+            margin: auto;
+            border: 1px solid black;
+        }
+        /* automation progress */
+        
+        #auto-t tr,
+        #auto-t td,
+        #auto-t th {
+            border: 0px;
+            font-weight: bold
+        }
+        
+        #auto-p td {
+            text-align: left;
+        }
+        
+        .running {
+            font-size: 1.2em;
+            color: red;
+            background-color: yellow;
+        }
+        
+        .run {
+            color: #BDBDBD;
+            font-weight: normal;
+        }
+        
+        .label {
+            font-family: "Courier New", Courier, monospace;
+            font-size: 16px;
+        }
+        
+        .inactive-num {
+            opacity: 0.2;
+        }
+        
+        #auxT {
+            display: none;
+        }
+        /* pwm */
+        /* LED */
+        
+        .ledreddim {
+            background: #5B0000;
+        }
+        
+        .ledgreendim {
+            background: #01290C;
+        }
+        
+        .round-led-circle {
+            width: 36px;
+            height: 0;
+            padding-bottom: 36px;
+            border-radius: 50%;
+            border-style: outset;
+            overflow: hidden;
+            display: inline-block;
+        }
+        
+        span.round-led {
+            width: 12px;
+            height: 12px;
+            display: table-cell;
+            text-align: center;
+            vertical-align: middle;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        
+        a {
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        
+        #status-p table,
+        #status-p tr,
+        #status-p td {
+            border: 0px;
+            margin: 0px;
+        }
+        
+        #ctrlpanel {
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+            display: inline-block;
+            background-color: #C0C0C0;
+        }
+        
+        table .ledpanel {
+            text-align: center;
+            width: 100%;
+        }
+        
+        #btnpanel {
+            width: fit-content;
+            height: fit-content;
+            position: relative;
+        }
+        
+        #btnpanel td {
+            width: 25%;
+        }
+        
+        #btngap {
+            height: 5px;
+        }
+        
+        #btncover {
+            position: absolute;
+            left: 0px;
+            top: 0px;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+            background-color: #FFF;
+            border-radius: 0px 0px 6px 6px;
+            opacity: 0.6;
+        }
+        
+        .round-button-circle {
+            width: 52px;
+            height: 0;
+            padding-bottom: 52px;
+            border-radius: 50%;
+            border-style: groove;
+            overflow: hidden;
+            background: #AA2222;
+            margin: 2px;
+        }
+        
+        a.round-button {
+            width: 52px;
+            height: 52px;
+            display: table-cell;
+            text-align: center;
+            vertical-align: middle;
+            color: #CCCCCC;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 8pt;
+        }
+        
+        #info {
+            text-align: center;
+            color: red;
+            font-weight: bold;
+            font-family: "Courier New", Courier, monospace;
+            background-color: rgba(230, 230, 0, .5);
+            padding: 4px;
+            height: 20px;
+            width: 100%;
+            display: none;
+            position: absolute;
+            z-index: 1000;
+        }
+        
+        #auto-p table,
+        #auto-p tr {
+            margin-top: 10px;
+            margin-left: auto;
+            margin-right: auto;
+            border: 2px;
+            border-style: groove;
+        }
+        
+        #sensors {
+            display: none;
+        }
+        
+        #auxledcon {
+            display: none;
+        }
+        /* network setup */
+        
+        #network-p table,
+        #network-p tr,
+        #network-p td {
+            border: 0px;
+        }
+        
+        #passmatch {
+            color: red;
+        }
+        
+        #saveok {
+            color: blue;
+            font-style: italic;
+        }
+        
+        #savefail {
+            color: red;
+            font-weight: bold;
+        }
+        /* utility */
+        
+        fieldset.commonset {
+            display: inline-block;
+        }
+        
+        fieldset {
+            margin: 10px;
+            display: inline-block;
+        }
+        
+        fieldset th {
+            text-align: right;
+        }
+        
+        fieldset td {
+            text-align: left;
+        }
+        
+        .eventaudio {
+            display: none;
+        }
+        /* blocks */
+        
+        .block {
+            background: white;
+            margin: 4px;
+            padding: 0px 0px 2px 0px;
+        }
+        
+        .block-size-1 {
+            width: 76px;
+            height: 70px;
+        }
+        
+        .block-size-2 {
+            width: 160px;
+            height: 70px;
+        }
+        
+        #auto-p,
+        #controller-pan {
+            width: 260px;
+        }
+        
+        #state-block {
+            width: 160px;
+            height: 70px;
+        }
+        
+        .block-header {
+            background: #d8e9f5;
+            display: block;
+            padding: 2px 4px 2px 2px;
+            margin: 0px 0px 2px 0px;
+            height: 20px;
+        }
+        
+        .block-title {
+            text-align: left;
+            font-size: smaller;
+            float: left;
+        }
+        
+        .block-ctrl {
+            float: right;
+        }
+        
+        .block-size-2 .block-body {
+            font-size: 32px;
+            font-weight: bold;
+            font-family: monospace;
+        }
+        
+        #temp-block-2,
+        #temp-block-3,
+        #temp-block-4,
+        #temp-block-5 {
+            display: none;
+        }
+        
+        .primary-sensor .block-title::before {
+            content: "*";
+        }
+        
+        .primary-sensor .block-title::after {
+            content: "*";
+        }
+        
+        .primary-sensor .block-title {
+            font-weight: bold;
+            color: blue;
+        }
+        
+        #blockgroup {
+            padding: 10px;
+        }
+        
+        #dialog-controller table,
+        #dialog-controller tr,
+        #dialog-controller td,
+        #dialog-controller th {
+            border: 0px;
+            border-collapse: collapse;
+        }
+    </style>
+    <script>
+        // strings, for localization
+        var STR = {
+            ChartLabel: "<%= temperature_chart_label %>",
+            AddMalt: "<%= add_malt %>",
+            RemoveMalt: "<%= remove_malt %>",
+            Boil: "<%= boil %>",
+            HopN: "<%= hop_num %>",
+            PBHN: "<%= postboilhop_num %>",
+            HopStandSession: "<%= hopstand_session %>",
+            Cooling: "<%= cooling %>",
+            Automation: "<%= automation %>",
+            PIDAutoTune: "<%= pid_autotune %>",
+            DelayStart: "<%= wait_to_start_automation %>",
+            PumpRest: "<%= pump_rest_label %>",
+            Idle: "<%= idle_mode_title %>",
+            ManualMode: "<%= manual_mode %>",
+            Setup: "<%= setup %>",
+            PaddleLed: "<%= led_label_paddle %>",
+            Unknown: "<%= unknown_state %>",
+            Pause: "<%= paused %>",
+            min: "<%= minute %>",
+            Mash: "<%= mash_step %>",
+
+            BoilEnd: "<%= boil_finish %>",
+            EndHopStand: "<%= hopstand_finish %>",
+            ResumeBrew: "<%= brew_resume %>",
+            spargeSensor: "<%= spargesensor_label %>",
+            stageName: ["<%= mash_in %>", "<%= mash_step1 %>", "<%= mash_step2 %>", "<%= mash_step3 %>", "<%= mash_step4 %>", "<%= mash_step5 %>", "<%= mash_step6 %>", "<%= mash_out %>", "<%= stage_boiling %>", "<%= stage_cooling %>", "<%= stage_whirlpool %>", "<%= stage_chilling %>", "<%= stage_hopstand %>"],
+
+            errorWrongHopSchedule: "<%= errorWrongHopSchedule %>",
+            errorMashoutTimeZero: "<%= errorMashoutTimeZero %>",
+            errorHopStandSession: "<%= errorHopStandSession %>",
+            errorPostHopSchedule: "<%= errorPostHopSchedule %>",
+            errorTooManyHop: "<%= errorTooManyHop %>",
+            errorTooManyHopStand: "<%= errorTooManyHopStand %>",
+            errorTooManyPostBoilHop: "<%= errorTooManyPostBoilHop %>",
+
+            DistillPreheat: "<%= distill_preheat %>",
+            DistillHead: "<%= distill_head %>",
+            DistillHeart: "<%= distill_heart %>",
+            DistillTail: "<%= distill_tail %>",
+
+            event: ["", "<%= temperature_reached %>",
+                "<%= add_malt %>",
+                "<%= remove_malt %>",
+                "<%= iodine_test %>",
+                "<%= pause %>",
+                "<%= resume %>",
+                "<%= add_hop %>",
+                "<%= pwm_off %>",
+                "<%= pwm_off %>",
+                "<%= boil_finish %>",
+                "<%= brew_finish %>"
+            ],
+
+        };
+
+        var STR_paddle = {
+            PumpRest: "<%= paddle_rest_label %>",
+        };
+        var Beep = new Audio(
+            "data:audio/mp4;base64,AAAAGGZ0eXBtcDQyAAAAAG1wNDJpc29tAAAAiGZyZWUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8NtZGF03gQAAGxpYmZhYWMgMS4yOAAAAbiDMMg8nh2/D2/T8ev69XTq8e/s37d/ATKf/fSbKoypkqRJUyvG/x17c/08/yADKPhd2ABnXvPVKACM/i+mACGhfx/NcoAKjwvSpACcOo9tnWIAruv7FHGrqQAAAAAAAAAAAADbh86N7WvKD64KAAABuKn+328O0ZSsAAA+Hr61RgAAdQ5f3dHswAAAAXdXTymCcLAAAAAAAKKvDp/eAOJ/nAv5DxoAAAAAALAP7dcYzex45kWN3QoAAAANFtBGgbhwARKf/TMZKEiJMuTIlmfM8fnv/T41n/b4/wAa6c/439ZBqISDC5tLfzOthfpXgP0tLBPbaz9LzLvp8N4XveL6d4DmBtc9sBzXhaRFrnttZzFzPeChSfnL9HvSXz0fp0n1WD9Hk/aIPlNH8tJ+SwZwMYzQy9817b0BnGZKBcKBFE891K5CihVNPU1912OPqLEiS/VaurqGQkd4DLvwOP6oDp9ABh/YB5NUDW/DA4/qgOn0Hwg9WIsJB8ENUPVA9WIsJApEACATkAKhYcABItQJKhIxhoLBIIjUInMIisIhMIjcZUZuv2+pW99+Pt9/PWtfb8dXnj6r54+f6/vn+ff9R5O6NFPx8eK3c8I8fjMPfP2gfDYd9x8afDYHviEfDAn3IH+GB33N1/+qCCGNcy+DUk/bBwMGT4MmX+BjHmymHCAHpfxBXGJQU4mAIiH6gtcmCKoA7wBkABHCAAAAAAAGDfW0Z0UUUAAAcZgAAHyICCoAAKZgAABiHAEaVBAkQwkNQkEQkERoGwkESGETmERSEQqERtW3WH9v53vOe/X59vv1fH6fjzJ8/fPnr1/f/Ffvv6HOi2dnV1m2/b7epvnbU841Pay359YpvsHokSvD57Q64z5/0P8aD5/N7Q/X4AADS8EsPn84zNvzJfGL58xoG0PKf02hoLWHQtAXuHhBzEQF4gHeAKWAD5RAAn/Sc0AJdAAAAAK9AEbgAABKQFwACQ4BIp/9ypcq3MlSZFSVIljK378/z11n+vt+oAPl9Gr1oLA//erf1AAdX9/pbwvk5VdRn/n5yFXdIifs5933BXO9zqMfx7L7wr3N9xHLauHzIyD/+GJ/pcD/5pP3GDy2EEABm68tU3MOESx9Gd9bEgDV1e2bI/P9ZzeUGuW+9ap//7Ywa9fE/YoUbcx/EAF/IeFA6r52By/qQHU9wBe/uIAAAHG6FD2TAwOjYQO0EjUbARgAAAAEg2hYKj42gAADgADIwIAjgAAAAoRtb292AAAAbG12aGQAAAAA1Wi/F9VovxcAAB9AAAAYAAABAAABAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAGGlvZHMAAAAAEICAgAcAT///KP//AAAB+HRyYWsAAABcdGtoZAAAAAHVaL8X1Wi/FwAAAAEAAAAAAAAYAAAAAAAAAAAAAAAAAAEAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAZRtZGlhAAAAIG1kaGQAAAAA1Wi/F9VovxcAAB9AAAAYAFXEAAAAAAAhaGRscgAAAAAAAAAAc291bgAAAAAAAAAAAAAAAAAAAAFLbWluZgAAABBzbWhkAAAAAAAAAAAAAAAkZGluZgAAABxkcmVmAAAAAAAAAAEAAAAMdXJsIAAAAAEAAAEPc3RibAAAAGdzdHNkAAAAAAAAAAEAAABXbXA0YQAAAAAAAAABAAAAAAAAAAAAAgAQAAAAAB9AAAAAAAAzZXNkcwAAAAADgICAIgAAAASAgIAUQBUAAMsAAAAAAAAm3AWAgIACFYgGgICAAQIAAAAgc3R0cwAAAAAAAAACAAAAAQAAAAAAAAAGAAAEAAAAADBzdHN6AAAAAAAAAAAAAAAHAAAAKgAAAKsAAADLAAAArQAAAKkAAAC/AAAABgAAABxzdHNjAAAAAAAAAAEAAAABAAAABwAAAAEAAAAUc3RjbwAAAAAAAAABAAAAqAAAACBjdHRzAAAAAAAAAAIAAAAB///8AAAAAAYAAAAAAAAAiGZyZWUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+        );
+
+        var ButtonLabels = {
+            0: {
+                u: "",
+                d: "",
+                s: "<%= btn_quit %>",
+                e: "<%= btn_go %>",
+                i: ""
+            },
+            1: {
+                u: "",
+                d: "",
+                s: "",
+                e: "<%= btn_ok %>",
+                i: ""
+            },
+            2: {
+                u: "",
+                d: "",
+                s: "<%= btn_edit %>",
+                e: "<%= btn_ok %>",
+                i: ""
+            },
+            3: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_arrow %>",
+                e: "",
+                i: ""
+            },
+            4: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_done %>",
+                e: "",
+                i: ""
+            },
+            5: {
+                u: "",
+                d: "",
+                s: "<%= btn_no %>",
+                e: "<%= btn_yes %>",
+                i: ""
+            },
+            6: {
+                u: "",
+                d: "<%= btn_manual %>",
+                s: "<%= btn_auto %>",
+                e: "<%= btn_setup %>",
+                i: ""
+            },
+            7: {
+                u: "",
+                d: "",
+                s: "",
+                e: "",
+                i: "<%= btn_i_pump_rest %>"
+            },
+            8: {
+                u: "",
+                d: "",
+                s: "<%= btn_yes %>",
+                e: "<%= btn_pump %>",
+                i: "<%= btn_i_continue_q %>"
+            },
+            9: {
+                u: "",
+                d: "",
+                s: "<%= btn_yes %>",
+                e: "<%= btn_no %>",
+                i: "<%= btn_i_continue_q %>"
+            },
+            10: {
+                u: "",
+                d: "",
+                s: "",
+                e: "<%= btn_pump %>",
+                i: ""
+            },
+            11: {
+                u: "",
+                d: "",
+                s: "<%= btn_time %>",
+                e: "<%= btn_pump %>",
+                i: ""
+            },
+            12: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "",
+                e: "<%= btn_pump %>",
+                i: ""
+            },
+            13: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "",
+                e: "",
+                i: ""
+            },
+            14: {
+                u: "",
+                d: "",
+                s: "<%= btn_exit %>",
+                e: "",
+                i: ""
+            },
+            15: {
+                u: "",
+                d: "",
+                s: "<%= btn_ok %>",
+                e: "",
+                i: ""
+            },
+            16: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_end %>",
+                e: "<%= btn_pump %>",
+                i: ""
+            },
+            17: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_heat %>",
+                e: "<%= btn_pump %>",
+                i: ""
+            },
+            18: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_pause %>",
+                e: "<%= btn_stp %>",
+                i: ""
+            },
+            19: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_pump_pause %>",
+                e: "<%= btn_stp %>",
+                i: ""
+            },
+            20: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_pause %>",
+                e: "",
+                i: ""
+            },
+            21: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_skip %>",
+                e: "<%= btn_ok %>",
+                i: ""
+            },
+            22: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "",
+                e: "<%= btn_ok %>",
+                i: ""
+            },
+            23: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_quit %>",
+                e: "<%= btn_ok %>",
+                i: ""
+            },
+            24: {
+                u: "",
+                d: "<%= btn_down %>",
+                s: "<%= btn_quit %>",
+                e: "<%= btn_ok %>",
+                i: ""
+            },
+            25: {
+                u: "<%= btn_up %>",
+                d: "",
+                s: "<%= btn_quit %>",
+                e: "<%= btn_ok %>",
+                i: ""
+            },
+            26: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_pause %>",
+                e: "<%= btn_pump %>",
+                i: ""
+            },
+            27: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_run %>",
+                e: "<%= btn_pump %>",
+                i: ""
+            },
+            28: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_done %>",
+                e: "<%= btn_more %>",
+                i: ""
+            },
+            29: {
+                u: "<%= btn_up %>",
+                d: "",
+                s: "",
+                e: "<%= btn_ok %>",
+                i: ""
+            },
+            30: {
+                u: "",
+                d: "<%= btn_down %>",
+                s: "",
+                e: "<%= btn_ok %>",
+                i: ""
+            },
+            31: {
+                u: "",
+                d: "",
+                s: "<%= btn_exit %>",
+                e: "<%= btn_pump %>",
+                i: ""
+            },
+            32: {
+                u: "",
+                d: "",
+                s: "<%= btn_no %>",
+                e: "<%= btn_yes %>",
+                i: "<%= btn_i_auto_tune_pid_q %>"
+            },
+            33: {
+                u: "",
+                d: "",
+                s: "<%= btn_no %>",
+                e: "<%= btn_yes %>",
+                i: "<%= btn_i_stop_autotune_q %>"
+            },
+            34: {
+                u: "",
+                d: "",
+                s: "",
+                e: "<%= btn_yes %>",
+                i: "<%= btn_i_run_ap_mode %>"
+            },
+            35: {
+                u: "<%= btn_extend %>",
+                d: "",
+                s: "<%= btn_skip %>",
+                e: "<%= btn_back %>",
+                i: ""
+            },
+            36: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_skip %>",
+                e: "<%= btn_pump %>",
+                i: ""
+            },
+            37: {
+                u: "",
+                d: "",
+                s: "<%= btn_mashout %>",
+                e: "<%= btn_extend %>",
+                i: ""
+            },
+            38: {
+                u: "",
+                d: "<%= btn_manual %>",
+                s: "<%= btn_auto %>",
+                e: "<%= btn_cancel %>",
+                i: ""
+            }
+        };
+
+        var ButtonLabels_paddle = {
+            7: {
+                u: "",
+                d: "",
+                s: "",
+                e: "",
+                i: "<%= btn_i_stir_rest %>"
+            },
+            8: {
+                u: "",
+                d: "",
+                s: "<%= btn_yes %>",
+                e: "<%= btn_stir %>",
+                i: "<%= btn_i_continue_q %>"
+            },
+            10: {
+                u: "",
+                d: "",
+                s: "",
+                e: "<%= btn_stir %>",
+                i: ""
+            },
+            11: {
+                u: "",
+                d: "",
+                s: "<%= btn_time %>",
+                e: "<%= btn_stir %>",
+                i: ""
+            },
+            12: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "",
+                e: "<%= btn_stir %>",
+                i: ""
+            },
+            16: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_end %>",
+                e: "<%= btn_stir %>",
+                i: ""
+            },
+            17: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_heat %>",
+                e: "<%= btn_stir %>",
+                i: ""
+            },
+            19: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_stir_pause %>",
+                e: "<%= btn_stp %>",
+                i: ""
+            },
+            26: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_pause %>",
+                e: "<%= btn_stir %>",
+                i: ""
+            },
+            27: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_run %>",
+                e: "<%= btn_stir %>",
+                i: ""
+            },
+            31: {
+                u: "",
+                d: "",
+                s: "<%= btn_exit %>",
+                e: "<%= btn_stir %>",
+                i: ""
+            },
+            36: {
+                u: "<%= btn_up %>",
+                d: "<%= btn_down %>",
+                s: "<%= btn_skip %>",
+                e: "<%= btn_stir %>",
+                i: ""
+            }
+        };
+
+        var ButtonLabels_distill = {
+            6: {
+                u: "<%= btn_distill %>",
+                d: "<%= btn_manual %>",
+                s: "<%= btn_auto %>",
+                e: "<%= btn_setup %>",
+                i: ""
+            }
+        };
+
+        $(function() {
+            $(".fn").hide();
+            var mySlidebars = new $.slidebars();
+            window.menuselected = {};
+            $("#menu").selectable({
+                element: null,
+                callback: {},
+                selected: function(event, ui) {
+                    element = $(ui.selected);
+                    if (typeof window.menuselected[ui.selected.id] != "undefined")
+                        window.menuselected[ui.selected.id]();
+                },
+                stop: function(event, ui) {
+                    element.siblings().removeClass("selected");
+                    $(".fn").hide();
+                    $('#' + element[0].id + '-p').show();
+                    $("#menupane").hide('slide');
+                }
+            });
+            $("#status").addClass('ui-selected');
+            $("#menupane").hide();
+            $("#status-p").show();
+
+            BM.init();
+            BChart.init("chart-canvas");
+            NetworkConfig.init();
+            Logs.init();
+            BrewUtils.init("#utility-p");
+            Recipes.init();
+            Sound.init();
+
+            // create customized alert and confirm
+            $("#dialog-confirm").hide();
+            $("#dialog-alert").hide();
+
+            // test 
+            //	$("#soundid").selectmenu();
+            $("#playsound").button().click(function(event) {
+                event.preventDefault();
+                Sound.play($("select#soundid option:checked").val());
+            });
+        });
+        var jAlert = function(msg) {
+            $("#dialog-alert .dialog-msg").text(msg);
+            $("#dialog-alert").dialog({
+                modal: true,
+                buttons: {
+                    Ok: function() {
+                        $(this).dialog("close");
+                    }
+                }
+            });
+        };
+        var jConfirm = function(opt) {
+            $("#dialog-confirm .dialog-msg").text(opt.msg);
+            if (typeof opt["title"] != "undefined") $("#dialog-confirm").prop("title", opt.title);
+            var btnok = (typeof opt["ok"] != "undefined") ? opt["ok"] : "OK";
+            var btncancel = (typeof opt["cancel"] != "undefined") ? opt["cancel"] : "Cancel";
+
+            $("#dialog-confirm").dialog({
+                resizable: false,
+                height: "auto",
+                width: 400,
+                modal: true
+            }).dialog("option", "buttons", [{
+                text: btnok,
+                click: function() {
+                    if (typeof opt["onok"] != "undefined") opt.onok(this);
+                    $(this).dialog("close");
+                }
+            }, {
+                text: btncancel,
+                click: function() {
+                    if (typeof opt["oncancel"] != "undefined") opt.oncancel(this);
+                    $(this).dialog("close");
+                }
+            }]);
+        };
+        // network selection
+    </script>
+    <script>
+        // for localization.
+
+        var Unit = {
+            liter: "<%= liter_label %>",
+            gal: "<%= gallon_label %>",
+            lb: "<%= lb_label %>",
+            kg: "<%= kg_label %>",
+            min: "<%= minute %>",
+            oz: "<%= oz_label %>",
+            qt: "<%= quart_label %>",
+            gram: "<%= gram_label %>",
+            degf: "&#8457;", //"°F",
+            degc: "&#8451;", //"°C",
+            Lovibond: "L",
+            plato: "&deg;P"
+        };
+        // settings
+        var EEPROM = {
+            "s_kp": {
+                max: 100,
+                min: -100,
+                inc: 1,
+                decode: function(v) {
+                    return v - 100;
+                },
+                encode: function(v) {
+                    return v + 100;
+                }
+            },
+            "s_ki": {
+                max: 155,
+                min: -100,
+                inc: 1,
+                decode: function(v) {
+                    return v - 100;
+                },
+                encode: function(v) {
+                    return v + 100;
+                }
+            },
+            "s_kd": {
+                max: 100,
+                min: -100,
+                inc: 1,
+                decode: function(v) {
+                    return v - 100;
+                },
+                encode: function(v) {
+                    return v + 100;
+                }
+            },
+            "s_kp2": {
+                max: 100,
+                min: -100,
+                inc: 1,
+                decode: function(v) {
+                    return v - 100;
+                },
+                encode: function(v) {
+                    return v + 100;
+                }
+            },
+            "s_ki2": {
+                max: 155,
+                min: -100,
+                inc: 1,
+                decode: function(v) {
+                    return v - 100;
+                },
+                encode: function(v) {
+                    return v + 100;
+                }
+            },
+            "s_kd2": {
+                max: 100,
+                min: -100,
+                inc: 1,
+                decode: function(v) {
+                    return v - 100;
+                },
+                encode: function(v) {
+                    return v + 100;
+                }
+            },
+            "s_kpall": {
+                max: 100,
+                min: -100,
+                inc: 1,
+                decode: function(v) {
+                    return v - 100;
+                },
+                encode: function(v) {
+                    return v + 100;
+                }
+            },
+            "s_kiall": {
+                max: 155,
+                min: -100,
+                inc: 1,
+                decode: function(v) {
+                    return v - 100;
+                },
+                encode: function(v) {
+                    return v + 100;
+                }
+            },
+            "s_kdall": {
+                max: 100,
+                min: -100,
+                inc: 1,
+                decode: function(v) {
+                    return v - 100;
+                },
+                encode: function(v) {
+                    return v + 100;
+                }
+            },
+            "s_sample_time": {
+                max: 8000,
+                min: 1500,
+                inc: 250,
+                decode: function(v) {
+                    return v * 250;
+                },
+                encode: function(v) {
+                    return Math.round(v / 250);
+                }
+            },
+            "s_window": {
+                max: 40000,
+                min: 4000,
+                inc: 250,
+                decode: function(v) {
+                    return v * 250;
+                },
+                encode: function(v) {
+                    return Math.round(v / 250);
+                }
+            },
+            "s_pwm": {
+                max: 100,
+                min: 0,
+                inc: 1
+            },
+            "s_cal": {
+                max: 5,
+                min: -5,
+                inc: 0.1,
+                decode: function(v) {
+                    return (v - 50) / 10;
+                },
+                encode: function(v) {
+                    return v * 10 + 50;
+                }
+            },
+            "s_pidstart": {
+                max: 3.5,
+                min: 1.0,
+                inc: 0.1,
+                decode: function(v) {
+                    return (v) / 10;
+                },
+                encode: function(v) {
+                    return v * 10;
+                }
+            },
+            "s_piddoughin": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                labels: ["<%= set_no %>", "<%= set_yes %>"]
+            },
+            "s_unit": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                labels: ["&deg;C", "&deg;F"],
+            },
+            "s_nodelay": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                labels: ["<%= set_no %>", "<%= set_yes %>"]
+            },
+            "s_boil": {
+                max: 120,
+                min: 80,
+                inc: 1
+            },
+            "s_pumpcycle": {
+                max: 15,
+                min: 5,
+                inc: 1
+            },
+            "s_pumprest": {
+                max: 5,
+                min: 0,
+                inc: 1
+            },
+            "s_pumppremash": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                labels: ["<%= set_off %>", "<%= set_on %>"]
+            },
+            "s_pumpmash": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                labels: ["<%= set_off %>", "<%= set_on %>"]
+            },
+            "s_pumpmashout": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                labels: ["<%= set_off %>", "<%= set_on %>"]
+            },
+            "s_pumpboil": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                labels: ["<%= set_off %>", "<%= set_on %>"]
+            },
+            "s_pumpstop": {
+                max: 120,
+                min: 80,
+                inc: 1
+            },
+            "s_pipe": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                labels: ["<%= set_no %>", "<%= set_yes %>"]
+            },
+            "s_skipadd": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                labels: ["<%= set_no %>", "<%= set_yes %>"]
+            },
+            "s_skipremove": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                labels: ["<%= set_no %>", "<%= set_yes %>"]
+            },
+            "s_skipiodine": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                labels: ["<%= set_no %>", "<%= set_yes %>"]
+            },
+            "s_iodine": {
+                max: 120,
+                min: 0,
+                inc: 1
+            },
+            "s_whirlpool": {
+                max: 2,
+                min: 0,
+                labels: ["<%= set_off %>", "<%= whirlpool_cold %>", "<%= whirlpool_hot %>"]
+            },
+            "s_hop": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                labels: ["<%= set_no %>", "<%= set_yes %>"]
+            },
+            "s_spenable": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                labels: ["<%= set_off %>", "<%= set_on %>"]
+            },
+            "s_sptempctrl": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                labels: ["<%= set_off %>", "<%= set_on %>"]
+            },
+            "s_spsensor": {
+                max: 5,
+                min: 0,
+                inc: 1
+            },
+            "s_sptemp": {
+                max: 80,
+                min: 75,
+                inc: 1
+            },
+            "s_spdiff": {
+                max: 2.0,
+                min: 0.5,
+                inc: 0.1,
+                decode: function(v) {
+                    return (v) / 10;
+                },
+                encode: function(v) {
+                    return v * 10;
+                }
+            },
+            "s_btnbuzz": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                labels: ["<%= set_off %>", "<%= set_on %>"]
+            },
+            "s_pprime": {
+                max: 10,
+                min: 0,
+                inc: 1
+            },
+            "s_ppon": {
+                max: 10000,
+                min: 250,
+                inc: 250,
+                decode: function(v) {
+                    return v * 250;
+                },
+                encode: function(v) {
+                    return Math.round(v / 250);
+                }
+            },
+            "s_ppoff": {
+                max: 10000,
+                min: 0,
+                inc: 250,
+                decode: function(v) {
+                    return v * 250;
+                },
+                encode: function(v) {
+                    return Math.round(v / 250);
+                }
+            },
+            "s_preheat": {
+                max: 3,
+                min: 1,
+                inc: 1,
+                labels: ["<%= invalid %>", "<%= primary_heater %>", "<%= secondary_heater %>", "<%= both_heaters %>"]
+            },
+            "s_mashheat": {
+                max: 3,
+                min: 1,
+                inc: 1,
+                labels: ["<%= invalid %>", "<%= primary_heater %>", "<%= secondary_heater %>", "<%= both_heaters %>"]
+            },
+            "s_boilheat": {
+                max: 3,
+                min: 1,
+                inc: 1,
+                labels: ["<%= invalid %>", "<%= primary_heater %>", "<%= secondary_heater %>", "<%= both_heaters %>"]
+            },
+            "s_pbheat": {
+                max: 3,
+                min: 1,
+                inc: 1,
+                labels: ["<%= invalid %>", "<%= primary_heater %>", "<%= secondary_heater %>", "<%= both_heaters %>"]
+            },
+            "s_wlv": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                labels: ["<%= set_off %>", "<%= set_on %>"]
+            },
+            "s_wlvtrigger": {
+                max: 1000,
+                min: 50,
+                inc: 50,
+                decode: function(v) {
+                    return v * 50;
+                },
+                encode: function(v) {
+                    return Math.round(v / 50);
+                }
+            },
+            "s_pmpminrest": {
+                max: 90,
+                min: 2,
+                inc: 1
+            }
+        };
+    </script>
+    <style>
+        #recipe-list-panel {
+            float: left;
+            width: 200px;
+        }
+        
+        #recipe-list .ui-selecting {
+            background: #FECA40;
+        }
+        
+        #recipe-list .ui-selected {
+            background: #4d8ba7;
+            color: white;
+        }
+        
+        #recipe-list {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+        }
+        
+        #recipe-list li {
+            margin: 3px;
+            padding: 0.2em;
+            font-size: 1em;
+            height: 18px;
+        }
+        
+        #xml-recipe {
+            border-collapse: collapse;
+            width: 600px;
+        }
+        
+        #xml-recipe table,
+        #xml-recipe tr,
+        #xml-recipe th,
+        #xml-recipe td {
+            border: 1px black solid;
+        }
+        
+        #xml-recipe table.subcat {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .RA {
+            text-align: right;
+        }
+        
+        #recipe-options-panel table {
+            text-align: left;
+        }
+        
+        #xml-recipe th {
+            background-color: lightgray;
+            font-weight: bold;
+        }
+        
+        #xml-recipe .auto_value {
+            color: red;
+        }
+        
+        .recipe-note {
+            text-align: left;
+        }
+        
+        .color-block {
+            width: 18px;
+            height: 0;
+            padding-bottom: 18px;
+            border-radius: 50%;
+            overflow: hidden;
+            display: inline-block;
+        }
+        
+        #rssi {
+            position: relative;
+            float: right;
+            margin: 0px 16px 0px 0px;
+            height: 24px;
+            width: 24px;
+        }
+        
+        .rssi-bar {
+            position: absolute;
+            bottom: 0;
+            float: left;
+            width: 4px;
+            border-radius: 1px;
+            background-color: #FFFFFF;
+        }
+        
+        .rssi-bar1 {
+            height: 4px;
+            left: 0px;
+        }
+        
+        .rssi-bar2 {
+            height: 12px;
+            left: 6px;
+        }
+        
+        .rssi-bar3 {
+            height: 18px;
+            left: 12px;
+        }
+        
+        .rssi-bar4 {
+            height: 24px;
+            left: 18px;
+        }
+        
+        .rssi-bar-inactive {
+            opacity: 0.2;
+        }
+        
+        #audioplay {
+            position: relative;
+            float: right;
+            margin: 0px 16px 0px 0px;
+            height: 24px;
+            width: 24px;
+        }
+        
+        .c {
+            text-align: center;
+        }
+        
+        #dialog-wifi div,
+        #dialog-wifi input {
+            padding: 5px;
+            font-size: 1em;
+        }
+        
+        #dialog-wifi input {
+            width: 95%;
+        }
+        
+        #dialog-wifi {
+            text-align: center;
+            font-family: verdana;
+        }
+        
+        #dialog-wifi button {
+            border: 0;
+            border-radius: 0.3rem;
+            background-color: #1fa3ec;
+            color: #fff;
+            line-height: 2.4rem;
+            font-size: 1.2rem;
+            width: 100%;
+        }
+        
+        #dialog-wifi .q {
+            float: right;
+            width: 64px;
+            text-align: right;
+        }
+        
+        #dialog-wifi .l {
+            background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAALVBMVEX///8EBwfBwsLw8PAzNjaCg4NTVVUjJiZDRUUUFxdiZGSho6OSk5Pg4eFydHTCjaf3AAAAZElEQVQ4je2NSw7AIAhEBamKn97/uMXEGBvozkWb9C2Zx4xzWykBhFAeYp9gkLyZE0zIMno9n4g19hmdY39scwqVkOXaxph0ZCXQcqxSpgQpONa59wkRDOL93eAXvimwlbPbwwVAegLS1HGfZAAAAABJRU5ErkJggg==") no-repeat left center;
+            background-size: 1em;
+        }
+        /* lcd */
+        
+        canvas {
+            image-rendering: optimizeSpeed;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: -o-crisp-edges;
+            -ms-interpolation-mode: nearest-neighbor
+        }
+        
+        #lcd {
+            background: #adf724;
+            image-rendering: pixelated;
+            border-radius: 5px;
+            /*margin: 1em,*/
+        }
+        
+        #contextmenu {
+            position: absolute;
+            z-index: 1001;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- slide bar  -->
+
+    <div class="sb-slidebar sb-left sb-width-custom" data-sb-width="160px">
+        <ol id="menu">
+            <li class="ui-widget-content" id="status">
+                <%= sb_panel %>
+            </li>
+            <li class="ui-widget-content" id="settings">
+                <%= sb_settings %>
+            </li>
+            <li class="ui-widget-content" id="automation">
+                <%= sb_automation %>
+            </li>
+            <li class="ui-widget-content" id="recipes">
+                <%= sb_recipes %>
+            </li>
+            <li class="ui-widget-content" id="brewlog">
+                <%= sb_brew_logs %>
+            </li>
+            <li class="ui-widget-content" id="network">
+                <%= sb_network %>
+            </li>
+            <li class="ui-widget-content" id="utility">
+                <%= sb_calculators %>
+            </li>
+            <li class="ui-widget-content" id="about">
+                <%= sb_about %>
+            </li>
+        </ol>
+    </div>
+
+    <div id="sb-site">
+        <div id="top-bar">
+            <div class="sb-toggle-left top-bar-block" id="menubar">
+                <div class="navicon-line"></div>
+                <div class="navicon-line"></div>
+                <div class="navicon-line"></div>
+            </div>
+            <div class="top-bar-block"> BrewManiacEx</div>
+            <div id="rssi">
+                <div class="rssi-bar rssi-bar1"></div>
+                <div class="rssi-bar rssi-bar2"></div>
+                <div class="rssi-bar rssi-bar3"></div>
+                <div class="rssi-bar rssi-bar4"></div>
+            </div>
+            <div id="audioplay"> <button>?</button></div>
+        </div>
+
+
+        <!-- MainScreren Panel  -->
+        <div class="fn" id="status-p">
+            <div id="info"></div>
+            <div id="blockgroup">
+                <ul id="contextmenu">
+                    <li class="ui-widget-header">
+                        <div>
+                            <%= menu_title %>
+                        </div>
+                    </li>
+                    <li>
+                        <a id="resetposition" href="#">
+                            <%= reset_position %>
+                        </a>
+                    </li>
+                </ul>
+
+                <div id="state-block" class="block movable">
+                    <div class="block-header">
+                        <div class="block-title">
+                            <%= status_title %>
+                        </div>
+                        <div class="block-ctrl"></div>
+                    </div>
+                    <div class="block-body">
+                        <div id="title">
+                            <%= sb_title %>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="heater-block" class="block movable block-size-1">
+                    <div class="block-header">
+                        <div class="block-title">
+                            <%= led_heating %>
+                        </div>
+                        <div class="block-ctrl"></div>
+                    </div>
+                    <div class="block-body">
+                        <div id="heatled" class="round-led-circle ledreddim"><span class="round-led"></span></div>
+                    </div>
+                </div>
+
+                <div id="heater2-block" class="block movable dualheating block-size-1">
+                    <div class="block-header">
+                        <div class="block-title">
+                            <%= led_heating_no2 %>
+                        </div>
+                        <div class="block-ctrl"></div>
+                    </div>
+                    <div class="block-body">
+                        <div id="heat2led" class="round-led-circle ledreddim"><span class="round-led"></span></div>
+                    </div>
+                </div>
+                <div id="auxledcon" class="block movable block-size-1">
+                    <div class="block-header">
+                        <div class="block-title">
+                            <%= led_sparge_heater %>
+                        </div>
+                        <div class="block-ctrl"></div>
+                    </div>
+                    <div class="block-body">
+                        <div id="auxled" class="round-led-circle ledreddim"><span class="round-led"></span></div>
+                    </div>
+                </div>
+
+                <div id="pump-block" class="block movable block-size-1">
+                    <div class="block-header">
+                        <div class="block-title">
+                            <%= led_pump %>
+                        </div>
+                        <div class="block-ctrl"></div>
+                    </div>
+                    <div class="block-body">
+                        <div id="pumpled" class="round-led-circle ledgreendim"><span class="round-led"></span></div>
+                    </div>
+                </div>
+
+                <div id="temp-block-1" class="block movable block-size-2">
+                    <div class="block-header">
+                        <div class="block-title">
+                            <%= temperature_title %>
+                        </div>
+                        <div class="block-ctrl"><span class="ui-icon ui-icon-gear"></span></div>
+                    </div>
+                    <div class="block-body">
+                        <div class="Tcon"><span id="currenttemp_1" class="temperature">100.75</span><span class="tmp_unit label">&deg;C</span></div>
+                    </div>
+                </div>
+
+
+                <div id="temp-block-2" class="block movable block-size-2">
+                    <div class="block-header">
+                        <div class="block-title">
+                            <%= temperature_title %> #2</div>
+                        <div class="block-ctrl"><span class="ui-icon ui-icon-gear"></span></div>
+                    </div>
+                    <div class="block-body">
+                        <div class="Tcon"><span id="currenttemp_2" class="temperature">100.75</span><span class="tmp_unit label">&deg;C</span></div>
+                    </div>
+                </div>
+
+
+                <div id="temp-block-3" class="block movable block-size-2">
+                    <div class="block-header">
+                        <div class="block-title">
+                            <%= temperature_title %> #3</div>
+                        <div class="block-ctrl"><span class="ui-icon ui-icon-gear"></span></div>
+                    </div>
+                    <div class="block-body">
+                        <div class="Tcon"><span id="currenttemp_3" class="temperature">100.75</span><span class="tmp_unit label">&deg;C</span></div>
+                    </div>
+                </div>
+
+                <div id="temp-block-4" class="block movable block-size-2">
+                    <div class="block-header">
+                        <div class="block-title">
+                            <%= temperature_title %> #4</div>
+                        <div class="block-ctrl"><span class="ui-icon ui-icon-gear"></span></div>
+                    </div>
+                    <div class="block-body">
+                        <div class="Tcon"><span id="currenttemp_4" class="temperature">100.75</span><span class="tmp_unit label">&deg;C</span></div>
+                    </div>
+                </div>
+                <div id="temp-block-5" class="block movable block-size-2">
+                    <div class="block-header">
+                        <div class="block-title">
+                            <%= temperature_title %> #5</div>
+                        <div class="block-ctrl"><span class="ui-icon ui-icon-gear"></span></div>
+                    </div>
+                    <div class="block-body">
+                        <div class="Tcon"><span id="currenttemp_5" class="temperature">100.75</span><span class="tmp_unit label">&deg;C</span></div>
+                    </div>
+                </div>
+
+                <div id="set-block" class="block movable block-size-2">
+                    <div class="block-header">
+                        <div class="block-title">
+                            <%= setting_temperature %>
+                        </div>
+                        <div class="block-ctrl"><span class="ui-icon ui-icon-gear"></span></div>
+                    </div>
+                    <div class="block-body">
+                        <div><span id="setpoint" class="temperature">64.75</span><span class="tmp_unit label">&deg;C</span></div>
+                    </div>
+                </div>
+
+                <div id="pwm-block" class="block movable block-size-2">
+                    <div class="block-header">
+                        <div class="block-title">
+                            <%= pwm_title %>
+                        </div>
+                        <div class="block-ctrl"><span class="ui-icon ui-icon-gear"></span></div>
+                    </div>
+                    <div class="block-body">
+                        <span id="pwm">99</span>
+                        <span class="label">%</span>
+                    </div>
+                </div>
+
+                <div id="timerPanel" class="block movable block-size-2">
+                    <div class="block-header">
+                        <div class="block-title">
+                            <%= time_title %>
+                        </div>
+                        <div class="block-ctrl"><span class="ui-icon ui-icon-gear"></span></div>
+                    </div>
+                    <div class="block-body">
+                        <div><span id="timer">01:59:38</span></div>
+                    </div>
+                </div>
+
+
+                <div id="controller-pan" class="block movable">
+                    <div class="block-header">
+                        <div class="block-title">
+                            <%= controller_title %>
+                        </div>
+                        <div class="block-ctrl"><span class="ui-icon ui-icon-gear"></span></div>
+                    </div>
+                    <div class="block-body">
+                        <table>
+                            <tr>
+                                <td colspan="2">
+                                    <div class=""><canvas id=lcd></canvas></div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
+                                    <div id="btnpanel">
+                                        <table>
+                                            <tr>
+                                                <td id="btngap" colspan="4"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <div class="round-button-circle">
+                                                        <a id="btn-up" class="round-button">
+                                                            <%= button_up %>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="round-button-circle">
+                                                        <a id="btn-down" class="round-button">
+                                                            <%= button_down %>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="round-button-circle">
+                                                        <a id="btn-start" class="round-button">
+                                                            <%= button_start %>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="round-button-circle">
+                                                        <a id="btn-enter" class="round-button">
+                                                            <%= button_enter %>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        <div id="btncover"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="auto-p" class="block movable">
+                    <div class="block-header">
+                        <div class="block-title">
+                            <%= automation_progress_title %>
+                        </div>
+                        <div class="block-ctrl"></div>
+                    </div>
+                    <div class="block-body">
+                        <table id="auto-t">
+                            <thead>
+                                <tr>
+                                    <th colspan="3">
+                                        <%= automation_progress %>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="autot-row">
+                                    <td class="autot-title"></td>
+                                    <td class="autot-temp"></td>
+                                    <td class="autot-time"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="tchart" class="block movable resizable" style="width:95%;">
+                    <div class="block-header">
+                        <div class="block-title">
+                            <%= chart_title %>
+                        </div>
+                        <div class="block-ctrl"></div>
+                    </div>
+                    <div class="block-body">
+                        <canvas id="chart-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Setting  -->
+
+        <div class="fn" id="settings-p">
+            <span class="section"><%= setting_settings %></span>
+            <button id="esetting" class="editbtn"><%= setting_set %></button>
+            <button id="savesetting" class="editbtn"><%= setting_save %></button>
+            <button id="exportsetting" class="editbtn"><%= setting_export %></button>
+            <button id="importsetting" class="editbtn"><%= setting_import %></button>
+            <table>
+                <tr>
+                    <td colspan="2" class="setting-category">
+                        <%= pid_pwm %>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= setting_kp %><span class="dualheating"> <%= primary_heater %></span>
+                    </td>
+                    <td><span id="s_kp">-</span> </td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= setting_ki %><span class="dualheating"> <%= primary_heater %></span> </td>
+                    <td><span id="s_ki">-</span> </td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= setting_kd %><span class="dualheating"> <%= primary_heater %></span> </td>
+                    <td><span id="s_kd">-</span> </td>
+                </tr>
+                <tr class="dualheating">
+                    <td>
+                        <%= kp_secondary_heater %>
+                    </td>
+                    <td><span id="s_kp2">-</span> </td>
+                </tr>
+                <tr class="dualheating">
+                    <td>
+                        <%= ki_secondary_heater %>
+                    </td>
+                    <td><span id="s_ki2">-</span> </td>
+                </tr>
+                <tr class="dualheating">
+                    <td>
+                        <%= kd_secondary_heater %>
+                    </td>
+                    <td><span id="s_kd2">-</span> </td>
+                </tr>
+                <tr class="dualheating">
+                    <td>
+                        <%= kp_both_elements %>
+                    </td>
+                    <td><span id="s_kpall">-</span> </td>
+                </tr>
+                <tr class="dualheating">
+                    <td>
+                        <%= ki_both_elements %>
+                    </td>
+                    <td><span id="s_kiall">-</span> </td>
+                </tr>
+                <tr class="dualheating">
+                    <td>
+                        <%= kd_both_elements %>
+                    </td>
+                    <td><span id="s_kdall">-</span> </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <%= sample_time %>
+                    </td>
+                    <td><span id="s_sample_time">-</span> </td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= windowset %>
+                    </td>
+                    <td><span id="s_window">-</span>
+                        <%= micro_second %>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= heat_pwm_in_boil %>
+                    </td>
+                    <td><span id="s_pwm">-</span> %</td>
+                </tr>
+                <tr>
+                    <td class="TCAL_T">
+                        <%= sensor_calibration %>
+                    </td>
+                    <td><span id="s_cal" class="TCAL_V">-</span><span class="tmp_unit">&deg;C</span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= pid_start %>
+                    </td>
+                    <td><span id="s_pidstart">-</span> <span class="tmp_unit">&deg;C</span></td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="setting-category">
+                        <%= unit_parameters %>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= temperature_unit %>
+                    </td>
+                    <td><span id="s_unit" class="tmp_unit">&deg;C</span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= boil_temperature %>
+                    </td>
+                    <td><span id="s_boil">-</span> <span class="tmp_unit">&deg;C</span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= pump_cycle %>
+                    </td>
+                    <td><span id="s_pumpcycle">-</span>
+                        <%= minutes %>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= pump_rest %>
+                    </td>
+                    <td><span id="s_pumprest">-</span>
+                        <%= minutes %>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= pump_premash %>
+                    </td>
+                    <td><span class="onoff" id="s_pumppremash">-</span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= pump_on_mash %>
+                    </td>
+                    <td><span class="onoff" id="s_pumpmash">-</span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= pump_mashout %>
+                    </td>
+                    <td><span class="onoff" id="s_pumpmashout">-</span> </td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= pump_on_boil %>
+                    </td>
+                    <td><span class="onoff" id="s_pumpboil">-</span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= pump_stop_temperature %>
+                    </td>
+                    <td><span id="s_pumpstop">-</span><span class="tmp_unit">&deg;C</span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= pid_when_doughing_in %>
+                    </td>
+                    <td><span id="s_piddoughin">-</span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= pid_when_remove_malt %>
+                    </td>
+                    <td><span id="s_pipe">-</span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= skip_add %>
+                    </td>
+                    <td><span class="yesno" id="s_skipadd">-</span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= skip_remove %>
+                    </td>
+                    <td><span class="yesno" id="s_skipremove">-</span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= skip_iodine %>
+                    </td>
+                    <td><span class="yesno" id="s_skipiodine">-</span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= iodine_time %>
+                    </td>
+                    <td><span id="s_iodine">-</span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= whirlpool %>
+                    </td>
+                    <td><span id="s_whirlpool">-</span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= heat_on_pump %>
+                    </td>
+                    <td><span id="s_hop">-</span></td>
+                </tr>
+
+                <tr>
+                    <td colspan="2" class="setting-category">
+                        <%= misc_settings %>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= disable_delay_start %>
+                    </td>
+                    <td><span id="s_nodelay">-</span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= buzz_on_bitton %>
+                    </td>
+                    <td><span id="s_btnbuzz">-</span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= pump_prime_cycle %>
+                    </td>
+                    <td><span id="s_pprime">-</span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= pump_prime_on_time %>
+                    </td>
+                    <td><span id="s_ppon">-</span>
+                        <%= micro_second %>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= pump_prime_off_time %>
+                    </td>
+                    <td><span id="s_ppoff">-</span>
+                        <%= micro_second %>
+                    </td>
+                </tr>
+                <tr class="spargeheating">
+                    <td colspan="2" class="setting-subcategory">
+                        <%= sparge_water_heating_control %>
+                    </td>
+                </tr>
+                <tr class="spargeheating">
+                    <td>
+                        <%= control_sparge_heating %>
+                    </td>
+                    <td><span id="s_spenable">-</span></td>
+                </tr>
+                <tr class="spargeheating">
+                    <td>
+                        <%= sparge_temperature_control %>
+                    </td>
+                    <td><span id="s_sptempctrl">-</span></td>
+                </tr>
+                <tr class="spargeheating">
+                    <td>
+                        <%= sensor_index %>
+                    </td>
+                    <td><span id="s_spsensor">-</span></td>
+                </tr>
+                <tr class="spargeheating">
+                    <td>
+                        <%= target_temperature %>
+                    </td>
+                    <td><span id="s_sptemp">-</span><span class="tmp_unit">&deg;C</span></td>
+                </tr>
+                <tr class="spargeheating">
+                    <td>
+                        <%= Temperature_difference %>
+                    </td>
+                    <td><span id="s_spdiff">-</span></td>
+                </tr>
+                <tr class="dualheating">
+                    <td colspan="2" class="setting-subcategory">
+                        <%= heating_element_usage %>
+                    </td>
+                </tr>
+                <tr class="dualheating">
+                    <td>
+                        <%= premash_heating_element %>
+                    </td>
+                    <td><span id="s_preheat">-</span></td>
+                </tr>
+                <tr class="dualheating">
+                    <td>
+                        <%= mashing_heating_element %>
+                    </td>
+                    <td><span id="s_mashheat">-</span></td>
+                </tr>
+                <tr class="dualheating">
+                    <td>
+                        <%= boiling_heating_element %>
+                    </td>
+                    <td><span id="s_boilheat">-</span></td>
+                </tr>
+                <tr class="dualheating">
+                    <td>
+                        <%= post_mash_heating_element %>
+                    </td>
+                    <td><span id="s_pbheat">-</span></td>
+                </tr>
+                <tr class="waterlevelsensor">
+                    <td colspan="2" class="setting-subcategory">
+                        <%= wort_water_level_sensor %>
+                    </td>
+                </tr>
+                <tr class="waterlevelsensor">
+                    <td>
+                        <%= enable_water_level_sensor %>
+                    </td>
+                    <td><span id="s_wlv">-</span></td>
+                </tr>
+                <tr class="waterlevelsensor">
+                    <td>
+                        <%= level_sensor_min_trigger_time %>
+                    </td>
+                    <td><span id="s_wlvtrigger">-</span>
+                        <%= micro_second %>
+                    </td>
+                </tr>
+                <tr class="waterlevelsensor">
+                    <td>
+                        <%= extended_pump_rest %>
+                    </td>
+                    <td><span id="s_pmpminrest">-</span>
+                        <%= seconds %>
+                    </td>
+                </tr>
+
+            </table>
+
+            <!-- Sensors  -->
+
+            <div id="multisensor">
+                <h3>
+                    <%= temperature_sensors %>
+                </h3>
+                <table>
+                    <tr class="setting-category">
+                        <th>#</th>
+                        <th>
+                            <%= address %>
+                        </th>
+                    </tr>
+                    <tr class="sensor_row">
+                        <td class="sensor_id">1</td>
+                        <td class="sensor_addr">0xFFFFFFFFFFFFFFFF</td>
+                    </tr>
+                </table>
+                <br>
+                <%= sensor_assignment %>
+                    <table>
+                        <tr class="setting-category">
+                            <th>
+                                <%= stage %>
+                            </th>
+                            <th>
+                                <%= sensor_primary %>
+                            </th>
+                            <th>
+                                <%= sensor_auxiliary %>
+                            </th>
+                        </tr>
+                        <tr>
+                            <td>
+                                <%= main_screen %>
+                            </td>
+                            <td id="sensor_P_0">1</td>
+                            <td id="sensor_S_0">1</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <%= manual_mode %>
+                            </td>
+                            <td id="sensor_P_1">1</td>
+                            <td id="sensor_S_1">1</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <%= pre_mash %>
+                            </td>
+                            <td id="sensor_P_2">1</td>
+                            <td id="sensor_S_2">1</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <%= mashing %>
+                            </td>
+                            <td id="sensor_P_3">1</td>
+                            <td id="sensor_S_3">1</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <%= boil %>
+                            </td>
+                            <td id="sensor_P_4">1</td>
+                            <td id="sensor_S_4">1</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <%= cooling %>
+                            </td>
+                            <td id="sensor_P_5">1</td>
+                            <td id="sensor_S_5">1</td>
+                        </tr>
+                    </table>
+            </div>
+            <!-- div id="multisensor" -->
+
+        </div>
+
+        <!-- Setting  -->
+
+        <!-- Automation  -->
+        <div class="fn" id="automation-p">
+            <em><%= automation_process %></em>
+            <button id="editauto" class="editbtn"><%= edit %></button>
+            <button id="saveauto" class="editbtn"><%= save %></button>
+            <table id="auto_table">
+                <tr>
+                    <td colspan="3" class="setting-category">
+                        <%= mash_schedule %> <button id="addrest" class="editbtn"><%= add_mash_rest %></button></td>
+                </tr>
+                <tr>
+                    <th>
+                        <%= mash_rest %>
+                    </th>
+                    <th>
+                        <%= mash_temp %>
+                    </th>
+                    <th>
+                        <%= mash_time %>
+                    </th>
+                </tr>
+                <tr>
+                    <td>
+                        <%= mash_in  %>
+                    </td>
+                    <td><span id="s0_tp">-</span><span class="tmp_unit">&deg;C</span></td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= mash_out %>
+                    </td>
+                    <td><span id="s7_tp">-</span><span class="tmp_unit">&deg;C</span></td>
+                    <td><span id="s7_tm">-</span>
+                        <%= minute %>
+                    </td>
+                </tr>
+                <tr>
+                    <tr>
+                        <td colspan="3" class="setting-category">
+                            <%= boil_n_hop %> <button id="addhop" class="editbtn"><%= add_hop_schedule %></button></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <%= boil_time %>
+                        </td>
+                        <td colspan="2"><span id="boiltime">-</span>
+                            <%= minute %>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="setting-category">
+                            <%= hop_stand %> <button id="addhopstand" class="editbtn"><%= add_session %></button></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <%= hopstand_session %> <span class="session-number">1</span></td>
+                        <td>
+                            <%= hopstand_start %> <span class="session-start-temp">99</span><span class="tmp_unit">&deg;C</span></td>
+                        <td>
+                            <%= hopstand_keep %><span class="session-hold-temp"> 80</span><span class="tmp_unit">&deg;C</span> <button class="editbtn addpbh"><%= add_hop_schedule %></button></td>
+                    </tr>
+            </table>
+        </div>
+        <!-- Automation  -->
+
+        <!-- recipes  -->
+        <div class="fn" id="recipes-p">
+            <div id="recipe-list-panel">
+                <ol id="recipe-list">
+                    <li class="ui-widget-content" id="recipe-options">
+                        <%= recipe_user_settings %>
+                    </li>
+                    <li class="ui-widget-content" id="recipe-import">
+                        <%= recipe_import %>
+                    </li>
+                    <hr>
+                </ol>
+            </div>
+            <div id="recipe-display">
+                <div id="recipe-options-panel">
+                    <h3>
+                        <%= recipe_options %>
+                    </h3>
+                    <div style="display:none">
+                        <span id="disp_unit_liter"><%= liter_label %> </span>
+                        <span id="disp_unit_gallon"><%= gallon_label %> </span>
+                        <span id="disp_unit_qt"><%= quart_label %> </span>
+                        <span id="disp_unit_kg"><%= kg_label %> </span>
+                        <span id="disp_unit_lb"><%= lb_label %> </span>
+                        <span id="disp_unit_oz"><%= oz_label %> </span>
+                        <span id="disp_unit_g"><%= gram_label %> </span>
+                    </div>
+                    <table>
+                        <tr>
+                            <td>
+                                <%= unit %>
+                            </td>
+                            <td colspan="3">
+                                <input type="radio" name="genunit" id="unit_metric" value="m">
+                                <label for="unit_metric"><%= metrics_unit %></label>
+                                <input type="radio" name="genunit" id="unit_us" value="u">
+                                <label for="unit_us"><%= us_unit %></label>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>
+                                <%= gravity_plato %>
+                            </td>
+                            <td colspan="3">
+                                <input type="radio" name="sugarunit" id="su_gravity" value="g">
+                                <label for="su_gravity"><%= gravity %></label>
+                                <input type="radio" name="sugarunit" id="su_plato" value="p">
+                                <label for="su_plato">&deg;<%= deg_plato %></label>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td rowspan="6">
+                                <%= mash_in_temperature %>
+                            </td>
+                            <td colspan="3">
+                                <input type="checkbox" name="prefer_infuse" id="mi_prefer_infuse">
+                                <label for="mi_prefer_infuse"><%= prefer_infuse_temp %></label>
+                            </td>
+                        </tr>
+                        <td colspan="3">
+                            <input type="radio" name="mashin_temp" id="mi_1stRest" value="1">
+                            <label for="mi_1stRest"><%= as_first_rest %></label>
+                        </td>
+                        </tr>
+                        <tr>
+                            <td rowspan="3"><input type="radio" name="mashin_temp" id="mi_cal" value="c">
+                                <label for="mi_cal"><%= calculated %></label></td>
+                            <td><label for="grain-temp"><%= grain_temperature %></label></td>
+                            <td><input type="text" id="grain-temp" size="4"></input><span class="tmp_unit">&deg;C</span></td>
+                        </tr>
+                        <tr>
+                            <td><label for="equip-adj"><%= equipment_adjust %></label></td>
+                            <td><input type="text" id="equip-adj" size="4"></input><span class="tmp_unit">&deg;C</span></td>
+                        </tr>
+                        <tr>
+                            <td><label for="kettle-mass"><%= kettle_equivelent_mass %></label></td>
+                            <td><input type="text" id="kettle-mass" size="4"></input><span id="kettlemass_unit">L</span></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <input type="radio" name="mashin_temp" id="mi_fixed" value="s">
+                                <label for="mi_fixed"><%= specified %></label>
+                            </td>
+                            <td>
+                                <label for="mashin-temp"><%= temperature %></label></td>
+                            <td><input type="text" id="mashin-stemp" size="4"></input><span class="tmp_unit">&deg;C</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td rowspan="2">
+                                <%= default_mashout %>
+                            </td>
+                            <td colspan="2">
+                                <label for="mo-temp"><%= temperature %></label></td>
+                            <td><input type="text" id="mo-temp" size="4"></input><span class="tmp_unit">&deg;C</span></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2"><label for="mo-time"><%= time %></label></td>
+                            <td><input type="text" id="mo-time" size="4"></input>
+                                <span id=disp_unit_min><%= minute %></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td rowspan="2">
+                                <%= default_hopstand %>
+                            </td>
+                            <td colspan="2">
+                                <label for="de-HS-temp"><%= start_temperature %></label></td>
+                            <td><input type="text" id="de-HS-temp" size="4"></input><span class="tmp_unit">&deg;C</span></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2"><label for="de-HS-keep-temp"><%= keep_temperature %></label></td>
+                            <td><input type="text" id="de-HS-keep-temp" size="4"></input><span class="tmp_unit">&deg;C</span>
+                            </td>
+                        </tr>
+
+                    </table>
+                    <br>
+                    <button id="recipe-option-update"><%= update %></button>
+                </div>
+                <div id="recipe-import-panel">
+                    <h3>
+                        <%= import_beerxml %>
+                    </h3>
+                    <div id="fileinputgrp">
+                        <input type="file" id="fileinput" />
+                    </div><br>
+                    <div id="import-xml-pane">
+                        <div>
+                            <select name="xml-recipe-select" id="xml-recipe-select">
+    	</select>
+                            <br>
+                            <%= save_as %><input type="text" size="20" maxlength="28" id="xml-savename"></input>
+                                <button id="xml-save"><%= save %></button>
+                                <button id="xml-brew"><%= brew_xml %></button>
+                        </div>
+                    </div>
+                </div>
+                <div id="recipe-view-panel">
+                    <h3>
+                        <%= reicpe %>
+                    </h3>
+                    <div>
+                        <button id="recipe-del"><%= delete_recipe %></button>
+                        <button id="recipe-brew"><%= brew_recipe %></button>
+                    </div>
+                </div>
+            </div>
+            <div id="recipe-table">
+                <hr>
+                <table id="xml-recipe">
+                    <tr>
+                        <td>
+                            <table class="subcat">
+                                <tr>
+                                    <th>
+                                        <%= recipe_name %>
+                                    </th>
+                                    <td><span class="recipe-name"></span></td>
+                                </tr>
+                                <tr>
+                                    <th>
+                                        <%= recipe_style %>
+                                    </th>
+                                    <td><span class="recipe-style"></span></td>
+                                </tr>
+                                <tr>
+                                    <th>
+                                        <%= batch_size %>
+                                    </th>
+                                    <td><span class="batch-size"></span></td>
+                                </tr>
+                                <tr>
+                                    <th><span class="auto_value"><%= boil_time %></span></th>
+                                    <td><span class="boil-time"></span></td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>
+                            <table class="subcat">
+                                <tr>
+                                    <th>
+                                        <%= recipe_efficiency %>
+                                    </th>
+                                    <th>
+                                        <%= recipe_og %>
+                                    </th>
+                                    <th>
+                                        <%= recipe_fg %>
+                                    </th>
+                                    <th>
+                                        <%= recipe_abv %>
+                                    </th>
+                                    <th>
+                                        <%= recipe_color %>
+                                    </th>
+                                    <th>
+                                        <%= recipe_ibu %>
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <td><span class="recipe-eff">-</span>%</td>
+                                    <td><span class="recipe-og"></span></td>
+                                    <td><span class="recipe-fg"></span></td>
+                                    <td><span class="recipe-abv"></span>%</td>
+                                    <td><span class="color-block"></span> <span class="recipe-color"></span></td>
+                                    <td><span class="recipe-ibu"></span></td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <%= fermentables %>
+                        </th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <table class="subcat">
+                                <tr class="ferm-header">
+                                    <th>
+                                        <%= fermentable %>
+                                    </th>
+                                    <th>
+                                        <%= weight %>
+                                    </th>
+                                    <th><span class="yieldtitle"><%= fermentatble_yield %></span><span class="ppgtitle"><%= fermentable_ppg %></span></th>
+                                    <th>
+                                        <%= fermentable_color %>
+                                    </th>
+                                    <th>
+                                        <%= note %>
+                                    </th>
+                                </tr>
+                                <tr class="ferm-row">
+                                    <td class="ferm-name">TT</td>
+                                    <td class="ferm-weight RA"></td>
+                                    <td class="ferm-yield RA"></td>
+                                    <td class="ferm-color RA"></td>
+                                    <td class="ferm-af"></td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <%= hop_n_misc %>
+                        </th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <table class="subcat">
+                                <tr class="hop-header">
+                                    <th></th>
+                                    <th>
+                                        <%= time %>
+                                    </th>
+                                    <th>
+                                        <%= hop_name %>
+                                    </th>
+                                    <th>
+                                        <%= weight %>
+                                    </th>
+                                    <th>
+                                        <%= alpha %>
+                                    </th>
+                                    <th>
+                                        <%= note %>
+                                    </th>
+                                </tr>
+                                <tr class="hop-row">
+                                    <td class="hop-order">
+                                        <span class="auto_value hop-boil"><%= hop_num %><span class="hop-order-id"></span></span>
+                                        <span class="auto_value hop-whirlpool"><%= postboilhop_num %><span class="hop-order-id"></span></span>
+                                    </td>
+                                    <td class="hop-time"></td>
+                                    <td class="hop-name"></td>
+                                    <td class="hop-weight RA"></td>
+                                    <td class="hop-alpha RA"></td>
+                                    <td class="hop-note"></td>
+                                </tr>
+                                <tr class="hopstand-row">
+                                    <td>
+                                        <%= hopstand_num %><span class="hopstand-order"></span></td>
+                                    <td class="hopstand-time"></td>
+                                    <td colspan="4"><span class="hopstand-stemp"></span> ~ <span class="hopstand-ktemp"></span> </td>
+                                </tr>
+
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <%= mash_profile %>
+                        </th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <table class="subcat">
+                                <tr class="mash-header">
+                                    <th></th>
+                                    <th>
+                                        <%= rest_name %>
+                                    </th>
+                                    <th>
+                                        <%= temperature %>
+                                    </th>
+                                    <th>
+                                        <%= time %>
+                                    </th>
+                                    <th>
+                                        <%= rest_type %>
+                                    </th>
+                                    <th>
+                                        <%= water %>
+                                    </th>
+                                </tr>
+                                <tr class="mash-row">
+                                    <td class="mash-autorest">
+                                        <td class="mash-name"></td>
+                                        <td class="mash-temp RA"></td>
+                                        <td class="mash-time"></td>
+                                        <td class="mash-type"></td>
+                                        <td class="mash-water RA"></td>
+                                </tr>
+                            </table>
+                            </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <%= yeast %>
+                        </th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <table class="subcat">
+                                <tr class="yeast-header">
+                                    <th>
+                                        <%= yeast_name %>
+                                    </th>
+                                    <th>
+                                        <%= lab_product %>
+                                    </th>
+                                    <th>
+                                        <%= temperature %>
+                                    </th>
+                                    <th>
+                                        <%= attenuation %>
+                                    </th>
+                                </tr>
+                                <tr class="yeast-row">
+                                    <td><span class="yeast-name"></span></td>
+                                    <td><span class="yeast-pid"></span></td>
+                                    <td><span class="yeast-temp"></span></td>
+                                    <td><span class="yeast-att"></span>%</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <%= fermentation %>
+                        </th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <table class="subcat">
+                                <tr class="fermstage-header">
+                                    <th>
+                                        <%= fermenation_stage %>
+                                    </th>
+                                    <th>
+                                        <%= temperature %>
+                                    </th>
+                                    <th>
+                                        <%= duration %>
+                                    </th>
+                                </tr>
+                                <tr class="fermstage-row">
+                                    <td><span class="ferm-stage"></span></td>
+                                    <td><span class="ferm-temp"></span></td>
+                                    <td><span class="ferm-time"></span>
+                                        <%= days %>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <%= recipe_note %>
+                        </th>
+                    </tr>
+                    <tr>
+                        <td class="recipe-note"></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <!-- recipes  -->
+
+        <!-- Network  -->
+        <div class="fn" id="network-p">
+            <h2>
+                <%= network_settings %>
+            </h2>
+            <table>
+                <tr>
+                    <td>
+                        <%= connected_network %>
+                    </td>
+                    <td><a href="#" id="wifissid">--</a></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <%= host_network_name %>
+                    </td>
+                    <td><input id="hostname" type="text" size="20" maxlength="20"></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= always_need_password %>
+                    </td>
+                    <td><input type="checkbox" id="protected" value="yes"></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= new_user_name %>
+                    </td>
+                    <td><input id="newusername" type="text" size="20" maxlength="20"></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= new_password %>
+                    </td>
+                    <td><input id="newpasswd" type="password" size="20" maxlength="16"></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= retype_new_password %>
+                    </td>
+                    <td><input id="newpasswd2" type="password" size="20" maxlength="16"></td>
+                </tr>
+                <tr>
+                    <td colspan="2" id="passmatch">
+                        <%= new_password_dont_match %>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= user_name %>
+                    </td>
+                    <td><input id="username" type="text" size="20" maxlength="20"></td>
+                </tr>
+                <tr>
+                    <td>
+                        <%= password %>
+                    </td>
+                    <td><input id="password" type="password" size="20" maxlength="16"></td>
+                </tr>
+                <tr>
+                    <!--   <td><button id="wifidisc">Disconnect WiFi</button></td> -->
+                    <td><button id="savecfg"><%= save %></button></td>
+                </tr>
+                <tr>
+                    <td colspan="2" id="saveok">
+                        <%= new_setting_will_be_effective %>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" id="savefail">
+                        <%= update_failed %>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <!-- Network  -->
+
+        <!-- Logs  -->
+        <div class="fn" id="brewlog-p">
+            <em><%= brew_logs %></em>
+            <button id="listfile"><%= refresh %></button>
+            <table id="loglist">
+                <tr>
+                    <th style="width:30%;">
+                        <%= log %>
+                    </th>
+                    <th style="width:40%;">
+                        <%= date %>
+                    </th>
+                    <th>
+                        <%= action %>
+                    </th>
+                </tr>
+                <tr>
+                    <td class="logid"></td>
+                    <td class="logdate"></td>
+                    <td><button class="dlbutton"><%= download %></button><button class="viewbutton"><%= view %></button></td>
+                </tr>
+            </table>
+            <br>
+
+            <div id="vchart" style="width:95%;">
+                <span id="viewlogname"></span>
+                <canvas id="vchart-canvas"></canvas>
+            </div>
+
+        </div>
+        <!-- Logs  -->
+
+
+        <!-- utility -->
+        <div class="fn" id="utility-p">
+            <fieldset class="commonset">
+                <legend>
+                    <%= volume_unit %>
+                </legend>
+                <input type="radio" name="volume_unit" id="volume_liter" value="L">
+                <label for="volume_liter" id="liter_label"><%= liter_label %></label>
+                <input type="radio" name="volume_unit" id="volume_gallon" value="G">
+                <label for="volume_gallon" id="gallon_label"><%= gallon_label %></label>
+                <input type="radio" name="volume_unit" id="volume_quart" value="Q">
+                <label for="volume_quart" id="quart_label"><%= quart_label %></label>
+            </fieldset>
+
+            <fieldset class="commonset">
+                <legend>
+                    <%= weight_unit %>
+                </legend>
+                <input type="radio" name="weight_unit" id="weight_kg" value="M">
+                <label for="weight_kg" id="kg_label"><%= kg_label %></label>
+                <input type="radio" name="weight_unit" id="weight_lb" value="U">
+                <label for="weight_lb" id="lb_label"><%= lb_label %></label>
+            </fieldset>
+            <fieldset class="commonset">
+                <legend>
+                    <%= temperature %>
+                </legend>
+                <input type="radio" name="temp_unit" id="temp_c" value="C">
+                <label for="temp_c">&deg;C</label>
+                <input type="radio" name="temp_unit" id="temp_f" value="F">
+                <label for="temp_f">&deg;F</label>
+            </fieldset>
+
+            <br class="fieldsetspace">
+
+            <fieldset class="FWSG">
+                <legend>
+                    <%= first_wort_gravity %>
+                </legend>
+                <table>
+                    <tr>
+                        <th>
+                            <%= grains %>
+                        </th>
+                        <td><input size="5" class="grain weightinput fwsg"></input><span class="weight_u"><%= kg_label %></span></td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <%= mash_water %>
+                        </th>
+                        <td><input size="5" class="water volinput fwsg"></input><span class="vol_u"><%= liter_label %></span></td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <%= fw_sg %>
+                        </th>
+                        <td><span class="result"></span></td>
+                    </tr>
+                </table>
+            </fieldset>
+
+            <fieldset class="HYDROMETER">
+                <legend>
+                    <%= hydrometer %>
+                </legend>
+                <table>
+                    <tr>
+                        <th>
+                            <%= gravity %>
+                        </th>
+                        <td><input size="5" value="1.0" class="hydroinput sgfraction"></input>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <%= temperature %>
+                        </th>
+                        <td> <input size="3" class="hydroinput tempinput sgtemp"></input><span class="tmp_u">&deg;C</span></td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <%= corrected_at %>
+                        </th>
+                        <td> <input size="3" value="20" class="hydroinput tempinput correctedTemp"></input><span class="tmp_u">&deg;C</span></td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <%= corrected_sg %>
+                        </th>
+                        <td><span class="result"></span></td>
+                    </tr>
+                </table>
+            </fieldset>
+
+            <fieldset class="REFRACTO">
+                <legend>
+                    <%= refractometer %>
+                </legend>
+                <table>
+                    <tr>
+                        <th>
+                            <%= reading %>
+                        </th>
+                        <td><input size="3" class="brixinput brixreading"></input>%</td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <%= wort_correction %>
+                        </th>
+                        <td><input size="4" value="1.04" class="brixinput wortcorrection"></input>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <%= corrected_sg %>
+                        </th>
+                        <td><span class="result"></span></td>
+                    </tr>
+                </table>
+            </fieldset>
+
+            <fieldset class="BOILOFF">
+                <legend>
+                    <%= boil_off %>
+                </legend>
+                <table>
+                    <tr>
+                        <th>
+                            <%= current_gravity %>
+                        </th>
+                        <td><input size="5" class="boiloffinput sg" value="1.0"></input>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <%= current_volume %>
+                        </th>
+                        <td><input size="5" class="boiloffinput vol" value="6"></input><span class="vol_u"><%= liter_label %></span></td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <%= desired_sg %>
+                        </th>
+                        <td><input size="5" class="boiloffinput newsg" value="1.0"></input>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <%= new_volume %>
+                        </th>
+                        <td><span class="resultvol">--</span><span class="vol_u"><%= liter_label %></span></td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <%= desired_volume %>
+                        </th>
+                        <td><input size="5" class="boiloffinput newvol"></input><span class="vol_u"><%= liter_label %></span></td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <%= new_sg %>
+                        </th>
+                        <td><span class="resultsg">--</span></td>
+                    </tr>
+                </table>
+            </fieldset>
+        </div>
+        <!-- utility -->
+
+        <!-- About  -->
+        <div class="fn" id="about-p">
+            <p> BrewManiacEx
+                <br> firmware version: <span id="firmware-version"></span>
+                <br> HTML/JS version: <span id="js-version"></span>
+                <p>By Vito Tai. <a href="http://vito.tw/?cat=11" target="_blank">More Info.</a></p>
+                <p style="{text-align:left;}">Powered by</p>
+                <ul>
+                    <li><a href="http://jquery.com" target="_blank">jQuery</a></li>
+                    <li><a href="http://plugins.adchsm.me/slidebars/" target="_blank">Slidebars by Adam Smith</a></li>
+                    <li><a href="http://olance.github.io/jQuery-switchButton/" target="_blank">jQuery UI iPhone-like Switch Button by Olivier Lance</a></li>
+                    <li><a href="http://www.chartjs.org" target="_blank">Chart.js</a></li>
+                </ul>
+                <div>
+                    <select name="soundid" id="soundid">
+                        <option value="open"><%= welcome %></option>
+                        <option value="tr"><%= temperature_reached %></option>
+                        <option value="addhop"><%= time_to_add_hop %></option>
+                        <option value="addmalt"><%= add_malt %></option>
+                        <option value="boil"><%= start_boil %></option>
+                        <option value="boilend"><%= boil_finish %></option>
+                        <option value="bye"><%= brew_finish %></option>
+                        <option value="chill"><%= time_to_chill %></option>
+                        <option value="cool"><%= time_to_cool %></option>
+                        <option value="iodine"><%= time_for_iodine %></option>
+                        <option value="maltin"><%= doughing_in %></option>
+                        <option value="mashout"><%= mash_out %></option>
+                        <option value="nmash"><%= next_mash_step %></option>
+                        <option value="removemalt"><%= remove_malt %></option>
+                        <option value="whirlpool"><%= whirlpool %></option>
+                        <option value="disc"><%= disconnected %></option>
+                      </select>
+                    <button id="playsound"><%= play %></button>
+                </div>
+        </div>
+
+    </div>
+    <!-- <div id="sb-site"> -->
+    <!-- Dialogs -->
+    <div id="d_ConnectionError" title="<%= title_error %>" class="dialog alert">
+        <p>
+            <%= dlg_connection_down %>
+        </p>
+    </div>
+    <div id="d_warning" title="<%= title_warning %>" class="no-close dialog">
+        <ul>
+            <li>
+                <%= dlg_warning_1 %>
+            </li>
+            <li>
+                <%= dlg_warning_2 %>
+            </li>
+            <li>
+                <%= dlg_warning_3 %>
+            </li>
+        </ul>
+        <label><input type="checkbox" id="nshow" class="dialog"> <%= dlg_warning_no_show_again %> </label>
+        <span style="display:none" class="button-ok"><%= button_agree %></span>
+    </div>
+
+
+    <div id="dialog-file" title="<%= select_file %>" class="dialog">
+        <p><input type="file"></input>
+            <span class="dialog-msg"></span></p>
+    </div>
+    <div id="dialog-wifi" Title="<%= network_setting %>" style="width:380px;" class="dialog">
+        <div><label for="aponly"><%= ap_only %></label> <input type="checkbox" id="aponly" style="width:20%"> </div>
+        <div id="wifisetup" style="text-align:left;display:inline-block;min-width:380px;">
+            <hr>
+            <div id="networks">
+                <div class="nwlist">
+                    <a href="#" class="ssid">
+                        <%= network %>
+                    </a>&nbsp;<span class="q"></span></div>
+                <div id="scanningwifi">
+                    <%= scanning %>
+                </div>
+            </div>
+            <div class="c">
+                <a href="#" id="scanwifi">
+                    <%= scan %>
+                </a>
+            </div>
+            <form method="get" action="#">
+                <input id="wifissidinput" name="s" length="32" placeholder="SSID"><br>
+                <input id="wifipasswd" name="p" length="64" type="password" placeholder="password"><br><br>
+                <input id="staticip" name="staticip" length="1" placeholder="Static IP"><br>
+                <input id="gateway" name="gateway" length="1" placeholder="Gateway"><br>
+                <input id="netmask" name="netmask" length="1" placeholder="Net Mask"><br><br>
+                <button type="submit" id="savewifi"><%= save %></button>
+            </form>
+        </div>
+    </div>
+
+    <div id="dialog-textcolor" title="<%= set_text_color %>" class="dialog">
+        <%= set_color_code %>
+            <p><input type="text" size=10></input>
+    </div>
+
+    <div id="dialog-controller" title="<%= controller_panel %>" class="dialog">
+        <table>
+            <tr>
+                <th style="text-align: left;">
+                    <%= colors %>
+                </th>
+                <td></td>
+            </tr>
+            <tr>
+                <th>
+                    <%= lcd_background %>
+                </th>
+                <td><input type="text" size=10 id=lcdbgcolor></input>
+                </td>
+            </tr>
+            <tr>
+                <th>
+                    <%= lcd_text %>
+                </th>
+                <td><input type="text" size=10 id=lcdtextcolor></input>
+                </td>
+            </tr>
+            <tr>
+                <th>
+                    <%= buttons %>
+                </th>
+                <td><input type="text" size=10 id=buttoncolor></input>
+                </td>
+            </tr>
+            <tr>
+                <th>
+                    <%= button_pressed %>
+                </th>
+                <td><input type="text" size=10 id=buttondowncolor></input>
+                </td>
+            </tr>
+        </table>
+        <div style="display:none">
+            <span id="dlg_ok"><%= dlg_ok %> </span> <span id="dlg_cancel"><%= dlg_cancel %> </span>
+        </div>
+    </div>
+
+</body>
+
+</html>
