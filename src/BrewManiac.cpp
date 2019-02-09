@@ -2054,13 +2054,13 @@ void heaterControl(void)
 
 	// PWM
   	unsigned long now = millis();
-  	if (now - _windowStartTime > (unsigned int) _heatWindowSize * 250)
+  	if (now - _windowStartTime > (unsigned long) _heatWindowSize * 250)
   	{
-    	_windowStartTime += (unsigned int)_heatWindowSize * 250;
+    	_windowStartTime += (unsigned long)_heatWindowSize * 250;
     	//time to shift the Relay Window
   	}
 
-  	if ((pidOutput / 255) * ((unsigned int)_heatWindowSize * 250) > now - _windowStartTime)
+  	if ((pidOutput / 255) * ((unsigned long)_heatWindowSize * 250) > now - _windowStartTime)
   	{
   		if(!_physicalHeattingOn)
   		{
@@ -2101,7 +2101,7 @@ void heatThread(void)
 	gAuxTemperature = gTemperatureReading[gAuxSensorIndex];
 #else
 	if(_physicalHeattingOn){
-    	if(gCurrentTemperature < gBoilStageTemperature)
+    	if(gCurrentTemperature < gBoilStageTemperature+1)
     		gCurrentTemperature += (gCurrentTimeInMS - lastTime) * 0.0004;
 		lastTime = gCurrentTimeInMS;
 	}else{
@@ -4360,6 +4360,14 @@ void autoModeEnterDoughIn(void)
 		lvMonitor.startMonitor();
 	#endif
 
+#if SpargeHeaterSupport == true
+	if(gEnableSpargeWaterHeatingControl)
+	{
+		startHeatingSpargeWater();
+	}
+#endif
+
+
 #if MaximumNumberOfSensors > 1
 	setSensorForStage(SensorForPreMash);
 #endif
@@ -4374,13 +4382,6 @@ void autoModeEnterDoughIn(void)
 	else
 		setAdjustTemperature(75.0,25.0);
 	gIsEnterPwm=false;
-
-#if SpargeHeaterSupport == true
-	if(gEnableSpargeWaterHeatingControl)
-	{
-		startHeatingSpargeWater();
-	}
-#endif
 
 	//
 

@@ -113,14 +113,14 @@ void uiLcdClear(byte col,byte row,byte space);
 
 void uiLcdClearAll(void);
 
-void uiLcdDrawSymbol(byte col,byte row,byte sid);
-
-void uiLcdDrawSymbolBmp(byte col,byte row,SymbolId symbol);
 
 void uiLcdLine(byte col,byte row,byte num);
 
 void uiLcdInitialize(void);
+
 void uiLcdAssignSymbol(byte sid,SymbolId symbol);
+void uiLcdDrawSymbol(byte col,byte row,byte sid);
+void uiLcdDrawSymbolBmp(byte col,byte row,SymbolId symbol);
 
 #include "uiTempTime.h"
 /**********************************************************************
@@ -131,6 +131,17 @@ byte _uibuffer[21];
 byte ipAddress[4];
 bool ipSet;
 
+#if UseLcdBuffer
+char _lcdBuffer[4][21];
+void clearLcdBuffer(void){
+	for(int i=0;i<4;i++){
+		int j;
+		for(j=0;j<20;j++) _lcdBuffer[i][j]=' ';
+		_lcdBuffer[i][j]='\0';
+	}
+}
+
+#endif
 
 #if LCD_USE_SSD1306 == true
 
@@ -138,21 +149,41 @@ bool ipSet;
 LCD "driver"
 ***********************************************************************/
 
-const byte WirelessSymbol[] PROGMEM ={0x00,0x0E,0x11,0x04,0x12,0x00,0x04,0x00,0x00,0x00,0x00,0x00};
+const byte _WirelessSymbol[] PROGMEM ={0x00,0x0E,0x11,0x04,0x12,0x00,0x04,0x00,0x00,0x00,0x00,0x00};
+const byte _WirelessAPSymbol[] PROGMEM ={0x00,0x0E,0x11,0x04,0x12,0x00,0x04,0x00,0x00,0x00,0x00,0x00};
 
-const byte CelsiusSymbol[] PROGMEM = { 0x00, 0x02, 0x05, 0x02, 0x00, 0x3c, 0x26, 0x02, 0x26, 0x3c, 0x00, 0x00};
-const byte FahrenheitSymbol[] PROGMEM = {0x00, 0x02, 0x05, 0x02, 0x00, 0x1c, 0x04, 0x1c, 0x04, 0x04, 0x00, 0x00};
-const byte RevHeatingSymbol[] PROGMEM = { 0x3f, 0x3f, 0x3f, 0x3f, 0x2d, 0x2d, 0x21, 0x2d, 0x2d, 0x2d, 0x3f, 0x3f};
-const byte HeatingSymbol[] PROGMEM = { 0x00, 0x00, 0x00, 0x00, 0x12, 0x12, 0x1e, 0x12, 0x12, 0x12, 0x00, 0x00};
-const byte SetpointSymbol[] PROGMEM = {0x07, 0x01, 0x07, 0x04, 0x07, 0x00, 0x3c, 0x24, 0x24, 0x3c, 0x04, 0x04};
-const byte RevPumpSymbol[] PROGMEM = {0x3f, 0x3f, 0x3f, 0x21, 0x2d, 0x21, 0x3d, 0x3d, 0x3d, 0x3f, 0x3f, 0x3f};
-const byte PumpSymbol[] PROGMEM = {0x00, 0x00, 0x00, 0x1e, 0x12, 0x1e, 0x02, 0x02, 0x02, 0x00, 0x00, 0x00};
+const byte _CelsiusSymbol[] PROGMEM = { 0x00, 0x02, 0x05, 0x02, 0x00, 0x3c, 0x26, 0x02, 0x26, 0x3c, 0x00, 0x00};
+const byte _FahrenheitSymbol[] PROGMEM = {0x00, 0x02, 0x05, 0x02, 0x00, 0x1c, 0x04, 0x1c, 0x04, 0x04, 0x00, 0x00};
+const byte _RevHeatingSymbol[] PROGMEM = { 0x3f, 0x3f, 0x3f, 0x3f, 0x2d, 0x2d, 0x21, 0x2d, 0x2d, 0x2d, 0x3f, 0x3f};
+const byte _HeatingSymbol[] PROGMEM = { 0x00, 0x00, 0x00, 0x00, 0x12, 0x12, 0x1e, 0x12, 0x12, 0x12, 0x00, 0x00};
+const byte _SetpointSymbol[] PROGMEM = {0x07, 0x01, 0x07, 0x04, 0x07, 0x00, 0x3c, 0x24, 0x24, 0x3c, 0x04, 0x04};
+const byte _RevPumpSymbol[] PROGMEM = {0x3f, 0x3f, 0x3f, 0x21, 0x2d, 0x21, 0x3d, 0x3d, 0x3d, 0x3f, 0x3f, 0x3f};
+const byte _PumpSymbol[] PROGMEM = {0x00, 0x00, 0x00, 0x1e, 0x12, 0x1e, 0x02, 0x02, 0x02, 0x00, 0x00, 0x00};
 
-#if SpargeHeaterSupport == true
-const byte RevSpargeHeatingSymbol[] PROGMEM = { 0x3f, 0x3f, 0x33, 0x2d, 0x3d, 0x3b, 0x37, 0x2f, 0x2d, 0x33, 0x3f, 0x3f};
-const byte SpargeHeatingSymbol[] PROGMEM =    {0x00, 0x00, 0x0c, 0x12, 0x02, 0x04, 0x08, 0x10, 0x12, 0x0c, 0x00, 0x00};
+const byte _RevSpargeHeatingSymbol[] PROGMEM = { 0x3f, 0x3f, 0x33, 0x2d, 0x3d, 0x3b, 0x37, 0x2f, 0x2d, 0x33, 0x3f, 0x3f};
+//const byte SpargeHeatingSymbol[] PROGMEM =    {0x00, 0x00, 0x0c, 0x12, 0x02, 0x04, 0x08, 0x10, 0x12, 0x0c, 0x00, 0x00};
 
+
+
+const byte* SymbolMaps[]={
+_CelsiusSymbol, //0
+_SetpointSymbol, //1
+_PumpSymbol, //2
+_RevPumpSymbol, //3
+_HeatingSymbol, //4
+_RevHeatingSymbol, //5
+_FahrenheitSymbol, //6
+_WirelessSymbol, //7
+_WirelessAPSymbol, //8
+_RevSpargeHeatingSymbol // 9
+#if SecondaryHeaterSupport == true
+,
+_PrimaryHeaterSymbol, //10
+_RevPrimaryHeaterSymbol, //11
+_SecondaryHeaterSymbol, //12
+_RevSecondaryHeaterSymbol //13
 #endif
+};
 
 #define TOP_MARGIN (4)
 #define LEFT_MARGIN 4
@@ -173,6 +204,16 @@ void uiLcdPrint(byte col,byte row,char* str)
 	display.setColor(WHITE);
 	display.drawString(x,y,str);
 	display.display();
+
+	#if UseLcdBuffer
+	char *p=str;
+	int j=col;
+	while(*p && j < 20){
+		_lcdBuffer[row][j]= *p;
+		p++;
+		j++;
+	}
+	#endif
 }
 
 void uiLcdPrint_P(byte col,byte row,const char* str)
@@ -187,6 +228,11 @@ void uiLcdClear(byte col,byte row,byte space)
     display.setColor(BLACK);
     display.fillRect(XofCol(col),YofRow(row),FontWidth * space,FontHeight);
     display.display();
+	#if UseLcdBuffer
+	for(int i=0;i<space;i++)
+		_lcdBuffer[row][col + i]= ' ';
+	#endif
+
 }
 
 void uiLcdClearAll(void)
@@ -194,23 +240,20 @@ void uiLcdClearAll(void)
     display.clear();
 }
 
-const byte* symbols[]={CelsiusSymbol,SetpointSymbol,PumpSymbol,RevPumpSymbol,HeatingSymbol,RevHeatingSymbol,RevSpargeHeatingSymbol};
 
-#define LcdCharSetpoint 1
-#define LcdCharPump 2
-#define LcdCharRevPump 3
-#define LcdCharHeating 4
-#define LcdCharRevHeating 5
-//#define LcdCharWireless 6
-//#define LcdCharReserved 7
+byte _reservedChar2SymbolId[8];
 
-void uiLcdAssignSymbol(byte sid,const byte* symbol)
-{
-	symbols[sid]=symbol;
+void uiLcdAssignSymbol(byte sid,const SymbolId symbol){
+	_reservedChar2SymbolId[sid] = symbol;
 }
+
 void uiLcdDrawSymbol(byte col,byte row,byte sid)
 {
-	if(sid<sizeof(symbols)/sizeof(char*)){
+	#if UseLcdBuffer
+	_lcdBuffer[row][col]= _reservedChar2SymbolId[sid];
+	#endif
+
+	if(sid<sizeof(SymbolMaps)/sizeof(char*)){
 		int x=XofCol(col);
 		int y=YofRow(row);
 
@@ -218,14 +261,17 @@ void uiLcdDrawSymbol(byte col,byte row,byte sid)
     	display.fillRect(x,y,FontWidth,FontHeight);
 
 		display.setColor(WHITE);
-		display.drawXbm(x,y,FontWidth,FontHeight,(const char*)symbols[sid]);
+		display.drawXbm(x,y,FontWidth,FontHeight,(const char*)SymbolMaps[_reservedChar2SymbolId[sid]]);
 	}else{
 	}
 	display.display();
 }
-
-void uiLcdDrawSymbolBmp(byte col,byte row,const byte* symbol)
+void uiLcdDrawSymbolBmp(byte col,byte row,SymbolId symbol)
 {
+	#if UseLcdBuffer
+	_lcdBuffer[row][col]= symbol;
+	#endif
+
 	int x=XofCol(col);
 	int y=YofRow(row);
 
@@ -233,7 +279,7 @@ void uiLcdDrawSymbolBmp(byte col,byte row,const byte* symbol)
     display.fillRect(x,y,FontWidth,FontHeight);
 
 	display.setColor(WHITE);
-	display.drawXbm(XofCol(col),YofRow(row),FontWidth,FontHeight,(const char*)symbol);
+	display.drawXbm(XofCol(col),YofRow(row),FontWidth,FontHeight,(const char*)SymbolMaps[symbol]);
 	display.display();
 }
 
@@ -253,8 +299,12 @@ void uiLcdInitialize(void)
     display.setFont(Cousine_10);
     display.setTextAlignment(TEXT_ALIGN_LEFT);
     display.setContrast(255);
-    if(gIsUseFahrenheit) uiLcdAssignSymbol(LcdCharDegree,FahrenheitSymbol);
 }
+
+
+#if UseLcdBuffer
+void refreshLcdDisplay(void){}
+#endif
 
 #else //#if LCD_USE_SSD1306 == true
 /**********************************************************************
@@ -292,6 +342,8 @@ const byte _SecondaryHeaterSymbol[8] PROGMEM = { 0b00000, 0b00100, 0b01010, 0b00
 const byte _RevSecondaryHeaterSymbol[8]PROGMEM = {0b11111, 0b11011, 0b10101, 0b11101, 0b11011, 0b10111, 0b10001, 0b11111};
 
 #endif
+
+
 const byte* SymbolMaps[]={
 _CelsiusSymbol, //0
 _SetpointSymbol, //1
@@ -301,13 +353,14 @@ _HeatingSymbol, //4
 _RevHeatingSymbol, //5
 _FahrenheitSymbol, //6
 _WirelessSymbol, //7
-_WirelessAPSymbol //8
+_WirelessAPSymbol, //8
+_RevSpargeHeatingSymbol // 9
 #if SecondaryHeaterSupport == true
 ,
-_PrimaryHeaterSymbol, //9
-_RevPrimaryHeaterSymbol, //10
-_SecondaryHeaterSymbol, //11
-_RevSecondaryHeaterSymbol //12
+_PrimaryHeaterSymbol, //10
+_RevPrimaryHeaterSymbol, //11
+_SecondaryHeaterSymbol, //12
+_RevSecondaryHeaterSymbol //13
 #endif
 };
 
@@ -323,39 +376,6 @@ void uiGetBitmap(byte *dst,const byte *addr)
       dst[i] =	pgm_read_byte_near(addr + i);
     }
 }
-
-#if UseLcdBuffer
-char _lcdBuffer[4][21];
-void clearLcdBuffer(void){
-	for(int i=0;i<4;i++){
-		int j;
-		for(j=0;j<20;j++) _lcdBuffer[i][j]=' ';
-		_lcdBuffer[i][j]='\0';
-	}
-}
-
-void refreshLcdDisplay(void){
-	lcd.begin(20,4);
-	lcd.clear();
-
-	for(byte i=0;i<4;i++){
-		lcd.setCursor(0,i);
-		for(byte j=0;j<20;j++){
-			if(_lcdBuffer[i][j] & 0xF0)
-				lcd.write(_lcdBuffer[i][j]);
-			else{
-				//symbol.
-				//uiLcdDrawSymbolBmp(j,i,(SymbolId)_lcdBuffer[i][j]);
-
-					char buffer[12];
-					const byte* bitmap= SymbolMaps[(int)_lcdBuffer[i][j]];
-   					CreatecCustomChar(buffer,LcdCharReserved,bitmap);
-					lcd.write(LcdCharReserved);
-			}
-		}	
-	}
-}
-#endif
 
 byte _reservedChar2SymbolId[8];
 
@@ -424,9 +444,6 @@ void uiLcdClear(byte col,byte row,byte space)
 void uiLcdClearAll(void)
 {
 	lcd.clear();
-	#if UseLcdBuffer
-	clearLcdBuffer();
-	#endif
 
 }
 
@@ -469,28 +486,32 @@ void uiLcdInitialize(void)
 {
 	uiScanLcdAddress();
 	lcd.begin(20,4);
-
-    if(gIsUseFahrenheit)
-    {
-       	uiLcdAssignSymbol(LcdCharDegree,SymbolFahrenheit);
-    }
-   	else
-   	{
-   		uiLcdAssignSymbol(LcdCharDegree,SymbolCelsius);
-   	}
-
-   	uiLcdAssignSymbol(LcdCharSetpoint,SymbolSetpoint);
-
-   	uiLcdAssignSymbol(LcdCharPump,SymbolPump);
-   	uiLcdAssignSymbol(LcdCharRevPump,SymbolRevPump);
-   	uiLcdAssignSymbol(LcdCharHeating,SymbolHeating);
-   	uiLcdAssignSymbol(LcdCharRevHeating,SymbolRevHeating);
-   	uiLcdAssignSymbol(LcdCharRevSpargeHeating,SymbolRevSpargeHeating);
-
-	#if UseLcdBuffer
-	clearLcdBuffer();
-	#endif
 }
+
+#if UseLcdBuffer
+void refreshLcdDisplay(void){
+	lcd.begin(20,4);
+	lcd.clear();
+
+	for(byte i=0;i<4;i++){
+		lcd.setCursor(0,i);
+		for(byte j=0;j<20;j++){
+			if(_lcdBuffer[i][j] & 0xF0)
+				lcd.write(_lcdBuffer[i][j]);
+			else{
+				//symbol.
+				//uiLcdDrawSymbolBmp(j,i,(SymbolId)_lcdBuffer[i][j]);
+
+					char buffer[12];
+					const byte* bitmap= SymbolMaps[(int)_lcdBuffer[i][j]];
+   					CreatecCustomChar(buffer,LcdCharReserved,bitmap);
+					lcd.write(LcdCharReserved);
+			}
+		}	
+	}
+}
+#endif
+
 #endif //#if LCD_USE_SSD1306 == true
 
 //********************************************************
@@ -867,6 +888,10 @@ void uiSettingDisplayNumber(float number,byte precision)
 void uiClearScreen(void)
 {
 	uiLcdClearAll();
+	#if UseLcdBuffer
+	clearLcdBuffer();
+	#endif
+
 	uiDisplayWirelessIcon();
 }
 
@@ -1117,6 +1142,28 @@ void uiInitialize(void)
 	ipSet = false;
 	uiRunningTimeStop();
 	uiLcdInitialize();
+	#if UseLcdBuffer
+	clearLcdBuffer();
+	#endif
+
+    if(gIsUseFahrenheit)
+    {
+       	uiLcdAssignSymbol(LcdCharDegree,SymbolFahrenheit);
+    }
+   	else
+   	{
+   		uiLcdAssignSymbol(LcdCharDegree,SymbolCelsius);
+   	}
+
+   	uiLcdAssignSymbol(LcdCharSetpoint,SymbolSetpoint);
+
+   	uiLcdAssignSymbol(LcdCharPump,SymbolPump);
+   	uiLcdAssignSymbol(LcdCharRevPump,SymbolRevPump);
+   	uiLcdAssignSymbol(LcdCharHeating,SymbolHeating);
+   	uiLcdAssignSymbol(LcdCharRevHeating,SymbolRevHeating);
+   	uiLcdAssignSymbol(LcdCharRevSpargeHeating,SymbolRevSpargeHeating);
+
+
 	#if SupportDistilling
 	_uiSettingTemperatureBlinking=false;
 	_uiSettingTemperatureHidden=false;

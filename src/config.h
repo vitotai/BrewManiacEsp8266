@@ -108,7 +108,7 @@
 #endif
 
 //debug setting
-//#define FakeHeating false
+//#define FakeHeating true
 //#define DEVELOP_SETTING_VALUE false
 
 #define SensorDiscGuardTime 10000
@@ -160,7 +160,7 @@
 
 
 #define FIRMWARE_UPDATE_URL "http://brew.vito.tw/bmeupdate.php?info"
-#define JS_UPDATE_URL  "http://brew.vito.tw/bmejsupdate.php?v="
+#define JS_UPDATE_URL  "http://brew.vito.tw/bmejsupdate.ml.php?v="
 
 // request status report period
 #define DEFAULT_REPORT_PERIOD 6000
