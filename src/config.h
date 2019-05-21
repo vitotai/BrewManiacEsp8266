@@ -160,7 +160,7 @@
 
 
 #define FIRMWARE_UPDATE_URL "http://brew.vito.tw/bmeupdate.php?info"
-#define JS_UPDATE_URL  "http://brew.vito.tw/bmejsupdate.ml.php?v="
+#define JS_UPDATE_URL  "http://brew.vito.tw/bmejsupdate.i18n.php?v="
 
 // request status report period
 #define DEFAULT_REPORT_PERIOD 6000

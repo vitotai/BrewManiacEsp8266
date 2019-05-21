@@ -1364,7 +1364,9 @@ public:
       	    if(_physicalOn)
       	    {
 			    turnPhysicalOff();
-        	    _isRestStateChanged = true;
+
+				// don't affect heating status if it stopTemp hit
+				//if(!IS_TEMP_INVALID(gCurrentTemperature)) _isRestStateChanged = true;
 		    }
 		    return;
   	    }
@@ -1375,6 +1377,7 @@ public:
 			// device is "ON" (or it returns at beginning of this function)
 		    if(!_restEnabled)
 		    {
+				// not in REST state.
       		    if(!_physicalOn) turnPhysicalOn();
 			    return;
 		    }
@@ -7128,7 +7131,7 @@ void brewmaniac_loop() {
 			wiLcdBufferEnd(true);
 		}else
 	#if UseLcdBuffer
-		if(isExactButtonsPressed(ButtonUpMask | ButtonDownMask | ButtonStartMask | ButtonEnterMask ))
+		if(isExactButtonsPressed(ButtonUpMask | ButtonDownMask | ButtonStartMask ))
 			refreshLcdDisplay();
 		else
 	#endif
