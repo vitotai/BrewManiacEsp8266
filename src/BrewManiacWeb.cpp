@@ -404,10 +404,14 @@ void BrewManiacWeb::getAutomation(String& json)
 
 void BrewManiacWeb::getCurrentStatus(String& json,bool initial)
 {
+	#if ARDUINOJSON_VERSION_MAJOR == 6
+	DynamicJsonDocument root(1024);
+	#else
 	const int BUFFER_SIZE = JSON_OBJECT_SIZE(17+3) + JSON_ARRAY_SIZE(5+4+3);
 	StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
    	JsonObject& root = jsonBuffer.createObject();
-	
+	#endif
+
 	root["state"]=_stage;
 	root["btn"]=_buttonLabel;
 	root["pump"]=_pumpStatus;
@@ -422,7 +426,11 @@ void BrewManiacWeb::getCurrentStatus(String& json,bool initial)
 #endif
 
 #if MaximumNumberOfSensors > 1
+	#if ARDUINOJSON_VERSION_MAJOR == 6
+	JsonArray temps = root.createNestedArray("temps");
+	#else
 	JsonArray& temps = root.createNestedArray("temps");
+	#endif
 	float *ts=gTemperatureReading;
 	for(byte i=0;i< gSensorNumber;i++)
 	{
@@ -443,8 +451,11 @@ void BrewManiacWeb::getCurrentStatus(String& json,bool initial)
 	root["stemp"]=gSettingTemperature;
 	root["rssi"]=WiFi.RSSI();
 // lcd.
+	#if ARDUINOJSON_VERSION_MAJOR == 6
+	JsonArray lcds = root.createNestedArray("lcd");
+	#else
 	JsonArray& lcds = root.createNestedArray("lcd");
-	
+	#endif
 	char lcdcol[4][41];
 	int idx=0;
 	for(int i=0;i<4;i++){
@@ -457,8 +468,11 @@ void BrewManiacWeb::getCurrentStatus(String& json,bool initial)
 		lcdcol[i][40]='\0';
 		lcds.add(lcdcol[i]);
 	}
-
+	#if ARDUINOJSON_VERSION_MAJOR == 6
+	serializeJson(root,json);
+	#else
 	root.printTo(json);
+	#endif
 }
 
 void BrewManiacWeb::loop(void)
@@ -508,6 +522,11 @@ byte hex2Int(char hex){
 
 bool BrewManiacWeb::updateSettings(String& json)
 {
+	#if ARDUINOJSON_VERSION_MAJOR == 6
+	DynamicJsonDocument root(2048); // ArduinoJson assistant suggest 14xx at least.
+	auto error=deserializeJson(root,json);
+	if(error)
+	#else
 	uint16_t size=json.length();
 	char *strJsonBuffer=(char*) malloc(size +1);
 	if(!strJsonBuffer){
@@ -520,9 +539,14 @@ bool BrewManiacWeb::updateSettings(String& json)
 	StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
 
 	JsonObject& root = jsonBuffer.parseObject(strJsonBuffer);
-	if (!root.success()){
+	if (!root.success())
+	#endif
+	{
 		DEBUGF("wrong JSON string\n");
+		#if ARDUINOJSON_VERSION_MAJOR == 5
 		free(strJsonBuffer);
+		#endif
+
 		return false;
 	}
 
@@ -548,8 +572,12 @@ bool BrewManiacWeb::updateSettings(String& json)
 	if(root.containsKey("sensors")
 	    && root.containsKey("primary")
 	    && root.containsKey("auxiliary")){
-
-    	JsonArray& sensors = root["sensors"];
+	
+		#if ARDUINOJSON_VERSION_MAJOR == 6
+    	JsonArray sensors = root["sensors"];
+		#else
+		JsonArray& sensors = root["sensors"];
+		#endif
 
     	int idx=0;
     	byte *address;
@@ -586,8 +614,12 @@ bool BrewManiacWeb::updateSettings(String& json)
 	    }
 	    // primary
 	    idx=0;
+		#if ARDUINOJSON_VERSION_MAJOR == 6
+	    JsonArray primary = root["primary"];
+		#else
 	    JsonArray& primary = root["primary"];
-        for(JsonArray::iterator it=primary.begin(); it!=primary.end(); ++it)
+        #endif
+		for(JsonArray::iterator it=primary.begin(); it!=primary.end(); ++it)
 	    {
     	    uint8_t sensor= it->as<unsigned char>();
     	    wiUpdatePrimarySensor(idx,sensor);
@@ -595,7 +627,11 @@ bool BrewManiacWeb::updateSettings(String& json)
     	}
 	    // primary
 	    idx=0;
+		#if ARDUINOJSON_VERSION_MAJOR == 6
+	    JsonArray auxliary = root["auxiliary"];
+		#else
 	    JsonArray& auxliary = root["auxiliary"];
+		#endif
         for(JsonArray::iterator it=auxliary.begin(); it!=auxliary.end(); ++it)
 	    {
     	    uint8_t sensor= it->as<unsigned char>();
@@ -607,7 +643,11 @@ bool BrewManiacWeb::updateSettings(String& json)
 #endif
 	commitSetting();
 	if(_eventHandler) _eventHandler(this,BmwEventSettingChanged);
+
+	#if ARDUINOJSON_VERSION_MAJOR == 5
 	free(strJsonBuffer);
+	#endif
+
 	return true;
 }
 

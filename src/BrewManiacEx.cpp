@@ -424,9 +424,18 @@ public:
 	void handleNetCfg(AsyncWebServerRequest *request){
 		if(request->method() == HTTP_POST){
 			String data=request->getParam("data", true, false)->value();
+
+			#if ARDUINOJSON_VERSION_MAJOR == 6
+
+			DynamicJsonDocument root(1024);
+			auto jsonerror=deserializeJson(root,data);
+
+			if(jsonerror){
+			#else
 			DynamicJsonBuffer jsonBuffer(JSON_BUFFER_SIZE);
 			JsonObject& root = jsonBuffer.parseObject(data.c_str());
 			if (!root.success()){
+			#endif
 				DBG_PRINTF("Invalid JSON string\n");
 				request->send(404);
 				return;
@@ -493,12 +502,22 @@ public:
 		char configBuf[MAX_CONFIG_LEN];
 		File config=SPIFFS.open(CONFIG_FILENAME,"r+");
 
-		DynamicJsonBuffer jsonBuffer(JSON_BUFFER_SIZE);
-
 		if(config){
 			size_t len=config.readBytes(configBuf,MAX_CONFIG_LEN);
 			configBuf[len]='\0';
 		}
+		#if ARDUINOJSON_VERSION_MAJOR == 6
+		DynamicJsonDocument root(2048);
+		auto error=deserializeJson(root,config);
+
+		if(error 
+				|| !config 
+				|| !root.containsKey("host")
+				|| !root.containsKey("user")
+				|| !root.containsKey("pass")){
+
+		#else
+		DynamicJsonBuffer jsonBuffer(JSON_BUFFER_SIZE);
 		JsonObject& root = jsonBuffer.parseObject(configBuf);
 
 		if(!config
@@ -506,6 +525,8 @@ public:
 				|| !root.containsKey("host")
 				|| !root.containsKey("user")
 				|| !root.containsKey("pass")){
+
+		#endif
 
   			strcpy(_gHostname,Default_HOSTNAME);
   			strcpy(_gUsername,Default_USERNAME);
@@ -853,16 +874,26 @@ AsyncWebSocket ws(WS_PATH);
 
 void processRemoteCommand( uint8_t *data, size_t len)
 {
-	StaticJsonBuffer<128> jsonBuffer;
 	char buf[128];
 	int i;
 	for(i=0;i< (int)len && i<127;i++){
 		buf[i]=data[i];
 	}
 	buf[i]='\0';
+
+#if ARDUINOJSON_VERSION_MAJOR == 6
+	DynamicJsonDocument root(1024);
+	auto jsonerror=deserializeJson(root,buf);
+	if(jsonerror)
+
+#else
+
+	StaticJsonBuffer<128> jsonBuffer;
 	JsonObject& root = jsonBuffer.parseObject(buf);
 
-	if (root.success()){
+	if (root.success())
+#endif
+	{
 		if(root.containsKey("btn") ){
 			int code = root["btn"];
 			bmWeb.sendButton(code & 0xF, (code & 0xF0)!=0);

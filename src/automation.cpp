@@ -50,11 +50,19 @@ bool CAutomation::load(void)
 
 	DBGPRINTF("load:\"%s\"\n",strJsonBuffer);
 
-	StaticJsonBuffer<1024> jsonBuffer;
+#if ARDUINOJSON_VERSION_MAJOR == 6
+	DynamicJsonDocument root(1024);
+	auto jsonerror=deserializeJson(root,strJsonBuffer);
+	if(jsonerror)
 
+#else
+	StaticJsonBuffer<1024> jsonBuffer;
 	JsonObject& root = jsonBuffer.parseObject(strJsonBuffer);
 
-	if (!root.success()){
+	if (!root.success())
+#endif
+
+	{
 		DBGPRINTF("wrong JSON string\n");
 		return false;
 	}
@@ -75,7 +83,13 @@ bool CAutomation::load(void)
 
 	_boilTime=root["boil"];
 
+#if ARDUINOJSON_VERSION_MAJOR == 6
+
+	JsonArray hopArray = root["hops"];
+#else
+
 	JsonArray& hopArray = root["hops"];
+#endif
 
 	byte idx=0;
 	for(JsonArray::iterator it=hopArray.begin(); it!=hopArray.end(); ++it)
@@ -87,17 +101,27 @@ bool CAutomation::load(void)
 
 	if(root.containsKey("hs")){
 
+#if ARDUINOJSON_VERSION_MAJOR == 6
+    	JsonArray hsArray = root["hs"];
+#else
     	JsonArray& hsArray = root["hs"];
-
+#endif
 	    byte hsidx=0;
 	    for(JsonArray::iterator it=hsArray.begin(); it!=hsArray.end(); ++it)
 	    {
+#if ARDUINOJSON_VERSION_MAJOR == 6
+	        JsonObject hs=it->as<JsonObject>();
+#else
 	        JsonObject& hs=it->as<JsonObject>();
+#endif
 	        _hopStandSessions[hsidx].startTemperature=hs["s"];
 	        _hopStandSessions[hsidx].keepTemperature=hs["k"];
 
+#if ARDUINOJSON_VERSION_MAJOR == 6
+        	JsonArray hsHopArray = hs["h"];
+#else
         	JsonArray& hsHopArray = hs["h"];
-
+#endif
 	        byte hidx=0;
 	        for(JsonArray::iterator hit=hsHopArray.begin(); hit!=hsHopArray.end(); ++hit)
 	        {
@@ -121,42 +145,79 @@ bool CAutomation::load(void)
 
 size_t CAutomation::formatJson(char* buffer,size_t size)
 {
+	#if ARDUINOJSON_VERSION_MAJOR == 6
+	DynamicJsonDocument root(1024);
+	#else
     StaticJsonBuffer<1024> jsonBuffer;
     JsonObject& root = jsonBuffer.createObject();
+	#endif
 
     root["boil"] =_boilTime;
 
+	#if ARDUINOJSON_VERSION_MAJOR == 6
+    JsonArray rest_tp = root.createNestedArray("rest_tp");
+	#else
     JsonArray& rest_tp = root.createNestedArray("rest_tp");
+	#endif
 	for(byte i=0;i<MAXIMUM_STAGE_NUMBER;i++){
 		rest_tp.add(_stageTemperatures[i]);
 	}
 
+	#if ARDUINOJSON_VERSION_MAJOR == 6
+    JsonArray rest_tm = root.createNestedArray("rest_tm");
+	#else
     JsonArray& rest_tm = root.createNestedArray("rest_tm");
+	#endif
+
 	for(byte i=0;i<MAXIMUM_STAGE_NUMBER;i++){
 		rest_tm.add(_stageTimes[i]);
 	}
+	#if ARDUINOJSON_VERSION_MAJOR == 6
 
-    JsonArray& hops = root.createNestedArray("hops");
-
+    JsonArray hops = root.createNestedArray("hops");
+	#else
+	JsonArray& hops = root.createNestedArray("hops");
+	#endif
 	for(byte i=0;i<_numberOfHops;i++){
 		hops.add(_hopTimes[i]);
 	}
 
     if(_numberOfHopStandSession >0){
-         JsonArray& hs = root.createNestedArray("hs");
+		#if ARDUINOJSON_VERSION_MAJOR == 6
+
+        JsonArray hs = root.createNestedArray("hs");
+		#else
+        JsonArray& hs = root.createNestedArray("hs");
+		#endif
 
 	    for(byte i=0;i<_numberOfHopStandSession;i++){
+			#if ARDUINOJSON_VERSION_MAJOR == 6
+
+    	    JsonObject session = hs.createNestedObject();
+			#else
     	    JsonObject& session = hs.createNestedObject();
-    	    session["s"]=_hopStandSessions[i].startTemperature;
+			#endif
+
+			session["s"]=_hopStandSessions[i].startTemperature;
     	    session["k"]=_hopStandSessions[i].keepTemperature;
+		
+			#if ARDUINOJSON_VERSION_MAJOR == 6
+    	    JsonArray pbh = session.createNestedArray("h");
+			#else
     	    JsonArray& pbh = session.createNestedArray("h");
+			#endif
+
     	    for(int j=0;j< _hopStandSessions[i].numberHops; j++){
     	        pbh.add(_hopStandSessions[i].hopTime[j]);
     	    }
 	    }
     }
-
+	#if ARDUINOJSON_VERSION_MAJOR == 6
+	return serializeJson(root,buffer,size);
+	#else
     return root.printTo(buffer,size);
+	#endif
+
 }
 
 void CAutomation::save(void)
