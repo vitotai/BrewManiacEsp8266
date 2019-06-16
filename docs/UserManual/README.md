@@ -1,6 +1,6 @@
 **BrewManiacEx Manual**
 
-![image alt text](images/images/image_0.jpg)
+![image alt text](images/image_0.jpg)
 
 **Version 0.4 draft v1**
 
