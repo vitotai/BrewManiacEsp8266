@@ -669,7 +669,12 @@ void HttpUpdateHandler::runUpdate(void)
 		_state = US_FirmwareUpdating;
 		DBG_PRINTF("Start http update:%s\n",_firmwareUpdateUrl.c_str());
 		ESPhttpUpdate.rebootOnUpdate(false);
+        #ifndef FRAMEWORK_180
+        WiFiClient client;
+		_updateReturn = ESPhttpUpdate.update(client,_firmwareUpdateUrl, _fwVersion);
+        #else
 		_updateReturn = ESPhttpUpdate.update(_firmwareUpdateUrl, _fwVersion);
+        #endif
 		DBG_PRINTF("End of http update\n");
 
 		_state = US_Idle;
@@ -727,9 +732,12 @@ void HttpFileDownloader::download(void)
 		_finished=true;
 		return;
 	}
-
+    #ifndef FRAMEWORK_180
+    WiFiClient wifiClient;
+    _http.begin(wifiClient,_url);
+    #else
     _http.begin(_url);
-
+    #endif
     DBG_PRINTF("[HTTP] GET %s...\n",_url.c_str());
     // start connection and send HTTP header
     int httpCode = _http.GET();

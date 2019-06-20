@@ -880,11 +880,13 @@ void processRemoteCommand( uint8_t *data, size_t len)
 		buf[i]=data[i];
 	}
 	buf[i]='\0';
+	
+	DBG_PRINTF("processRemoteCommand:\"%s\"\n",buf);
 
 #if ARDUINOJSON_VERSION_MAJOR == 6
 	DynamicJsonDocument root(1024);
 	auto jsonerror=deserializeJson(root,buf);
-	if(jsonerror)
+	if(!jsonerror)
 
 #else
 
@@ -948,6 +950,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
     	if(info->final && info->index == 0 && info->len == len){
       		//the whole message is in a single frame and we got all of it's data
       		DBG_PRINTF("ws[%s][%u] %s-message[%llu]\n", server->url(), client->id(), (info->opcode == WS_TEXT)?"text":"binary", info->len);
+			
 			processRemoteCommand(data,info->len);
 
 		} else {
@@ -1262,9 +1265,9 @@ void setup(void){
 	//start SPI Filesystem
   	if(!SPIFFS.begin()){
   		// TO DO: what to do?
-  		DebugOut("SPIFFS.being() failed");
+  		DebugOut("SPIFFS.being() failed\n");
   	}else{
-  		DebugOut("SPIFFS.being() Success");
+  		DebugOut("SPIFFS.being() Success\n");
   	}
 
 	//1b. load nsetwork conf
@@ -1412,6 +1415,8 @@ void loop(void){
 
 	ESPUpdateServer_loop();
   	bmWeb.loop();
+	
+	MDNS.update();
 
   	brewmaniac_loop();
 
