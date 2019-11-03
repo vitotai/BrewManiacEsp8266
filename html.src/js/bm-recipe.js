@@ -595,6 +595,7 @@ var Recipes = {
         //console.log(auto);
         //CALL BM
         BM.saveRecipe(auto);
+        BM.show("#automation");
     },
     saveXml: function() {
         if (Recipes.importing < 0 || typeof Recipes.beerxml == "undefined") return;

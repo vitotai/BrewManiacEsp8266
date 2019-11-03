@@ -330,8 +330,9 @@ var BMRecipe = {
     },
     displayhopstand: function() {
         var b = this;
-        if (typeof b.auto.hs == "undefined") return;
         b.rmhopstand();
+
+        if (typeof b.auto.hs == "undefined") return;
         var tbody = $("#auto_table tbody");
         var phbnumber = 1;
         $.each(b.auto.hs, function(hsidx, hssec) {

@@ -21,7 +21,24 @@ module.exports = (grunt) ->
           expand: true
           cwd: './src'
           src: './src/index.tmpl.html'
-          dest: './dist/index.tmpl.html'
+          dest: './build/index.tmpl.html'
+        },{
+          expand: true
+          cwd: './src/css'
+          src: '**/*.css'
+          dest: './build/css/'
+        },
+        {
+          expand: true
+          cwd: './js'
+          src: '**/*.js'
+          dest: './build/js/'
+        },
+        {
+          expand: true
+          cwd: './src/js'
+          src: '**/*.js'
+          dest: './build/js/'
         }]
 
     htmlmin:
@@ -49,7 +66,7 @@ module.exports = (grunt) ->
           minifyJS: false,
           minifyCSS: false
         files: [{
-          'build/index.tmpl.html': 'build/index.tmpl.html'
+          'dist/index.tmpl.html': 'dist/index.tmpl.html'
         }]
 
     comboall:
@@ -105,7 +122,7 @@ module.exports = (grunt) ->
         expand: true
         files: [{
           expand: true
-          src: ['dist/english/*.htm', 'dist/spanish/*.htm', 'dist/russian/*.htm']
+          src: ['dist/english/*.htm', 'dist/spanish/*.htm', 'dist/russian/*.htm','dist/portuguese-br/*.htm','dist/italiano/*.htm']
           dest: '.'
           ext: '.htm.gz'
         }]
@@ -119,7 +136,7 @@ module.exports = (grunt) ->
     multi_lang_site_generator:
       default:
           options:
-            vocabs:           ['english', 'spanish', 'russian']
+            vocabs:           ['english', 'spanish', 'russian','portuguese-br','italiano']
             vocab_directory:  'src/locales'
             output_directory: 'dist'
             template_directory: 'dist'
@@ -170,7 +187,6 @@ module.exports = (grunt) ->
   grunt.registerTask 'i18n', [
     'copy'
     'processhtml'
-    'htmlmin:dev'
     'comboall'
     'htmlmin:dist'
     'multi_lang_site_generator'

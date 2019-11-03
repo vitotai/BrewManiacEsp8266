@@ -6,11 +6,39 @@
 
     <title>BrewManiac</title>
     <script>
-        var BMLIB_VERSION = "0.4.7";
+        var BMLIB_VERSION = "0.4.8";
     </script>
-    <script type="text/javascript" src="bm.047.js" ignore></script>
-    <!--
-    <script type="text/javascript" src="js/lib.js" ignore></script>
+    <script type="text/javascript" src="/bm.048.js" ignore></script>
+
+    <script type="text/javascript" src="js/lib/dygraph.min.js"></script>
+    <script type="text/javascript" src="js/lib/slidebars.min.js" ></script>
+
+    <script type="text/javascript" src="js/lib/RGBColor.js" ></script>
+    <script type="text/javascript" src="js/lcd.js" ></script>
+
+    <script type="text/javascript" src="js/bm-util.js" ></script>
+    <script type="text/javascript" src="js/bm-brewchart.js" ></script>
+    <script type="text/javascript" src="js/bm-settings.js" ></script>
+    <script type="text/javascript" src="js/bm-automation.js" ></script>
+    <script type="text/javascript" src="js/bm-sound.js" ></script>
+    <script type="text/javascript" src="js/bm-chart.js" ></script>
+    <script type="text/javascript" src="js/bm-control.js" ></script>
+    <script type="text/javascript" src="js/bm-main-ws.js" ></script>
+    <script type="text/javascript" src="js/bm-netcfg.js" ></script>
+    <script type="text/javascript" src="js/bm-log.js" ></script>
+    <script type="text/javascript" src="js/bm-cals.js" ></script>
+    <script type="text/javascript" src="js/bm-beerxml.js"></script>
+    <script type="text/javascript" src="js/bm-recipe.js"></script>
+<!--
+    <script type="text/javascript" src="js/lib/jquery.min.js" ignore></script>
+    <script type="text/javascript" src="js/lib/jquery-ui.min.js" ignore></script>
+    <script type="text/javascript" src="js/lib/jquery.switchButton.min.js" ignore></script>
+    <script type="text/javascript" src="js/lib/jquery.ui.touch-punch.min.js" ignore></script>
+
+    <script type="text/javascript" src="js/lib/dygraph.min.js" ignore></script>
+
+    <script type="text/javascript" src="js/lib/slidebars.min.js" ignore></script>
+
     <script type="text/javascript" src="js/lib/RGBColor.js" ignore></script>
     <script type="text/javascript" src="js/lcd.js" ignore></script>
 
@@ -27,8 +55,8 @@
     <script type="text/javascript" src="js/bm-cals.js" ignore></script>
     <script type="text/javascript" src="js/bm-beerxml.js" ignore></script>
     <script type="text/javascript" src="js/bm-recipe.js" ignore></script>
-    
-    -->
+-->
+    <link rel="stylesheet" href="css/dygraph.css">
     <link rel="stylesheet" href="css/jquery-ui.min.css">    
     <link rel="stylesheet" href="css/lib.css">
     <link rel="stylesheet" href="css/main.css">
@@ -445,8 +473,8 @@
                         </div>
                         <div class="block-ctrl"></div>
                     </div>
-                    <div class="block-body">
-                        <canvas id="chart-canvas"></canvas>
+                    <div class="block-body" style="height:95%;width:100%">
+                        <div id="chart-canvas" style="height:100%;width:100%"></div>
                     </div>
                 </div>
             </div>
@@ -1454,7 +1482,7 @@
 
             <div id="vchart" style="width:95%;">
                 <span id="viewlogname"></span>
-                <canvas id="vchart-canvas"></canvas>
+                <div id="vchart-canvas" style="width:100%"></div>
             </div>
 
         </div>

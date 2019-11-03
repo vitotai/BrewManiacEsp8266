@@ -1,9 +1,12 @@
+var Q = function(d) {
+    return document.querySelector(d);
+};
 function show(i) {
-    document.getElementById(i).style.display = 'block'
+    Q("#" +i).style.display = 'block'
 }
 
 function hide(i) {
-    document.getElementById(i).style.display = 'none'
+    Q("#" +i).style.display = 'none'
 }
 
 function getPara(a) {
@@ -80,9 +83,9 @@ function countdown(a, b, c) {
     setTimeout(function() {
         location.reload()
     }, a * 1000);
-    document.getElementById(b).innerHTML = c + "<h2>Wait to reconnect in <span id=COUNTDOWN>" + a + "</span> seconds.</h2>";
+    Q("#" + b).innerHTML = c + "<h2>Wait to reconnect in <span id=COUNTDOWN>" + a + "</span> seconds.</h2>";
     setInterval(function() {
-        ele = document.getElementById("COUNTDOWN");
+        ele = Q("#COUNTDOWN");
         ele.innerHTML = "" + (parseInt(ele.innerHTML) - 1)
     }, 1000)
 }
@@ -92,7 +95,7 @@ function fwprogress() {
         m: "GET",
         url: ver_info.fwus,
         timeout: function() {
-            document.getElementById("fw_progress").insertAdjacentHTML('beforeend', "...");
+            Q("#fw_progress").insertAdjacentHTML('beforeend', "...");
             setTimeout(fwprogress, 3000)
         },
         success: function(r) {
@@ -101,10 +104,10 @@ function fwprogress() {
                 if (typeof d["refresh"] != "undefined") {
                     countdown(d.refresh, "fw_progress", "Update Succeeded.")
                 } else {
-                    document.getElementById("fw_progress").innerHTML = d.result
+                    Q("#fw_progress").innerHTML = d.result
                 }
             } else {
-                document.getElementById("fw_progress").insertAdjacentHTML('beforeend', "...");
+                Q("#fw_progress").insertAdjacentHTML('beforeend', "...");
                 setTimeout(fwprogress, 3000)
             }
         }
@@ -184,7 +187,7 @@ function processFile(i) {
 }
 
 function formatSpifs() {
-    var formating = document.getElementById("listdes");
+    var formating = Q("#listdes");
     invoke({
         m: "GET",
         url: "format-spiffs?update=1",
@@ -199,8 +202,8 @@ function formatSpifs() {
 }
 
 function startProcessFile() {
-    document.getElementById("listdes").innerHTML = "Updating..";
-    document.getElementById("listdes").style.opacity = 1;
+    Q("#listdes").innerHTML = "Updating..";
+    Q("#listdes").style.opacity = 1;
     if (window.blinkFormating) clearInterval(window.blinkFormating);
     processingIndex = 0;
     processFile(processingIndex);
@@ -211,53 +214,80 @@ function updatejs() {
     show("filedetial");
     noSubmit();
     if (window.freshInstall) {
-        document.getElementById("listdes").innerHTML = "Formating..";
+        Q("#listdes").innerHTML = "Formating..";
         formatSpifs();
     } else
         startProcessFile();
 }
 
 function showfilelist() {
-    if (document.getElementById("filedetial").style.display == "none") show("filedetial");
+    if (Q("#filedetial").style.display == "none") show("filedetial");
     else hide("filedetial")
 }
 var fwurl = "";
 
-function setTargetList(list) {
+function setTargetList(targetlist) {
     // clear old list ,if any
-    var oldlist = document.getElementById("filedetial").getElementsByTagName("ul");
+    
+    // filter out
+    var list=[];
+    for(var i=0;i<targetlist.length;i++){
+        if(typeof targetlist[i].lang == "undefined")
+            list.push(targetlist[i]);
+        else if (window.language == targetlist[i].lang)
+            list.push(targetlist[i]);
+    }
+
+    var oldlist = Q("#filedetial").getElementsByTagName("ul");
     if (oldlist.length > 0) {
         oldlist[0].parentNode.removeChild(oldlist[0]);
     }
     window.targetFileList = list;
-    document.getElementById("fileno").innerHTML = "" + list.length;
+    Q("#fileno").innerHTML = "" + list.length;
     var c = document.createElement("ul");
     window.targetFileList.forEach(function(a, i) {
         var b = document.createElement("li");
         b.innerHTML = "[" + a.action + "] " + a.dst;
         c.appendChild(b)
     });
-    document.getElementById("filedetial").appendChild(c)
+    Q("#filedetial").appendChild(c)
+}
+
+function languages(list,lang){
+
+    for (var i = 0; i < list.length; i ++ ) {
+        var option = document.createElement( 'option' );
+        option.value = option.text = list[i];
+        Q("#lang").add(option);
+    }
+    Q("#lang").value = lang;
+    window.language=lang;
+
+    Q("#lang").onchange=function(){
+        window.language=Q("#lang").value;
+        freshinstallchange();
+    };
 }
 
 function checkUpdate() {
     var e = (getPara("forced") != null);
-    document.getElementById("fw_version").innerHTML = "" + ver_info.fw;
+    Q("#fw_version").innerHTML = "" + ver_info.fw;
     var f = new SoftwareUpdater("fw_");
     f.loadinfo(ver_info.fwurl + "&opt=" + ver_info.opt, ver_info.fw, function(d) {
-        document.getElementById("newversion").innerHTML = "" + d.version;
-        document.getElementById("infolink").href = d.url;
-        document.getElementById("fsize").innerHTML = d.size;
+        Q("#newversion").innerHTML = "" + d.version;
+        Q("#infolink").href = d.url;
+        Q("#fsize").innerHTML = d.size;
         fwurl = d.source
     }, e);
-    document.getElementById("js_version").innerHTML = "" + ver_info.js;
+    Q("#js_version").innerHTML = "" + ver_info.js;
     var g = new SoftwareUpdater("js_");
     var h = (e) ? "&forced=1" : "";
     g.loadinfo(ver_info.jsurl + ver_info.js + h, ver_info.js, function(d) {
-        document.getElementById("jsnewversion").innerHTML = "" + d.version;
-        document.getElementById("jsinfolink").href = d.url;
+        Q("#jsnewversion").innerHTML = "" + d.version;
+        Q("#jsinfolink").href = d.url;
         hide("filedetial");
         jsfiles = d;
+        languages(jsfiles.languages,jsfiles.default_language);
         setTargetList(jsfiles.list);
     }, e)
 }
@@ -277,16 +307,16 @@ function updatelist(d) {
         else b.innerHTML = "[wait] " + a.dst;
         e.appendChild(b)
     });
-    var f = document.getElementById("filedetial");
+    var f = Q("#filedetial");
     var g = f.getElementsByTagName("ul")[0];
     f.removeChild(g);
     f.appendChild(e)
 }
 
-function freshinstallchange(ckbox) {
+function freshinstallchange() {
     //console.log("fresh installed:" + ckbox.target.checked);
-    window.freshInstall = ckbox.target.checked;
-    if (ckbox.target.checked) {
+    window.freshInstall = Q("#freshinstall").checked;
+    if (window.freshInstall) {
         setTargetList(jsfiles.fl);
     } else {
         setTargetList(jsfiles.list);
@@ -295,7 +325,7 @@ function freshinstallchange(ckbox) {
 var ver_info = {};
 
 function init() {
-    document.getElementById("freshinstall").onclick = freshinstallchange;
+    Q("#freshinstall").onclick = freshinstallchange;
     invoke({
         m: "GET",
         url: "version.php",

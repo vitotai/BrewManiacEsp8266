@@ -798,6 +798,7 @@ var BMScreen = {
             $(div).resizable({ aspectRatio: 2 / 1 });
             $(div).on("resizestop", function(event, ui) {
                 savePair(did + "_size", ui.size.width, ui.size.height);
+                $(div).find('.block-body').trigger('resize');
             });
             var size = getPair(did + "_size");
             if (size) $(div).css("height", size.y + "px").css("width", size.x + "px");
