@@ -83,7 +83,7 @@ BrewChart.prototype.tempFormat = function(y) {
     return parseFloat(v).toFixed(2) + DEG;
 };
 
-BrewChart.prototype.chart = function() {
+BrewChart.prototype.createChart = function() {
  
     var t = this;
     var labeldiv = document.createElement("div");
@@ -305,7 +305,7 @@ BrewChart.prototype.process = function(data) {
             // 
             t.starttime = (data[i] << 24) + (data[i + 1] << 16) + (data[i + 2] << 8) + data[i + 3];
             i += 4;
-            t.chart();
+            t.createChart();
         } else if (d0 == 0xF1) { // stage
             //console.log(""+t.ctime/t.interval +" Stage:"+d1);
             t.addStage(d1);
