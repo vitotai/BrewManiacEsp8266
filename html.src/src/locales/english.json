@@ -141,7 +141,7 @@
     "chart_title": "Temperature Chart",
 
     "button_up": "Up",
-    "button_down": "Dowwn",
+    "button_down": "Down",
     "button_start": "Start",
     "button_enter": "Enter",
 
@@ -200,7 +200,7 @@
 
     "sparge_water_heating_control": "Sparge Water Heating Control",
     "control_sparge_heating": "Control Sparge Heating",
-    "sparge_temperature_control": "Tempearature Control",
+    "sparge_temperature_control": "Temperature Control",
     "sensor_index": "Sensor Index",
     "target_temperature": "Target Temperature",
     "Temperature_difference": "Temp. Difference",
@@ -274,7 +274,7 @@
     "import_beerxml": "Import BeerXML",
     "save_as": "Save As",
     "brew_xml": "Brew",
-    "reicpe": "Recipe",
+    "recipe": "Recipe",
     "delete_recipe": "Delete",
     "brew_recipe": "Brew",
     "recipe_name": "Name",
@@ -314,7 +314,7 @@
     "days": "days",
     "recipe_note": "Note:",
 
-    "__network_settings__": "Netork setting tab",
+    "__network_settings__": "Network setting tab",
     "network_settings": "Network Settings",
     "connected_network": "Connected Network",
     "host_network_name": "Host/Network Name",
@@ -322,7 +322,7 @@
     "new_user_name": "New User Name",
     "new_password": "New Password",
     "retype_new_password": "Retype New Password",
-    "new_password_dont_match": "New Passwords don't mathch!!",
+    "new_password_dont_match": "New Passwords don't match!!",
     "user_name": "User Name",
     "password": "Password",
     "new_setting_will_be_effective": "New setting will be effective after restart.",
@@ -378,7 +378,7 @@
     "play": "Play",
 
     "__dialogs__": "dialogs",
-    "dlg_connection_down": "The connection to BrewManiac is down. It might be wireless issue or ESP8266 issue. Check your Brew ASAP.",
+    "dlg_connection_down": "The connection to BrewManiac is down. It might be a wireless issue or ESP8266 issue. Check your Brew ASAP.",
     "dlg_warning_1": "Never leave your brew unattended!",
     "dlg_warning_2": "Wireless connection may be unstable, and the status may be out of sync.",
     "dlg_warning_3": "Use at your own risk.",

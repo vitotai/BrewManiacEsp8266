@@ -274,7 +274,7 @@
     "import_beerxml": "Importar BeerXML",
     "save_as": "Guardar como",
     "brew_xml": "Cocinar",
-    "reicpe": "Receta",
+    "recipe": "Receta",
     "delete_recipe": "Borrar",
     "brew_recipe": "Cocinar",
     "recipe_name": "Nombre",
