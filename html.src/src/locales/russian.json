@@ -274,7 +274,7 @@
     "import_beerxml": "Импорт BeerXML",
     "save_as": "Сохранить как",
     "brew_xml": "Сварить по этому рецепту",
-    "reicpe": "Рецепт",
+    "recipe": "Рецепт",
     "delete_recipe": "Удалить",
     "brew_recipe": "Сварить по этому рецепту",
     "recipe_name": "Название",
