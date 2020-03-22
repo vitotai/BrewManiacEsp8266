@@ -122,7 +122,7 @@ const char* TimeKeeperClass::getDateTimeStr(void)
 /*
 void TimeKeeperClass::saveTime(time_t t)
 {
-	File f = SPIFFS.open(TIME_SAVE_FILENAME, "w");
+	File f = FileSystem.open(TIME_SAVE_FILENAME, "w");
 	if(!f){
 		DBG_PRINTF("Failed to save time!\n");
 		return;
@@ -134,7 +134,7 @@ void TimeKeeperClass::saveTime(time_t t)
 time_t TimeKeeperClass::loadTime(void)
 {
 	time_t t;
-	File f = SPIFFS.open(TIME_SAVE_FILENAME, "r");
+	File f = FileSystem.open(TIME_SAVE_FILENAME, "r");
 	if(!f){
 		DBG_PRINTF("Failed to open time saving file!\n");
 		return 0;

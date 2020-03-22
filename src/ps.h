@@ -169,46 +169,46 @@ const unsigned char  DEFAULT_EEPROM[] PROGMEM={
 0,0,0, // 
 50,70,100,55,83,90,100 //PS_Distill_Base
 };
-#include "SpiffsEeprom.h"
+#include "FsEeprom.h"
 
 void commitSetting(void)
 {
-	SpiEEPROM.commit();
+	FsEEPROM.commit();
 }
 
 byte readSetting(int addr)
 {
-	return SpiEEPROM.read(addr);
+	return FsEEPROM.read(addr);
 }
 
 bool updateSetting(int addr,byte value)
 {
-	return SpiEEPROM.write(addr,value);
+	return FsEEPROM.write(addr,value);
 }
 
 word readSettingWord(int addr)
 {
-	return word(SpiEEPROM.read(addr),SpiEEPROM.read(addr+1));
+	return word(FsEEPROM.read(addr),FsEEPROM.read(addr+1));
 }
 
 void updateSettingWord(int addr,word value)
 {
-  	SpiEEPROM.write(addr,highByte(value));
-  	SpiEEPROM.write((addr+1),lowByte(value));
+  	FsEEPROM.write(addr,highByte(value));
+  	FsEEPROM.write((addr+1),lowByte(value));
 }
 
 void EepromInit(void)
 {
-	SpiEEPROM.begin(EEPROM_SIZE);
+	FsEEPROM.begin(EEPROM_SIZE);
 
-	if(!(SpiEEPROM.read(29)=='M'
-	 		&& SpiEEPROM.read(30)=='E'
-	 		&& SpiEEPROM.read(31)=='X')){
+	if(!(FsEEPROM.read(29)=='M'
+	 		&& FsEEPROM.read(30)=='E'
+	 		&& FsEEPROM.read(31)=='X')){
 
 //		Serial.printf("re-initialized EEPROM data\n");
 
 		for(byte i=0;i<sizeof(DEFAULT_EEPROM);i++){
-			SpiEEPROM.write(i,pgm_read_byte_near(& DEFAULT_EEPROM[i]));
+			FsEEPROM.write(i,pgm_read_byte_near(& DEFAULT_EEPROM[i]));
 		}
 	}
 

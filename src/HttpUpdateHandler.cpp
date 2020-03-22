@@ -12,6 +12,8 @@
 #define SPIFFS_FORMAT_EXE_PATH "/exeformat-spiffs"
 
 
+extern FS& FileSystem;
+
 #if SerialDebug == true
 #define DBG_PRINTF(...) DebugPort.printf(__VA_ARGS__)
 #else
@@ -439,11 +441,11 @@ static const unsigned char indexhtml_gz[] PROGMEM = {
 static const char spiffsformat_html[] PROGMEM = R"END(
 <html>
 <head>
-<title>SPIFFS Format</title>
+<title>FS Format</title>
 <script>eval(function(p,a,c,k,e,r){e=function(c){return c.toString(a)};if(!''.replace(/^/,String)){while(c--)r[e(c)]=k[c]||e(c);k=[function(e){return r[e]}];e=function(){return'\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\b'+e(c)+'\\b','g'),k[c]);return p}('2 3(){4(5.6("0").7){1 8}9{a("b c 0 d e f g h.");1 i}};',19,19,'sure|return|function|makesure|if|document|getElementById|checked|true|else|alert|Please|make|you|know|what|will|happen|false'.split('|'),0,{}))</script>
 </head>
 <body>
-By click the "Format" button. The SPIFFS will be formated.<br>
+By click the "Format" button. The File System will be formated.<br>
 Wait for 60 seconds for formating the file system.
 <form onsubmit="return makesure()" action="exeformat-spiffs">
 <input type="checkbox" id="sure"> I know all files and data will be gone.<br>
@@ -456,7 +458,7 @@ Wait for 60 seconds for formating the file system.
 static const char spiffsformating_html[] PROGMEM = R"END(
 <html>
 <head>
-<title>SPIFFS Format</title>
+<title>FS Format</title>
 <script>/*<![CDATA[*/eval(function(p,a,c,k,e,r){e=function(c){return c.toString(a)};if(!''.replace(/^/,String)){while(c--)r[e(c)]=k[c]||e(c);k=[function(e){return r[e]}];e=function(){return'\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\b'+e(c)+'\\b','g'),k[c]);return p}('2 7(){0 a=3.4();8(2(){0 c=9.d((3.4()-a)/5);e(c<6){0 b=f.g("h");b.i=""+(6-c)}j{1.k=1.l+"//"+1.m}},5)};',23,23,'var|location|function|Date|now|1000|60|count|setInterval|Math||||round|if|document|getElementById|sec|innerHTML|else|href|protocol|hostname'.split('|'),0,{}))/*]]>*/</script>
 </head>
 <body onload=count()>
@@ -572,7 +574,7 @@ void HttpUpdateHandler::_scriptUpdateStart(AsyncWebServerRequest *request)
 	  	_state=US_FileDownloadPending;
 
 	}else if(p->value().equals("del")){
-		SPIFFS.remove(filename);
+		FileSystem.remove(filename);
 	  	request->send(200);
 	}
 }
@@ -695,9 +697,9 @@ void HttpUpdateHandler::runUpdate(void)
         UpdaterState oldstate=_state;
 		_state= US_Formating;
         BackupService.backup();
-		DBG_PRINTF("Start Formating SPIFFS\n");
-		SPIFFS.format();
-		DBG_PRINTF("End Formating SPIFFS\n");
+		DBG_PRINTF("Start Formating FS\n");
+		FileSystem.format();
+		DBG_PRINTF("End Formating FS\n");
         BackupService.restore();
         if(oldstate == US_FormatPending)
     		_state = US_RestartInitiated;
@@ -712,7 +714,7 @@ void HttpFileDownloader::download(void)
 {
  	// configure server and url
 
-    File f=SPIFFS.open(_filename,"w+");
+    File f=FileSystem.open(_filename,"w+");
     if(!f){
     	DBG_PRINTF("file open failed\n");
 		_error = -1;

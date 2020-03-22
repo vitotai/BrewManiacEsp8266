@@ -14,7 +14,7 @@ String _jsonDisconnected="{\"code\":-1,\"result\":\"BM disc.\"}";
 #else
 #define DEBUGF(...)
 #endif
-
+extern FS& FileSystem;
 extern float gCurrentTemperature;
 extern float gSettingTemperature;
 extern float gBoilStageTemperature;
@@ -653,7 +653,7 @@ bool BrewManiacWeb::updateSettings(String& json)
 
 bool BrewManiacWeb::updateAutomation(String& json)
 {
-    File f=SPIFFS.open(AUTOMATION_FILE,"w+");
+    File f=FileSystem.open(AUTOMATION_FILE,"w+");
 	if(f){
 	    /*size_t len=*/f.print(json.c_str());
 		f.close();

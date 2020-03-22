@@ -68,6 +68,10 @@
 #define EnableLevelSensor false
 #endif
 
+#ifndef UseLittleFS
+#define UseLittleFS true
+#endif
+
 /**************************************************************************************/
 /*  BrewManiac Related settings                                                       */
 /**************************************************************************************/
@@ -190,7 +194,5 @@
 		#define BUILD_OPTIONS "s"
 	#endif
 #endif
-
-
 
 #endif

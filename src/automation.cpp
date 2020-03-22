@@ -6,6 +6,7 @@
 
 #define BUFFER_SIZE 512
 
+extern FS& FileSystem;
 
 #if SerialDebug == true
 #define DebugOut(a) DebugPort.print(a)
@@ -31,13 +32,13 @@ bool CAutomation::load(void)
 {
     char strJsonBuffer[BUFFER_SIZE];
 
-    File f=SPIFFS.open(AUTOMATION_FILE,"r");
+    File f=FileSystem.open(AUTOMATION_FILE,"r");
 
 	if(!f){
 	    // no file exists. use default file
 	    DBGPRINTF("No automation file!\n");
         strcpy_P(strJsonBuffer,DefaultAutomation);
-        f=SPIFFS.open(AUTOMATION_FILE,"w+");
+        f=FileSystem.open(AUTOMATION_FILE,"w+");
         if(f){
             f.print(strJsonBuffer);
             f.close();
@@ -225,7 +226,7 @@ void CAutomation::save(void)
     char buffer[BUFFER_SIZE];
     size_t length=formatJson(buffer,BUFFER_SIZE);
 
-    File f=SPIFFS.open(AUTOMATION_FILE,"w+");
+    File f=FileSystem.open(AUTOMATION_FILE,"w+");
 
     if(f){
         f.write((const uint8_t*)buffer,length);

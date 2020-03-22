@@ -9,9 +9,10 @@ extern "C" {
 #include "osapi.h"
 #include "spi_flash.h"
 }
-#include "SpiffsEeprom.h"
+#include "FsEeprom.h"
 #include "TimeKeeper.h"
 
+extern FS& FileSystem;
 
 #if SerialDebug == true
 #define DBG_PRINTF(...) DebugPort.printf(__VA_ARGS__)
@@ -63,7 +64,7 @@ bool BackupServiceClass::status(BackupStatusInfo &info){
     BackupHeader header;
     _readFlash((uint8_t*) &header,0,sizeof(header));
     if(header.pattern !=GuardPattern) return false;
-    if(header.setting_size != (uint32_t)SpiEEPROM.size()) return false;
+    if(header.setting_size != (uint32_t)FsEEPROM.size()) return false;
     info.preference_size = header.backupflags;
     info.time_stamp = header.time_stamp;
     info.setting_size = header.setting_size;
@@ -77,18 +78,18 @@ void BackupServiceClass::backup(){
     BackupHeader header;
     header.pattern = GuardPattern;
     header.time_stamp = TimeKeeper.getTimeSeconds();
-    header.setting_size = SpiEEPROM.size();
+    header.setting_size = FsEEPROM.size();
 
-	if(SPIFFS.exists(CONFIG_FILENAME)){
-        File f=SPIFFS.open(CONFIG_FILENAME,"r+");
+	if(FileSystem.exists(CONFIG_FILENAME)){
+        File f=FileSystem.open(CONFIG_FILENAME,"r+");
         header.networkconfig_size = f.size();
         f.close();
     }else{
         header.networkconfig_size=0;
     }
 
-	if(SPIFFS.exists(RECIPE_PREFERNECE)){
-        File f=SPIFFS.open(RECIPE_PREFERNECE,"r+");
+	if(FileSystem.exists(RECIPE_PREFERNECE)){
+        File f=FileSystem.open(RECIPE_PREFERNECE,"r+");
         header.preference_size = f.size();
         f.close();
     }else{
@@ -111,13 +112,13 @@ void BackupServiceClass::backup(){
     DBG_PRINTF("Backup header done.\n");
 
     // write settings
-    if(!_writeFlash((uint8_t*)SpiEEPROM.data(), offset, header.setting_size)) goto END;
+    if(!_writeFlash((uint8_t*)FsEEPROM.data(), offset, header.setting_size)) goto END;
     offset += Round2Next4(header.setting_size); 
     DBG_PRINTF("Backup setting done:%lu\n",(long unsigned int)offset);
 
     // write network config
     if(header.networkconfig_size){
-        File f=SPIFFS.open(CONFIG_FILENAME,"r+");
+        File f=FileSystem.open(CONFIG_FILENAME,"r+");
         f.readBytes(buffer,header.networkconfig_size);
         f.close();
         if(!_writeFlash((uint8_t*)buffer,offset, header.networkconfig_size)) goto END;
@@ -127,7 +128,7 @@ void BackupServiceClass::backup(){
     // write user preferences
 
     if(header.preference_size){
-        File f=SPIFFS.open(RECIPE_PREFERNECE,"r+");
+        File f=FileSystem.open(RECIPE_PREFERNECE,"r+");
         f.readBytes(buffer,header.preference_size);
         f.close();
         if(!_writeFlash((uint8_t*) buffer, offset, header.preference_size)) goto END;
@@ -147,14 +148,14 @@ void BackupServiceClass::restore(){
         DBG_PRINTF("guard pattern mismatched!\n");
         return;
     } 
-    if(header.setting_size != (uint32_t)SpiEEPROM.size()){
+    if(header.setting_size != (uint32_t)FsEEPROM.size()){
         DBG_PRINTF("setting size mismatched!\n");
         return;
     } 
     DBG_PRINTF("restore setting..\n");
-    _readFlash((uint8_t*) SpiEEPROM.data(),offset,header.setting_size);
+    _readFlash((uint8_t*) FsEEPROM.data(),offset,header.setting_size);
     offset += Round2Next4(header.setting_size);
-    SpiEEPROM.commit(true);
+    FsEEPROM.commit(true);
 
     uint32_t bufferSize = (header.preference_size > header.networkconfig_size)? header.preference_size:header.networkconfig_size;
     char* buffer=NULL;
@@ -165,7 +166,7 @@ void BackupServiceClass::restore(){
 
         _readFlash((uint8_t*) buffer,offset,header.networkconfig_size);
         offset += Round2Next4(header.networkconfig_size);
-        File f=SPIFFS.open(CONFIG_FILENAME,"w+");
+        File f=FileSystem.open(CONFIG_FILENAME,"w+");
         if(f){
             f.write((const uint8_t*)buffer,header.networkconfig_size);
             f.close();
@@ -178,7 +179,7 @@ void BackupServiceClass::restore(){
 
         _readFlash((uint8_t*) buffer,offset,header.preference_size);
 
-        File f=SPIFFS.open(RECIPE_PREFERNECE,"w+");
+        File f=FileSystem.open(RECIPE_PREFERNECE,"w+");
         if(f){
             f.write((const uint8_t*)buffer,header.preference_size);
             f.close();

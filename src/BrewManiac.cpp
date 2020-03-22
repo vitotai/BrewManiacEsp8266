@@ -4279,9 +4279,6 @@ byte _primePumpCount;
 // for recovery
 //
 
-//this is non sense for SPIFFS #define LEVEL_FACTOR 5
-
-
 
 //**************************
 // Delay start

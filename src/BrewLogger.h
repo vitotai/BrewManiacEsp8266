@@ -29,6 +29,8 @@ typedef struct _FileInfo{
 		uint32_t time;
 } FileInfo;
 
+extern FS& FileSystem;
+
 class BrewLogger
 {
 
@@ -42,12 +44,12 @@ public:
 		_spChanged=false;
 	}
 	// Session related:
-	bool checkRecovery(void){ return SPIFFS.exists(BREWING_TMPFILE);}
-	void clearRecovery(void){ if(checkRecovery()) SPIFFS.remove(BREWING_TMPFILE);}
+	bool checkRecovery(void){ return FileSystem.exists(BREWING_TMPFILE);}
+	void clearRecovery(void){ if(checkRecovery()) FileSystem.remove(BREWING_TMPFILE);}
 
 	void resumeSession(uint8_t *pStage,uint32_t *pTime)
 	{
-		_tmpFile=SPIFFS.open(BREWING_TMPFILE,"a+");
+		_tmpFile=FileSystem.open(BREWING_TMPFILE,"a+");
 		size_t fsize= _tmpFile.size();
 		size_t rsize=0;
 		_savedLength=fsize;
@@ -83,7 +85,7 @@ public:
 		_saveLog=saved;
 
 		if(_saveLog){
-			_tmpFile=SPIFFS.open(BREWING_TMPFILE,"w");
+			_tmpFile=FileSystem.open(BREWING_TMPFILE,"w");
 			if(!_tmpFile){
 				DBG_PRINTF("Error open temp file\n");
 				return;
@@ -118,7 +120,7 @@ public:
 			int fidx=newLogFileIndex();
 			char buf[32];
 			createFilename(buf,fidx);
-			SPIFFS.rename(BREWING_TMPFILE,buf);
+			FileSystem.rename(BREWING_TMPFILE,buf);
 		}
 	}
 	// tracking
@@ -187,7 +189,7 @@ public:
 			//DBG_PRINTF("read from file\n");
 			// read from file
 			if(!_isFileOpen){
-				_file=SPIFFS.open(BREWING_TMPFILE,"r");
+				_file=FileSystem.open(BREWING_TMPFILE,"r");
 				if(!_file){
 					DBG_PRINTF("error open file\n");
 					return 0;
@@ -460,7 +462,7 @@ private:
 	{
 		if(_Indexloaded) return;
 		// load index
-		File idxFile= SPIFFS.open(LOG_RECORD_FILE,"r+");
+		File idxFile= FileSystem.open(LOG_RECORD_FILE,"r+");
 		if(idxFile){
 			idxFile.readBytes((char*)&_fileInfo,sizeof(_fileInfo));
 			idxFile.close();
@@ -476,7 +478,7 @@ private:
 
 	void saveIdxFile(void)
 	{
-		File idxFile= SPIFFS.open(LOG_RECORD_FILE,"w+");
+		File idxFile= FileSystem.open(LOG_RECORD_FILE,"w+");
 		if(idxFile){
 			idxFile.write((uint8_t*)&_fileInfo,sizeof(_fileInfo));
 			idxFile.close();
@@ -504,8 +506,8 @@ private:
 			// no empty slot
 			char buf[32];
 			createFilename(buf,_fileInfo[0].index);
-			if(SPIFFS.exists(buf)){
-				SPIFFS.remove(buf);
+			if(FileSystem.exists(buf)){
+				FileSystem.remove(buf);
 			}
 			for(i=1;i<MAX_FILE_NUMBER;i++){
 				_fileInfo[i-1].index=_fileInfo[i].index;

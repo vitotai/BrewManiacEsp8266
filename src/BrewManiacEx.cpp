@@ -20,10 +20,12 @@
 #include "WiFiSetup.h"
 #include "HttpUpdateHandler.h"
 #include "BrewManiacWeb.h"
-//#include "SPIFFSEditor.h"
 #include "ESPUpdateServer.h"
 
 #include "TimeKeeper.h"
+#if UseLittleFS
+#include <LittleFS.h>
+#endif
 
 #if SerialDebug == true
 #define DebugOut(a) DebugPort.print(a)
@@ -90,6 +92,11 @@ char _gUsername[MaxNameLength];
 char _gPassword[MaxNameLength];
 bool _gSecuredAccess;
 
+#if UseLittleFS
+FS& FileSystem = LittleFS;
+#else
+FS& FileSystem =SPIFFS;
+#endif
 
 #if UseSoftwareSerial == true
 SoftwareSerial wiSerial(SW_RX_PIN,SW_TX_PIN);
@@ -135,7 +142,7 @@ class RecipeFileHandler:public AsyncWebHandler
 	}
 
 	String listDirectory(String path){
-		Dir dir = SPIFFS.openDir(path);
+		Dir dir = FileSystem.openDir(path);
 		String json=String("[");
 		bool comma=false;
 		uint16_t len=path.length();
@@ -161,7 +168,7 @@ public:
 
 				if(accessAllow(file,WRITE_MASK)){
 					DBG_PRINTF("RM executed:%s\n",file.c_str());
-					SPIFFS.remove(file.c_str());
+					FileSystem.remove(file.c_str());
 					request->send(200, "", "{}");
 				}else{
 					DBG_PRINTF("RM not allowed:%s\n",file.c_str());
@@ -175,7 +182,7 @@ public:
 			if( request->hasParam("file",true,true)){
 				String file=request->getParam("file", true, true)->value();
 				if(accessAllow(file,WRITE_MASK)){
-					if( SPIFFS.exists(file)){
+					if( FileSystem.exists(file)){
 						DBG_PRINTF("File UL success:%s\n",file.c_str());
 						request->send(200, "", "{}");
 					}else{
@@ -204,7 +211,7 @@ public:
 
 		}else{
 			// just return the file WITHOUT CACHE!
-			request->send(SPIFFS,request->url());
+			request->send(FileSystem,request->url());
 		}
 	}
     virtual void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final)
@@ -213,7 +220,7 @@ public:
 			String file=filename;
 			DBG_PRINTF("upload: %s\n", filename.c_str());
 			if(accessAllow(file,WRITE_MASK)){
-	        	request->_tempFile = SPIFFS.open(file, "w");
+	        	request->_tempFile = FileSystem.open(file, "w");
     	    	_startTime = millis();
       		}
       	}
@@ -235,7 +242,7 @@ public:
 	 	if(request->url() == RM_PATH || request->url() ==UPLOAD_PATH || request->url() ==LS_PATH) return true;
 	 	if(request->url() == RECIPE_PREFERNECE) return true;
 	 	if(request->url().startsWith(RECIPE_PATH_Base)){
-		 	if(SPIFFS.exists(request->url())) return true;
+		 	if(FileSystem.exists(request->url())) return true;
 		}
 	 	return false;
 	}
@@ -260,8 +267,8 @@ public:
 				//DBG_PRINTF("Get log index:%d\n",index);
 				char buf[40];
 				brewLogger.createFilename(buf,index);
-				if(SPIFFS.exists(buf)){
-					request->send(SPIFFS,buf,"application/octet-stream");
+				if(FileSystem.exists(buf)){
+					request->send(FileSystem,buf,"application/octet-stream");
 				}else{
 					request->send(404);
 				}
@@ -327,7 +334,7 @@ protected:
 	bool saveConfig(void)
 	{
 
-		File config=SPIFFS.open(CONFIG_FILENAME,"w+");
+		File config=FileSystem.open(CONFIG_FILENAME,"w+");
   		if(!config){
   				return false;
   		}
@@ -477,8 +484,8 @@ public:
 			}
 
 		}else if(request->method() == HTTP_GET){
-			if(SPIFFS.exists(CONFIG_FILENAME)){
-				request->send(SPIFFS,CONFIG_FILENAME, "text/json");
+			if(FileSystem.exists(CONFIG_FILENAME)){
+				request->send(FileSystem,CONFIG_FILENAME, "text/json");
 			}else{
 				String rsp=String("{\"host\":\"") + String(_gHostname)
 				+ String("\",\"secured\":") + (_gSecuredAccess? "1":"0")
@@ -500,7 +507,7 @@ public:
 	void loadSetting(void){
 		// try open configuration
 		char configBuf[MAX_CONFIG_LEN];
-		File config=SPIFFS.open(CONFIG_FILENAME,"r+");
+		File config=FileSystem.open(CONFIG_FILENAME,"r+");
 
 		if(config){
 			size_t len=config.readBytes(configBuf,MAX_CONFIG_LEN);
@@ -578,7 +585,7 @@ class FileReader
 public:
     FileReader(void){}
     bool prepare(String filename,int start, int end){
-		_file = SPIFFS.open(filename, "r+");
+		_file = FileSystem.open(filename, "r+");
 
 		if(!_file) return false;
 		_filesize=_file.size();
@@ -696,7 +703,7 @@ public:
 
 	 	    if(request->url() == AUDIO_PATH){
 	 	        // no cache.
-    	 		 request->send(SPIFFS,AUDIO_FILE);
+    	 		 request->send(FileSystem,AUDIO_FILE);
     	 		 return;
 	 		}
 
@@ -710,9 +717,9 @@ public:
 
 	 			String pathWithJgz = path.substring(0,path.lastIndexOf('.')) + ".jgz";
 				//DBG_PRINTF("checking with:%s\n",pathWithJgz.c_str());
-  			  	if(SPIFFS.exists(pathWithJgz)){
+  			  	if(FileSystem.exists(pathWithJgz)){
   			  		//DBG_PRINTF("response with:%s\n",pathWithJgz.c_str());
-		 			response = request->beginResponse(SPIFFS, pathWithJgz,"application/javascript");
+		 			response = request->beginResponse(FileSystem, pathWithJgz,"application/javascript");
 					response->addHeader("Content-Encoding", "gzip");
 					response->addHeader("Cache-Control","max-age=2592000");
 					request->send(response);
@@ -737,7 +744,7 @@ public:
 			        else /*if(path.endsWith(".ogg"))*/ mime = "audio/ogg";
 
                 if(start ==0 && end == -1){
-    	 			response = request->beginResponse(SPIFFS, path,mime);
+    	 			response = request->beginResponse(FileSystem, path,mime);
 	    		    response->addHeader("Accept-Ranges","bytes");
 		    	    response->addHeader("Cache-Control","max-age=2592000");
 			        request->send(response);
@@ -761,11 +768,11 @@ public:
 			    }
 	 		}else{
     	 		String pathWithGz = path + ".gz";
-  	    		if(SPIFFS.exists(pathWithGz)){
+  	    		if(FileSystem.exists(pathWithGz)){
 			    	// AsyncFileResonse will add "content-disposion" header, result in "download" of Safari, instead of "render" 
-	 	    	  	// response = request->beginResponse(SPIFFS, pathWithGz,"application/x-gzip");
+	 	    	  	// response = request->beginResponse(FileSystem, pathWithGz,"application/x-gzip");
 			      	// response->addHeader("Content-Encoding", "gzip");
-				  	File file=SPIFFS.open(pathWithGz,"r");
+				  	File file=FileSystem.open(pathWithGz,"r");
 			 	  	if(!file){
 						request->send(500);
 						return;
@@ -773,7 +780,7 @@ public:
 					response = request->beginResponse(file, path,getContentType(path));
 
   			    }else{
-	 			    response = request->beginResponse(SPIFFS, path);
+	 			    response = request->beginResponse(FileSystem, path);
 			    }
 
 			    response->addHeader("Cache-Control","max-age=2592000");
@@ -789,7 +796,7 @@ public:
 	 			return true;
 	 		else{
 	 		    if(request->url() == AUDIO_PATH){
-    	 		    return SPIFFS.exists(AUDIO_FILE);
+    	 		    return FileSystem.exists(AUDIO_FILE);
 	 		    }
 				// get file
 				request->addInterestingHeader("Range");
@@ -798,16 +805,16 @@ public:
 	 			if(path.endsWith("/")) path +=DEFAULT_INDEX_FILE;
 	 			//DBG_PRINTF("request:%s\n",path.c_str());
 				//if(fileExists(path)) return true;
-				if(SPIFFS.exists(path)) return true;
+				if(FileSystem.exists(path)) return true;
 
   				if(path.endsWith(".js")){
 	 				String pathWithJgz = path.substring(0,path.lastIndexOf('.')) + ".jgz";
 					//DBG_PRINTF("checking with:%s\n",pathWithJgz.c_str());
-  			  		if(SPIFFS.exists(pathWithJgz)) return true;
+  			  		if(FileSystem.exists(pathWithJgz)) return true;
   			  	}
 
   				String pathWithGz = path + ".gz";
-  				if(SPIFFS.exists(pathWithGz)) return true;
+  				if(FileSystem.exists(pathWithGz)) return true;
 
 	 		}
 	 	}else if(request->method() == HTTP_POST){
@@ -1164,10 +1171,10 @@ AppleCNAHandler appleCNAHandler;
 #endif //#if ResponseAppleCNA == true
 
 HttpUpdateHandler httpUpdateHandler(FIRMWARE_UPDATE_URL,JS_UPDATE_URL);
-
-bool testSPIFFS(void)
+/*
+bool testFileSystem(void)
 {
-	File vf=SPIFFS.open("/BME_TestWrite.t","w+");
+	File vf=FileSystem.open("/BME_TestWrite.t","w+");
 	if(!vf){
   		DebugOut("Failed to open file for test\n");
 		return false;
@@ -1177,7 +1184,7 @@ bool testSPIFFS(void)
 	vf.close();
 	DebugOut("Close file writing\n");
 
-	File rf=SPIFFS.open("/BME_TestWrite.t","r");
+	File rf=FileSystem.open("/BME_TestWrite.t","r");
 	if(!rf){
   		DebugOut("Failed to open file for test for reading\n");
 		return false;
@@ -1190,6 +1197,7 @@ bool testSPIFFS(void)
 	DebugOut(c.c_str());
 	return true;
 }
+*/
 #define PROFILING false
 #if PROFILING == true
 unsigned long _profileMaximumLoop=0;
@@ -1217,7 +1225,7 @@ String checkJSVersion(void){
 
 	String version="0";
 
-	Dir dir=SPIFFS.openDir("/");
+	Dir dir=FileSystem.openDir("/");
 	bool indexFileExist=false;
 	bool jsFileExist=false;
 	int lastIndex;
@@ -1263,11 +1271,11 @@ void setup(void){
 
 	//1.Initialize file system
 	//start SPI Filesystem
-  	if(!SPIFFS.begin()){
+  	if(!FileSystem.begin()){
   		// TO DO: what to do?
-  		DebugOut("SPIFFS.being() failed\n");
+  		DebugOut("File System begin() failed\n");
   	}else{
-  		DebugOut("SPIFFS.being() Success\n");
+  		DebugOut("File System begin() Success\n");
   	}
 
 	//1b. load nsetwork conf
@@ -1347,14 +1355,14 @@ void setup(void){
 #endif
 
 	server.addHandler(&logHandler);
-	//5.2.2 SPIFFS is part of the serving pages
+	//5.2.2 FileSystem is part of the serving pages
 	//securedAccess need additional check
-	// server.serveStatic("/", SPIFFS, "/","public, max-age=259200"); // 3 days
+	// server.serveStatic("/", FileSystem, "/","public, max-age=259200"); // 3 days
 
 
 	server.on("/system",[](AsyncWebServerRequest *request){
 		FSInfo fs_info;
-		SPIFFS.info(fs_info);
+		FileSystem.info(fs_info);
 		request->send(200,"","totalBytes:" +String(fs_info.totalBytes) +
 		" usedBytes:" + String(fs_info.usedBytes)+" blockSize:" + String(fs_info.blockSize)
 		+" pageSize:" + String(fs_info.pageSize)
