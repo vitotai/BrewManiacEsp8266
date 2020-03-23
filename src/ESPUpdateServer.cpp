@@ -134,6 +134,9 @@ static void handleFileList(void) {
 
   String path = server.arg("dir");
   DBG_PRINTLN("handleFileList: " + path);
+  // linked list(queue) is needed. 
+  // avoid recursive call, which might open too many directories 
+  
   Dir dir = FileSystem.openDir(path);
   path = String();
 
@@ -141,11 +144,19 @@ static void handleFileList(void) {
   while(dir.next()){
     File entry = dir.openFile("r");
     if (output != "[") output += ',';
+    #if UseLittleFS
+    bool isDir = dir.isDirectory();
+    #else
     bool isDir = false;
+    #endif
     output += "{\"type\":\"";
     output += (isDir)?"dir":"file";
     output += "\",\"name\":\"";
+    #if UseLittleFS
+    output += entry.name();
+    #else
     output += String(entry.name()).substring(1);
+    #endif
     output += "\"}";
     entry.close();
   }
@@ -163,11 +174,12 @@ void ESPUpdateServer_setup(const char* user, const char* pass){
   server.on("/list", HTTP_GET, handleFileList);
   //load editor
   server.on(FILE_MANAGEMENT_PATH, HTTP_GET, [](){
- 	if(_username != NULL && _password != NULL && !server.authenticate(_username, _password))
- 		return server.requestAuthentication();
-
-	server.sendHeader("Content-Encoding", "gzip");
-	server.send_P(200,"text/html",edit_htm_gz,edit_htm_gz_len);
+      if(_username != NULL && _password != NULL && !server.authenticate(_username, _password))
+ 		  return server.requestAuthentication();
+//      if(!handleFileRead("edit.htm")){
+  	    server.sendHeader("Content-Encoding", "gzip");
+	      server.send_P(200,"text/html",edit_htm_gz,edit_htm_gz_len);
+//      }
   });
   //create file
   server.on("/edit", HTTP_PUT, handleFileCreate);

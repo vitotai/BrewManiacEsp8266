@@ -149,11 +149,13 @@ class RecipeFileHandler:public AsyncWebHandler
 		while (dir.next()) {
 			String file=dir.fileName();
     		DBG_PRINTF("LS File:%s\n",file.c_str());
-    		if(comma)
-    			json = json + String(",");
-    		else
-    			comma=true;
+    		if(comma) json = json + String(",");
+    		else comma=true;
+			#if UseLittleFS
+    		json += String("\"") + file + String("\"");
+			#else
     		json += String("\"") + file.substring(len) + String("\"");
+			#endif
 		}
 		return json + String("]");
 	}
@@ -1229,18 +1231,28 @@ String checkJSVersion(void){
 	bool indexFileExist=false;
 	bool jsFileExist=false;
 	int lastIndex;
-	#define JS_FILE_START  "\bm."
+	#if UseLittleFS
+	#define JS_FILE_START  "bm."
+	#else
+	#define JS_FILE_START  "/bm."
+	#endif
 	#define JS_FILE_EXTEND ".jgz"
+	
+	#if UseLittleFS
+	String FullindexFile = String(DEFAULT_INDEX_FILE);
+	#else
 	String FullindexFile = String("/") + String(DEFAULT_INDEX_FILE);
+	#endif
+
 	while (dir.next()) {
     	String fn=dir.fileName();
-		DBG_PRINTF("file:%s\n",fn.c_str());
+		DBG_PRINTF("file:%s, JS_START:%d Extend:%d\n",fn.c_str(),fn.startsWith(JS_FILE_START),fn.lastIndexOf( JS_FILE_EXTEND));
 		if(fn.compareTo(FullindexFile) == 0 ||
 			fn.compareTo(FullindexFile + ".gz") == 0){ // might be .htm or htm.gz
 			indexFileExist=true;
 			if(jsFileExist) break;
-		}else if((fn.startsWith(JS_FILE_START) == 0) && ((lastIndex=fn.lastIndexOf( JS_FILE_EXTEND)) > 0)){
-			String verstr = fn.substring(strlen(JS_FILE_START)+1,lastIndex);
+		}else if((fn.startsWith(JS_FILE_START)) && ((lastIndex=fn.lastIndexOf( JS_FILE_EXTEND)) > 0)){
+			String verstr = fn.substring(strlen(JS_FILE_START),lastIndex);
 			version = verstr.substring(0,1) + String(".") + verstr.substring(1,2) + String(".") + verstr.substring(2);
 			DBG_PRINTF("version:%s\n",version.c_str());
 			jsFileExist = true;
@@ -1249,7 +1261,7 @@ String checkJSVersion(void){
 	}
 	if(!indexFileExist || !jsFileExist){
 		version="0";
-		DBG_PRINTF("missing file!\n");	
+		DBG_PRINTF("missing index:%d  jsfile:%d!\n",indexFileExist,jsFileExist);	
 	}
 	return version;
 }
