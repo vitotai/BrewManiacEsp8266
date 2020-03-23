@@ -1,3 +1,7 @@
+function C2F(c) { return c * 1.8 + 32; }
+
+function F2C(f) { return (f - 32) / 1.8; }
+
 var BrewUtils = {
     ciWeightUnit: "WEIGHT_U",
     ciVolumeUnit: "VOLUME_U",
@@ -49,10 +53,6 @@ var BrewUtils = {
         $(".tmp_u").html(unit);
         this.u_temp = u;
         setCookie(this.ciTempUnit, u, 365);
-
-        function C2F(c) { return c * 1.8 + 32; }
-
-        function F2C(f) { return (f - 32) / 1.8; }
 
         var conv = (u == 'C') ? F2C : C2F;
 
