@@ -835,6 +835,30 @@ BmwHandler bmwHandler;
 
 #define ESPAsyncTCP_issue77_Workaround 1
 
+void getSystemInfo(String& json){
+
+	json += String("{\"fid\":") + String(ESP.getFlashChipId())
+			+ String(",\"rsize\":") + String(ESP.getFlashChipRealSize())
+			+ String(",\"ssize\":") + String(ESP.getFlashChipSize());
+
+	FSInfo fs_info;
+	FileSystem.info(fs_info);
+	json +=  String(", \"fs\":") + String(fs_info.totalBytes);
+
+
+	uint8_t mac[WL_MAC_ADDR_LENGTH];
+	WiFi.macAddress(mac);
+	json +=String(", \"mac\":\"");
+
+	#define toHex(a)  ((char)(((a)>9)? ('A'+((a)-10)):('0' +(a))))
+
+	for(int i=0;i<WL_MAC_ADDR_LENGTH;i++){
+
+		json += String(toHex(mac[i] >>4)) + String(toHex(mac[i] & 0x0F)); 
+	}
+	json +="\"}";
+}
+
 // version
 void getVersionInfo(String& json)
 {
@@ -848,7 +872,12 @@ void getVersionInfo(String& json)
 	#else
 	json += String(",\"paddle\":0");
 	#endif
-	json +="}}";
+
+	json += String("},\"system\":");
+
+	getSystemInfo(json);
+
+	json +="}";
 }
 
 void greeting(std::function<void(const String&,const char*)> sendFunc){
