@@ -1336,7 +1336,8 @@ void setup(void){
 
   	DebugOut("Connected! IP address: ");
   	DebugOut(WiFi.localIP());
-	if (!MDNS.begin(_gHostname)) {
+
+	if (!MDNS.begin(_gHostname,WiFi.localIP())) {
 		DebugOut("Error setting mDNS responder");
 	}
 	// TODO: SSDP responder
