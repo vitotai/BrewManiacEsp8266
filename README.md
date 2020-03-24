@@ -25,8 +25,29 @@ Watching the temperature chart during brew and after brew
  * [Untested/uncompleted] Distilling
 PWM controlled heating instead of PID controlled. Customized 4 stages: pre-heat, head, heart, and tail, which are defined by temperature ranges.
 
+## NOTE:
+Flash layout and File system are changed in 0.4.9. All data and setting will be lost after upgrading. Please backup before upgrading.
+The major change in 0.4.9 is adapting of LitteFS, whihch is quiet new to ESP8266/Arduino framework. Although the performance is better,
+the stability is in doubt. Please be aware.
 
 ## Update History
+ * 0.4.9 (pre-release)
+   * Update framework to 2.3.3
+   * Change File System to LittleFS
+   * Display critical system information on WiFi setup page, system update page, and about page.
+   * Fix HTML/JS version error.
+   * Change Flash Layout to 2M program
+   * 16M flash layout support.
+
+ * 0.4.8
+    * Only HTML/JS has 0.4.8.
+    * Change Charting library to dygraph.
+    * re-orgnize HTML/JS
+
+ * 0.4.7
+    * Update framework to 2.2.0
+    * Update ArduinoJson to v6
+
  * 0.4.6
     * multi sensor calibration error fixed
     * enable dragging on mobile platform

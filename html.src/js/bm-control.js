@@ -864,5 +864,19 @@ var BMScreen = {
         if (typeof versions["distill"] != "undefined" && versions["distill"]) {
             $.extend(ButtonLabels, ButtonLabels_distill);
         }
+    },
+    sysinfo: function(info) {
+        //
+        $("#flash-id").text("0x"+ info.fid.toString(16));
+        var vendor = parseInt(info.fid) & 0xFF;
+        $("#flash-vendor").text("0x"+ vendor.toString(16));
+        $("#real-flash-size").text(info.rsize);
+        $("#specified-flash-size").text(info.ssize);
+        $("#fs-size").text(info.fs);
+        var str="";
+        for(var i=0;i<12;i+=2){
+            str += ((str == "")? "":":") + info.mac.substring(i,i+2);
+        }
+        $("#mac-address").text(str);
     }
 };

@@ -323,7 +323,20 @@ function freshinstallchange() {
     }
 }
 var ver_info = {};
-
+function sysinfo(info) {
+    //
+    Q("#flash-id").innerText="0x"+ info.fid.toString(16);
+    var vendor = parseInt(info.fid) & 0xFF;
+    Q("#flash-vendor").innerText="0x"+ vendor.toString(16);
+    Q("#real-flash-size").innerText=info.rsize;
+    Q("#specified-flash-size").innerText=info.ssize;
+    Q("#fs-size").innerText=info.fs;
+    var str="";
+    for(var i=0;i<12;i+=2){
+        str += ((str == "")? "":":") + info.mac.substring(i,i+2);
+    }
+    Q("#mac-address").innerText=str;
+}
 function init() {
     Q("#freshinstall").onclick = freshinstallchange;
     invoke({
@@ -331,7 +344,8 @@ function init() {
         url: "version.php",
         success: function(r) {
             ver_info = JSON.parse(r);
-            checkUpdate()
+            checkUpdate();
+            sysinfo(ver_info.system);
         }
     })
 }

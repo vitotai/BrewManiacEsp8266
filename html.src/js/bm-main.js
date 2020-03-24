@@ -428,6 +428,7 @@ var BM = {
             code: function(v) { b.errorCode(v); },
             btn: function(v) { BMScreen.buttons(v); },
             firmware: function(v) { BMScreen.firmware(v) },
+            system: function(v){ BMScreen.sysinfo(v)},
             rssi: function(v) { BM.rssi(v); },
             lcd: function(v) { BMScreen.lcd(v) }
 
