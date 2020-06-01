@@ -28,11 +28,11 @@ TimeKeeperClass TimeKeeper;
 
 void TimeKeeperClass::setCurrentTime(time_t now)
 {
-	if(_referenceSeconds ==0){
+	//if(_referenceSeconds ==0){
 		_referenceSeconds=now;
   		_referenceSystemTime = millis();
 		_lastSaved=_referenceSeconds;
-	}
+	//}
 //	saveTime(now);
 }
 

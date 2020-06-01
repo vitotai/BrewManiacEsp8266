@@ -1465,8 +1465,9 @@ PumpControl pump;
 // *************************
 //*  heating related function
 // *************************
+bool _hopStanding;
 
-boolean _physicalHeattingOn;
+bool _physicalHeattingOn;
 byte _heatWindowSize;
 unsigned long _windowStartTime;
 
@@ -1939,6 +1940,12 @@ void heatOn(bool pidmode=true)
 	#else
 	heatPhysicalOff();
 	#endif
+	_hopStanding=false;
+}
+
+void hsHeatOn(void){
+	heatOn();
+	_hopStanding=true;	
 }
 
 void heatProgramOff(void)
@@ -2039,7 +2046,14 @@ void heaterControl(void)
 		//DebugPort.println(pidOutput);
 	} else
 #endif
-	if (pidInput >= pidSetpoint && pidInput >= gBoilStageTemperature)
+	// the logic assumes always "heating", which is not true in hopstand
+	// say, current temperature is 99, setpoint is 80, boil temp is 95
+	// the PWM mode is always running.
+	//if (pidInput >= pidSetpoint && pidInput >= gBoilStageTemperature)
+	//	pidOutput = gBoilHeatOutput * 255.0 / 100.0;
+
+	if(! _hopStanding &&
+		(pidInput >= pidSetpoint && pidInput >= gBoilStageTemperature))
 		pidOutput = gBoilHeatOutput * 255.0 / 100.0;
 
   	if(gIsHeatProgramOff) pidOutput=0;
@@ -5279,7 +5293,7 @@ void autoModeStartHopStandHopTimer(void)
 
 void autoModeEnterHopStand(uint32_t elapsed=0)
 {
-    heatOn();
+    hsHeatOn();
     pump.off();
     //set temperature as "start" temperature.
     float temp=automation.sessionKeepTemperature(_hopStandSession);
@@ -5376,7 +5390,7 @@ void autoModeStartHopStand(void)
 {
 	uiClearSubTitleRow();
 	uiClearPrompt();
-
+	
     _hopStandSession=0;
     _hopStandSessionHopIndex=0;
     // in case of knock off, (stating temp == boil temp, or current temperature)
