@@ -114,7 +114,7 @@
 //debug setting
 #define FakeHeating true
 //#define DEVELOP_SETTING_VALUE false
-#define EnableCORS false
+#define EnableCORS true
 #define SensorDiscGuardTime 10000
 
 

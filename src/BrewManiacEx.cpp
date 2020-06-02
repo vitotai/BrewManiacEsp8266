@@ -117,6 +117,31 @@ typedef union _address{
                 uint32_t dword;
 } IPV4Address;
 
+/**************************************************************************************/
+/* common response.  */
+/**************************************************************************************/
+// it's kind of ugly, but might reduce the code size
+void requestSend(AsyncWebServerRequest *request,int code,String type="application/json", String content="{}"){
+#if EnableCORS
+
+	AsyncWebServerResponse *response;
+	
+	if(code == 200){
+		response= request->beginResponse(200,type, content);
+	}else{
+		response= request->beginResponse(code);
+	}
+	response->addHeader("access-control-allow-origin","*");
+	request->send(response);
+
+#else	
+	if(code == 200){
+		request->send(200,type, content);
+	}else{
+		request->send(code);
+	}
+#endif
+}
 
 /**************************************************************************************/
 /* Recipe Fle management interface */
@@ -171,33 +196,14 @@ public:
 				if(accessAllow(file,WRITE_MASK)){
 					DBG_PRINTF("RM executed:%s\n",file.c_str());
 					FileSystem.remove(file.c_str());
-					#if EnableCORS
-					AsyncWebServerResponse *response = request->beginResponse(200,"","{}");
-					response->addHeader("access-control-allow-origin","*");
-					request->send(response);
-					#else
-					request->send(200, "", "{}");
-					#endif
+					requestSend(request,200);
 				}else{
 					DBG_PRINTF("RM not allowed:%s\n",file.c_str());
-					#if EnableCORS
-					AsyncWebServerResponse *response = request->beginResponse(400);
-					response->addHeader("access-control-allow-origin","*");
-					request->send(response);
-					#else
-					request->send(400);
-					#endif
+					requestSend(request,400);
 				}
 			}else{
-
 				DBG_PRINTF("miss file in req.");
-					#if EnableCORS
-					AsyncWebServerResponse *response = request->beginResponse(404);
-					response->addHeader("access-control-allow-origin","*");
-					request->send(response);
-					#else
-					request->send(404);
-					#endif
+				requestSend(request,400);
 			}
 		}else if(request->url() == UPLOAD_PATH){
 			if( request->hasParam("file",true,true)){
@@ -205,90 +211,34 @@ public:
 				if(accessAllow(file,WRITE_MASK)){
 					if( FileSystem.exists(file)){
 						DBG_PRINTF("File UL success:%s\n",file.c_str());
-						
-						#if EnableCORS
-						AsyncWebServerResponse *response = request->beginResponse(200, "", "{}");
-						response->addHeader("access-control-allow-origin","*");
-						request->send(response);
-						#else
-						request->send(200, "", "{}");
-						#endif
-
+						requestSend(request,200);
 					}else{
 						DBG_PRINTF("File UL Failed:%s\n",file.c_str());
-						#if EnableCORS
-						AsyncWebServerResponse *response = request->beginResponse(500);
-						response->addHeader("access-control-allow-origin","*");
-						request->send(response);
-						#else
-						request->send(500);
-						#endif
+						requestSend(request,500);
 					}
 				}else{
-					#if EnableCORS
-					AsyncWebServerResponse *response = request->beginResponse(401);
-					response->addHeader("access-control-allow-origin","*");
-					request->send(response);
-					#else
-					request->send(401);
-					#endif
-
+					requestSend(request,401);
 					DBG_PRINTF("File UL not allowed:%s\n",file.c_str());
 				}
 			}else{
 				DBG_PRINTF("miss file in req.");
-					#if EnableCORS
-					AsyncWebServerResponse *response = request->beginResponse(404);
-					response->addHeader("access-control-allow-origin","*");
-					request->send(response);
-					#else
-					request->send(404);
-					#endif
+				requestSend(request,404);
 			}
 		}else if(request->url() == LS_PATH){
 			if(request->hasParam("dir",true)){
 				String file=request->getParam("dir", true)->value();
 				DBG_PRINTF("LS request:%s\n",file.c_str());
 				if(accessAllow(file,EXECUTE_MASK | READ_MASK)){
-					#if EnableCORS
-					AsyncWebServerResponse *response = request->beginResponse(200, "application/json", listDirectory(file));
-					response->addHeader("access-control-allow-origin","*");
-					request->send(response);
-					#else
-					request->send(200, "application/json", listDirectory(file));
-					#endif					
+					requestSend(request,200, "application/json", listDirectory(file));
 				}
 				else
-				{
-					#if EnableCORS
-					AsyncWebServerResponse *response = request->beginResponse(401);
-					response->addHeader("access-control-allow-origin","*");
-					request->send(response);
-					#else
-					request->send(401);
-					#endif
-				}
-			}else{
-					#if EnableCORS
-					AsyncWebServerResponse *response = request->beginResponse(400);
-					response->addHeader("access-control-allow-origin","*");
-					request->send(response);
-					#else
-					request->send(400);
-					#endif
-			}
+					requestSend(request,401);
+			}else
+				requestSend(request,400);
 
 		}else{
 			// just return the file WITHOUT CACHE!
-			#if EnableCORS
-			AsyncWebServerResponse *response = request->beginResponse(FileSystem,request->url());
-			response->addHeader("access-control-allow-origin","*");
-			request->send(response);
-			#else
 			request->send(FileSystem,request->url());
-			#endif
-
-
 		}
 	}
     virtual void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final)
@@ -345,22 +295,9 @@ public:
 				char buf[40];
 				brewLogger.createFilename(buf,index);
 				if(FileSystem.exists(buf)){
-					#if EnableCORS
-					AsyncWebServerResponse *response = request->beginResponse(FileSystem,buf,"application/octet-stream");
-					response->addHeader("access-control-allow-origin","*");
-					request->send(response);
-					#else
 					request->send(FileSystem,buf,"application/octet-stream");
-					#endif
-
 				}else{
-					#if EnableCORS
-					AsyncWebServerResponse *response = request->beginResponse(404);
-					response->addHeader("access-control-allow-origin","*");
-					request->send(response);
-					#else
-					request->send(404);
-					#endif
+					requestSend(request,404);
 				}
 			}else{
 				// list
@@ -379,16 +316,7 @@ public:
 					}
 				}
 				json += "]";
-
-				#if EnableCORS
-				AsyncWebServerResponse *response = request->beginResponse(200, "text/json;",json);
-				response->addHeader("access-control-allow-origin","*");
-				request->send(response);
-				#else
-				request->send(200, "text/json;",json);
-				#endif
-
-
+				requestSend(request,200, "application/json;",json);
 			}
 			return;
 		}
@@ -401,28 +329,11 @@ public:
 		}
 		size_t size=brewLogger.beginCopyAfter(offset);
 		if(size >0){
-#if EnableCORS			
-			AsyncWebServerResponse *response = request->beginResponse("application/octet-stream", size, [](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
-				return brewLogger.read(buffer, maxLen,index);
-			});
-			response->addHeader("access-control-allow-origin","*");
-			request->send(response);
-
-#else
 			request->send("application/octet-stream", size, [](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
 				return brewLogger.read(buffer, maxLen,index);
 			});
-
-#endif
 		}else{
-#if EnableCORS
-			AsyncWebServerResponse *response = request->beginResponse(204);
-			response->addHeader("access-control-allow-origin","*");
-			request->send(response);
-
-#else
-			request->send(204);
-#endif
+			requestSend(request,204);
 		}
 	}
 	TemperatureLogHandler(){}
@@ -474,37 +385,15 @@ public:
 	}
 
 	void handleNetworkScan(AsyncWebServerRequest *request){
-		if(WiFiSetup.requestScanWifi()){
-			#if EnableCORS
-			AsyncWebServerResponse *response = request->beginResponse(200,"application/json","{}");
-			response->addHeader("access-control-allow-origin","*");
-			request->send(response);
-			#else
-			request->send(200,"application/json","{}");
-			#endif
-
-		}else{ 
-			#if EnableCORS
-			AsyncWebServerResponse *response = request->beginResponse(403);
-			response->addHeader("access-control-allow-origin","*");
-			request->send(response);
-			#else
-			request->send(403);
-			#endif
-
-		}
+		if(WiFiSetup.requestScanWifi())
+			requestSend(request,200);
+		else 
+			requestSend(request,403);
 	}
 
 	void handleNetworkDisconnect(AsyncWebServerRequest *request){
 		WiFiSetup.disconnect();
-		#if EnableCORS
-		AsyncWebServerResponse *response = request->beginResponse(200,"application/json","{}");
-		response->addHeader("access-control-allow-origin","*");
-		request->send(response);
-		#else
-		request->send(200,"application/json","{}");
-		#endif
-
+		requestSend(request,200);
 		saveConfig();
 	}
 
@@ -535,14 +424,7 @@ public:
 	void handleNetworkConnect(AsyncWebServerRequest *request){
 
 		if(!request->hasParam("nw",true) && !request->hasParam("ap",true)){
-			#if EnableCORS
-			AsyncWebServerResponse *response = request->beginResponse(400);
-			response->addHeader("access-control-allow-origin","*");
-			request->send(response);
-			#else
-			request->send(400);
-			#endif
-
+			requestSend(request,400);
 			return;
 		}
 
@@ -570,13 +452,7 @@ public:
 			}
 		}
 		saveConfig();
-		#if EnableCORS
-		AsyncWebServerResponse *response = request->beginResponse(200,"application/json","{}");
-		response->addHeader("access-control-allow-origin","*");
-		request->send(response);
-		#else
-		request->send(200,"application/json","{}");
-		#endif
+		requestSend(request,200);
 	}
 
 	void handleNetCfg(AsyncWebServerRequest *request){
@@ -595,40 +471,19 @@ public:
 			if (!root.success()){
 			#endif
 				DBG_PRINTF("Invalid JSON string\n");
-				#if EnableCORS
-				AsyncWebServerResponse *response = request->beginResponse(404);
-				response->addHeader("access-control-allow-origin","*");
-				request->send(response);
-				#else
-				request->send(404);
-				#endif
-
-
+				requestSend(request,404);
 				return;
 			}
 			if(!root.containsKey("user") || !root.containsKey("pass")
 			 || (strcmp(_gUsername,root["user"]) !=0)
 			 || (strcmp(_gPassword,root["pass"]) !=0) ){
 				//DBG_PRINTF("expected user:%s pass:%s\n",_gUsername,_gPassword);
-				#if EnableCORS
-				AsyncWebServerResponse *response = request->beginResponse(400);
-				response->addHeader("access-control-allow-origin","*");
-				request->send(response);
-				#else
-				request->send(400);
-				#endif
+			 	requestSend(request,400);
 			 	return;
 			}
 			if(root.containsKey("disconnect")){
 				requestRestart(true);
-  				#if EnableCORS
-				AsyncWebServerResponse *response = request->beginResponse(200);
-				response->addHeader("access-control-allow-origin","*");
-				request->send(response);
-				#else
-				request->send(200);
-				#endif
-
+  				requestSend(request,200);
   				return;
 			}
 
@@ -649,48 +504,20 @@ public:
 				_gSecuredAccess =( 0 != value);
 			}
 
-			if(saveConfig()){
-
-				#if EnableCORS
-				AsyncWebServerResponse *response = request->beginResponse(200,"text/json","{}");
-				response->addHeader("access-control-allow-origin","*");
-				request->send(response);
-				#else
-				request->send(200,"text/json","{}");
-				#endif
-
+			if(saveConfig()){	
+				requestSend(request,200);
 			}else{
-				#if EnableCORS
-				AsyncWebServerResponse *response = request->beginResponse(500);
-				response->addHeader("access-control-allow-origin","*");
-				request->send(response);
-				#else
-				request->send(500);
-				#endif
+				requestSend(request,500);
 			}
 
 		}else if(request->method() == HTTP_GET){
 			if(FileSystem.exists(CONFIG_FILENAME)){
-				#if EnableCORS
-				AsyncWebServerResponse *response = request->beginResponse(FileSystem,CONFIG_FILENAME, "text/json");
-				response->addHeader("access-control-allow-origin","*");
-				request->send(response);
-				#else
 				request->send(FileSystem,CONFIG_FILENAME, "text/json");
-				#endif
-
 			}else{
 				String rsp=String("{\"host\":\"") + String(_gHostname)
 				+ String("\",\"secured\":") + (_gSecuredAccess? "1":"0")
 				+ String(",\"wifi\":\"") +WiFiSetup.status() + String("}");
-
-				#if EnableCORS
-				AsyncWebServerResponse *response = request->beginResponse(200, "text/json",rsp);
-				response->addHeader("access-control-allow-origin","*");
-				request->send(response);
-				#else
-				request->send(200, "text/json",rsp);
-				#endif
+				requestSend(request,200, "application/json",rsp);
 			}
 		}
 	}
@@ -841,14 +668,14 @@ public:
   				AsyncWebParameter* tvalue = request->getParam("time");
   				DBG_PRINTF("Set Time:%ld, current:%ld\n",tvalue->value().toInt(),TimeKeeper.getTimeSeconds());
 	 			TimeKeeper.setCurrentTime(tvalue->value().toInt());
-	 			request->send(200);
+	 			requestSend(request,200);
 	 		}
-	 		else request->send(400);
-	 	}else if(request->method() == HTTP_GET && request->url() == SETTING_PATH ){ //deprecated
+	 		else requestSend(request,400);
+	 	}else if(request->method() == HTTP_GET && request->url() == SETTING_PATH ){
 	 		String setting;
 	 		bmWeb.getSettings(setting);
 	 		String json= "{\"code\":0,\"result\":\"OK\", \"data\":"+ setting + "}";
-	 		request->send(200, "text/json", json);
+	 		requestSend(request,200, "application/json", json);
 
 			//piggyback the time from browser
 			if(request->hasParam("time")){
@@ -857,7 +684,7 @@ public:
 	 			TimeKeeper.setCurrentTime(tvalue->value().toInt());
 	 		}
 
-	 	}else if(request->method() == HTTP_GET && request->url() == AUTOMATION_PATH){ //deprecated
+	 	}else if(request->method() == HTTP_GET && request->url() == AUTOMATION_PATH){
 	 		String json;
 	 		String autojson;
 
@@ -865,33 +692,27 @@ public:
 	 		json = "{\"code\":0,\"result\":\"OK\", \"data\":";
             json += autojson;
             json += "}";
-	 		request->send(200, "text/json", json);
+	 		requestSend(request,200, "application/json", json);
 #if	MaximumNumberOfSensors	> 1
 	 	}else if(request->method() == HTTP_GET && request->url() == SCAN_SENSOR_PATH){
 	 		bmWeb.scanSensors();
-	 		request->send(200,"text/json","{}");
+	 		requestSend(200);
 #endif
-	 	}else if(request->method() == HTTP_GET && request->url() == BUTTON_PATH){ //deprecated
+	 	}else if(request->method() == HTTP_GET && request->url() == BUTTON_PATH){
 			if(request->hasParam("code")){
 				AsyncWebParameter* p = request->getParam("code");
 				byte code=p->value().toInt();
 	 			bmWeb.sendButton(code & 0xF, (code & 0xF0)!=0);
-	 			request->send(200,"text/json","{}");
+	 			requestSend(request,200);
 	 		}else{
-	 			request->send(400);
+	 			requestSend(request,400);
 	 		}
-	 	}else if(request->method() == HTTP_POST && request->url() == UPDATE_AUTOMATION_PATH){ 
+	 	}else if(request->method() == HTTP_POST && request->url() == UPDATE_AUTOMATION_PATH){
 	 		String data=request->getParam("data", true, false)->value();
 //	 		DebugOut("saveauto.php:\n");
 //	 		DebugOut(data.c_str());
 	 		if(bmWeb.updateAutomation(data)){
-				#if EnableCORS
-				AsyncWebServerResponse *response = request->beginResponse(200, "text/json", "{\"code\":0,\"result\":\"OK\"}");
-				response->addHeader("access-control-allow-origin","*");
-				request->send(response);
-				#else
 	 			request->send(200, "text/json", "{\"code\":0,\"result\":\"OK\"}");
-				#endif
 	 		}else{
 	 			request->send(400);
 	 		}
@@ -901,34 +722,16 @@ public:
 	 		DebugOut("savesettings.php:\n");
 	 		DebugOut(data.c_str());
 	 		if(bmWeb.updateSettings(data)){
-				#if EnableCORS
-				AsyncWebServerResponse *response = request->beginResponse(200, "text/json", "{\"code\":0,\"result\":\"OK\"}");
-				response->addHeader("access-control-allow-origin","*");
-				request->send(response);
-				#else
-	 			request->send(200, "text/json", "{\"code\":0,\"result\":\"OK\"}");
-				#endif
+	 			requestSend(request,200);
 	 		}else{
-				#if EnableCORS
-				AsyncWebServerResponse *response = request->beginResponse(400);
-				response->addHeader("access-control-allow-origin","*");
-				request->send(response);
-				#else
-	 			request->send(400);
-				#endif
+	 			requestSend(request,400);
 	 		}
 	 	}else if(request->method() == HTTP_GET){
 
 	 	    if(request->url() == AUDIO_PATH){
 	 	        // no cache.
-				#if EnableCORS
-				AsyncWebServerResponse *response = request->beginResponse(FileSystem,AUDIO_FILE);
-				response->addHeader("access-control-allow-origin","*");
-				request->send(response);
-				#else
-    	 		request->send(FileSystem,AUDIO_FILE);
-				#endif
-    	 		return;
+    	 		 request->send(FileSystem,AUDIO_FILE);
+    	 		 return;
 	 		}
 
 
@@ -946,10 +749,6 @@ public:
 		 			response = request->beginResponse(FileSystem, pathWithJgz,"application/javascript");
 					response->addHeader("Content-Encoding", "gzip");
 					response->addHeader("Cache-Control","max-age=2592000");
-					#if EnableCORS
-					response->addHeader("access-control-allow-origin","*");
-					#endif
-
 					request->send(response);
 					return;
 				}
@@ -975,21 +774,10 @@ public:
     	 			response = request->beginResponse(FileSystem, path,mime);
 	    		    response->addHeader("Accept-Ranges","bytes");
 		    	    response->addHeader("Cache-Control","max-age=2592000");
-					#if EnableCORS
-					response->addHeader("access-control-allow-origin","*");
-					#endif
-					
 			        request->send(response);
 			    }else{
 			        if(! fileReader.prepare(path,start,end)) {
-						#if EnableCORS
-						AsyncWebServerResponse *response = request->beginResponse(500);
-						response->addHeader("access-control-allow-origin","*");
-						request->send(response);
-						#else
-			            request->send(500);
-						#endif
-
+			            requestSend(request,500);
 			            return;
 			        }
 
@@ -1002,9 +790,6 @@ public:
 	    		    response->addHeader("Accept-Ranges","bytes");
 		    	    response->addHeader("Cache-Control","max-age=2592000");
 		    	    response->setCode(206);
-					#if EnableCORS
-					response->addHeader("access-control-allow-origin","*");
-					#endif
 
 		    	    request->send(response);
 			    }
@@ -1016,13 +801,7 @@ public:
 			      	// response->addHeader("Content-Encoding", "gzip");
 				  	File file=FileSystem.open(pathWithGz,"r");
 			 	  	if(!file){
-						#if EnableCORS
-						AsyncWebServerResponse *response = request->beginResponse(500);
-						response->addHeader("access-control-allow-origin","*");
-						request->send(response);
-						#else
-			            request->send(500);
-						#endif
+						requestSend(request,500);
 						return;
 					}
 					response = request->beginResponse(file, path,getContentType(path));
@@ -1032,10 +811,6 @@ public:
 			    }
 
 			    response->addHeader("Cache-Control","max-age=2592000");
-				#if EnableCORS
-				response->addHeader("access-control-allow-origin","*");
-				#endif
-
 			    request->send(response);
 			}
 		}
@@ -1668,7 +1443,7 @@ void setup(void){
 	// 404 NOT found.
   	//called when the url is not defined here
 	server.onNotFound([](AsyncWebServerRequest *request){
-		request->send(404);
+		requestSend(request,404);
 	});
 
 	//6. start Web server
