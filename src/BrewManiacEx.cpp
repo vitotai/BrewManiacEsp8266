@@ -120,8 +120,8 @@ typedef union _address{
 /**************************************************************************************/
 /* common response.  */
 /**************************************************************************************/
-// it's kind of ugly, but might reduce the code size
-void requestSend(AsyncWebServerRequest *request,int code,String type="application/json", String content="{}"){
+// it's kind of ugly, but might reduce the code size and simpler to modify
+void requestSend(AsyncWebServerRequest *request,int code,const String& type="application/json",const String& content="{}"){
 #if EnableCORS
 
 	AsyncWebServerResponse *response;
@@ -141,6 +141,26 @@ void requestSend(AsyncWebServerRequest *request,int code,String type="applicatio
 		request->send(code);
 	}
 #endif
+}
+
+void requestSend(AsyncWebServerRequest *request,AsyncWebServerResponse* response){
+	#if EnableCORS
+	response->addHeader("access-control-allow-origin","*");
+	#endif
+	request->send(response);
+}
+
+void requestSend(AsyncWebServerRequest *request,FS &fs, const String& path, const String& contentType=String() ){
+	#if EnableCORS
+	DBG_PRINTF("Send file %s.\n",path.c_str());
+
+	AsyncWebServerResponse *response=request->beginResponse(fs,path,contentType);
+	response->addHeader("access-control-allow-origin","*");
+	request->send(response);
+
+	#else
+	request->send(fs,path,contentType);
+	#endif
 }
 
 /**************************************************************************************/
@@ -238,7 +258,8 @@ public:
 
 		}else{
 			// just return the file WITHOUT CACHE!
-			request->send(FileSystem,request->url());
+			DBG_PRINTF("requestin recipe file:%s",request->url().c_str());
+			requestSend(request,FileSystem,request->url());
 		}
 	}
     virtual void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final)
@@ -266,10 +287,14 @@ public:
     }
 
 	bool canHandle(AsyncWebServerRequest *request){
-	 	if(request->url() == RM_PATH || request->url() ==UPLOAD_PATH || request->url() ==LS_PATH) return true;
-	 	if(request->url() == RECIPE_PREFERNECE) return true;
-	 	if(request->url().startsWith(RECIPE_PATH_Base)){
-		 	if(FileSystem.exists(request->url())) return true;
+	 	if(request->url() == RM_PATH 
+		 || request->url() ==UPLOAD_PATH 
+		 || request->url() ==LS_PATH){
+			return true;
+//		}else if(request->url() == RECIPE_PREFERNECE){
+//			  return FileSystem.exists(request->url());
+	 	}else if(request->url().startsWith(RECIPE_PATH_Base)){
+		 	return FileSystem.exists(request->url());
 		}
 	 	return false;
 	}
@@ -295,7 +320,7 @@ public:
 				char buf[40];
 				brewLogger.createFilename(buf,index);
 				if(FileSystem.exists(buf)){
-					request->send(FileSystem,buf,"application/octet-stream");
+					requestSend(request,FileSystem,buf,"application/octet-stream");
 				}else{
 					requestSend(request,404);
 				}
@@ -329,9 +354,10 @@ public:
 		}
 		size_t size=brewLogger.beginCopyAfter(offset);
 		if(size >0){
-			request->send("application/octet-stream", size, [](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+			AsyncWebServerResponse *response=request->beginResponse("application/octet-stream", size, [](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
 				return brewLogger.read(buffer, maxLen,index);
 			});
+			requestSend(request,response);
 		}else{
 			requestSend(request,204);
 		}
@@ -512,7 +538,7 @@ public:
 
 		}else if(request->method() == HTTP_GET){
 			if(FileSystem.exists(CONFIG_FILENAME)){
-				request->send(FileSystem,CONFIG_FILENAME, "text/json");
+				requestSend(request,FileSystem,CONFIG_FILENAME, "application/json");
 			}else{
 				String rsp=String("{\"host\":\"") + String(_gHostname)
 				+ String("\",\"secured\":") + (_gSecuredAccess? "1":"0")
@@ -671,7 +697,7 @@ public:
 	 			requestSend(request,200);
 	 		}
 	 		else requestSend(request,400);
-	 	}else if(request->method() == HTTP_GET && request->url() == SETTING_PATH ){
+	 	}else if(request->method() == HTTP_GET && request->url() == SETTING_PATH ){ // deprecated.
 	 		String setting;
 	 		bmWeb.getSettings(setting);
 	 		String json= "{\"code\":0,\"result\":\"OK\", \"data\":"+ setting + "}";
@@ -684,7 +710,7 @@ public:
 	 			TimeKeeper.setCurrentTime(tvalue->value().toInt());
 	 		}
 
-	 	}else if(request->method() == HTTP_GET && request->url() == AUTOMATION_PATH){
+	 	}else if(request->method() == HTTP_GET && request->url() == AUTOMATION_PATH){ // deprecated.
 	 		String json;
 	 		String autojson;
 
@@ -712,9 +738,9 @@ public:
 //	 		DebugOut("saveauto.php:\n");
 //	 		DebugOut(data.c_str());
 	 		if(bmWeb.updateAutomation(data)){
-	 			request->send(200, "text/json", "{\"code\":0,\"result\":\"OK\"}");
+	 			requestSend(request,200);
 	 		}else{
-	 			request->send(400);
+	 			requestSend(request,400);
 	 		}
 
 	 	}else if(request->method() == HTTP_POST && request->url() == UPDATE_SETTING_PATH){
@@ -730,10 +756,10 @@ public:
 
 	 	    if(request->url() == AUDIO_PATH){
 	 	        // no cache.
-    	 		 request->send(FileSystem,AUDIO_FILE);
+    	 		 requestSend(request,FileSystem,AUDIO_FILE);
     	 		 return;
 	 		}
-
+			// file retrievl.
 
 		 	AsyncWebServerResponse *response;
 
@@ -749,7 +775,7 @@ public:
 		 			response = request->beginResponse(FileSystem, pathWithJgz,"application/javascript");
 					response->addHeader("Content-Encoding", "gzip");
 					response->addHeader("Cache-Control","max-age=2592000");
-					request->send(response);
+					requestSend(request,response);
 					return;
 				}
   			}else{
@@ -759,8 +785,8 @@ public:
 
     	 		int start=0;
     	 		int end = -1;
-    	 		if(request->hasHeader("Range")){
-                    AsyncWebHeader* h = request->getHeader("Range");
+    	 		if(request->hasHeader("range")){
+                    AsyncWebHeader* h = request->getHeader("range");
                     DBG_PRINTF("Range: %s\n", h->value().c_str());
                     decodeRange(h->value(),start,end);
                     DBG_PRINTF("decode: %d - %d\n", start, end);
@@ -774,7 +800,7 @@ public:
     	 			response = request->beginResponse(FileSystem, path,mime);
 	    		    response->addHeader("Accept-Ranges","bytes");
 		    	    response->addHeader("Cache-Control","max-age=2592000");
-			        request->send(response);
+			        requestSend(request,response);
 			    }else{
 			        if(! fileReader.prepare(path,start,end)) {
 			            requestSend(request,500);
@@ -787,11 +813,12 @@ public:
                     char buff[128];
                     sprintf(buff,"bytes %d-%d/%d",start,fileReader.end(),fileReader.filesize());
                     //response->addHeader("Content-Range",buff);
+			
 	    		    response->addHeader("Accept-Ranges","bytes");
 		    	    response->addHeader("Cache-Control","max-age=2592000");
 		    	    response->setCode(206);
 
-		    	    request->send(response);
+		    	    requestSend(request,response);
 			    }
 	 		}else{
     	 		String pathWithGz = path + ".gz";
@@ -809,47 +836,57 @@ public:
   			    }else{
 	 			    response = request->beginResponse(FileSystem, path);
 			    }
-
 			    response->addHeader("Cache-Control","max-age=2592000");
-			    request->send(response);
+			    requestSend(request,response);
 			}
 		}
 	 }
 
 	bool canHandle(AsyncWebServerRequest *request){
 	 	if(request->method() == HTTP_GET){
-	 		if(request->url() == SETTIME_PATH || request->url() == SETTING_PATH || request->url() == AUTOMATION_PATH
-	 		    || request->url() == BUTTON_PATH  || request->url() == SCAN_SENSOR_PATH)
+	 		if(request->url() == SETTIME_PATH 
+			 	|| request->url() == SETTING_PATH 
+				|| request->url() == AUTOMATION_PATH
+	 		    || request->url() == BUTTON_PATH  
+				|| request->url() == SCAN_SENSOR_PATH){
 	 			return true;
-	 		else{
+	 		}else{
+				DBG_PRINTF("BmwHandler canHandle file:%s\n",request->url().c_str());
+
 	 		    if(request->url() == AUDIO_PATH){
     	 		    return FileSystem.exists(AUDIO_FILE);
 	 		    }
-				// get file
-				request->addInterestingHeader("Range");
 
+				// get file
+				if(request->url().endsWith(".m4a") || request->url().endsWith(".mp3") || request->url().endsWith(".ogg")){
+					request->addInterestingHeader("range");
+				}
+				
 				String path=request->url();
 	 			if(path.endsWith("/")) path +=DEFAULT_INDEX_FILE;
 	 			//DBG_PRINTF("request:%s\n",path.c_str());
 				//if(fileExists(path)) return true;
+				
 				if(FileSystem.exists(path)) return true;
-
+				// special handling of jgz->js
   				if(path.endsWith(".js")){
 	 				String pathWithJgz = path.substring(0,path.lastIndexOf('.')) + ".jgz";
 					//DBG_PRINTF("checking with:%s\n",pathWithJgz.c_str());
   			  		if(FileSystem.exists(pathWithJgz)) return true;
   			  	}
-
+				// pre compressed file
   				String pathWithGz = path + ".gz";
   				if(FileSystem.exists(pathWithGz)) return true;
 
 	 		}
 	 	}else if(request->method() == HTTP_POST){
-	 		if(request->url() == UPDATE_AUTOMATION_PATH || request->url() == UPDATE_SETTING_PATH)
+	 		if(request->url() == UPDATE_AUTOMATION_PATH 
+			 	|| request->url() == UPDATE_SETTING_PATH){
 	 			return true;
+			}
 	 	}
 	 	return false;
-	 }
+	 } // end of bool canHandle(...)
 };
 
 BmwHandler bmwHandler;

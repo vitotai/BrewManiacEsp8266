@@ -40,11 +40,11 @@
 #error "MaximumNumberOfSensors should not exceed 5"
 #endif
 
-#if UsePaddleInsteadOfPumpEnabled
-#define UsePaddleInsteadOfPump true
-#else
+#ifndef UsePaddleInsteadOfPump
 #define UsePaddleInsteadOfPump false
 #endif
+
+
 
 #if SecondaryHeaterSupportEnabled
 #define SecondaryHeaterSupport true
