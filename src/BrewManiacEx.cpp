@@ -63,7 +63,6 @@ extern String getContentType(String filename);
 #define UPDATE_SETTING_PATH 	"/savesettings.php"
 
 #define NETCFG_PATH 		"/netcfg.php"
-#define SCAN_SENSOR_PATH 	"/scan.php"
 #define DEFAULT_INDEX_FILE  "bm.htm"
 
 #define MAX_CONFIG_LEN 256
@@ -84,6 +83,11 @@ extern String getContentType(String filename);
 #define WIFI_SCAN_PATH "/wifiscan"
 #define WIFI_CONNECT_PATH "/wificon"
 #define WIFI_DISC_PATH "/wifidisc"
+
+#define RPC_TAG "rpc"
+#define RPCID_TAG "id"
+
+#define SCAN_SENSOR_CMD 	"scansensor"
 
 #define MaxNameLength 32
 
@@ -190,7 +194,9 @@ class RecipeFileHandler:public AsyncWebHandler
 		Dir dir = FileSystem.openDir(path);
 		String json=String("[");
 		bool comma=false;
+		#if !UseLittleFS
 		uint16_t len=path.length();
+		#endif
 		while (dir.next()) {
 			String file=dir.fileName();
     		DBG_PRINTF("LS File:%s\n",file.c_str());
@@ -719,11 +725,6 @@ public:
             json += autojson;
             json += "}";
 	 		requestSend(request,200, "application/json", json);
-#if	MaximumNumberOfSensors	> 1
-	 	}else if(request->method() == HTTP_GET && request->url() == SCAN_SENSOR_PATH){
-	 		bmWeb.scanSensors();
-	 		requestSend(200);
-#endif
 	 	}else if(request->method() == HTTP_GET && request->url() == BUTTON_PATH){
 			if(request->hasParam("code")){
 				AsyncWebParameter* p = request->getParam("code");
@@ -847,8 +848,7 @@ public:
 	 		if(request->url() == SETTIME_PATH 
 			 	|| request->url() == SETTING_PATH 
 				|| request->url() == AUTOMATION_PATH
-	 		    || request->url() == BUTTON_PATH  
-				|| request->url() == SCAN_SENSOR_PATH){
+	 		    || request->url() == BUTTON_PATH){
 	 			return true;
 	 		}else{
 				DBG_PRINTF("BmwHandler canHandle file:%s\n",request->url().c_str());
@@ -972,7 +972,9 @@ void greeting(std::function<void(const String&,const char*)> sendFunc){
 #if UseWebSocket == true
 AsyncWebSocket ws(WS_PATH);
 
-void processRemoteCommand( uint8_t *data, size_t len)
+extern void printSensorAddress(char *buf, byte *addr);
+
+void processRemoteCommand(AsyncWebSocketClient * client, uint8_t *data, size_t len)
 {
 	char buf[128];
 	int i;
@@ -1002,6 +1004,41 @@ void processRemoteCommand( uint8_t *data, size_t len)
 		}else if(root.containsKey("btnx")){
 			int code = root["btnx"];
 			bmWeb.sendButton(code,false);
+		}
+		else if(root.containsKey(RPC_TAG)
+				&& root.containsKey(RPCID_TAG)){			
+			String rpcFunc=root[RPC_TAG];
+			String rpcID=root[RPCID_TAG];
+
+#if	MaximumNumberOfSensors	> 1
+#if ARDUINOJSON_VERSION_MAJOR < 6
+#error "ArduinoJson v6 is required"
+#endif
+		// not finished
+			if(rpcFunc == SCAN_SENSOR_CMD){
+				byte addr[MaximumNumberOfSensors][8];
+		 		byte num=bmWeb.scanSensors(MaximumNumberOfSensors,addr);
+
+				StaticJsonDocument<1024> json;
+				json["ok"] = 1;
+				json["id"] = rpcID;
+				JsonObject ret=json.createNestedObject("ret");
+				ret["num"] = num;
+
+				char hex[20];
+				if(num > 0){
+					JsonArray addrs=ret.createNestedArray("sensors");
+					for(int i=0;i<num;i++){
+						printSensorAddress(hex,addr[i]);
+						addrs.add(String("0x") + String(hex));
+					}
+				}
+				String msg;
+				serializeJson(json,msg);
+				client->text(String("rpc:")+ msg);
+				DBG_PRINTF("cmd rsp:%s\n",msg.c_str());
+			}
+#endif
 		}
 	}
 }
@@ -1051,7 +1088,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
       		//the whole message is in a single frame and we got all of it's data
       		DBG_PRINTF("ws[%s][%u] %s-message[%llu]\n", server->url(), client->id(), (info->opcode == WS_TEXT)?"text":"binary", info->len);
 			
-			processRemoteCommand(data,info->len);
+			processRemoteCommand(client,data,info->len);
 
 		} else {
       		//message is comprised of multiple frames or the frame is split into multiple packets

@@ -734,7 +734,22 @@ void printSensorAddress(char *buf, byte *addr)
 	buf[16]=0;
 }
 
-
+#if FakeHeating
+byte FakeSensors[][8]={
+{0x28,0xFF,0x2B,0x00,0x00,0x00,0x01,0x9e},
+{0x28,0xFF,0x2B,0x00,0x00,0x00,0x02,0x7c},
+{0x28,0xFF,0x2B,0x00,0x00,0x00,0x03,0x22},
+{0x28,0xFF,0x2B,0x00,0x00,0x00,0x04,0xa1}
+};
+byte scanSensors(byte max,byte addresses[][8]) {
+//	byte i;
+	for(int i=0;i<4;i++){
+		memcpy(addresses[i],FakeSensors[i],8);
+		gTemperatureReading[i]= gIsUseFahrenheit? 67.8:19.9;
+	}
+	return 4;
+}
+#else
 byte scanSensors(byte max,byte addresses[][8]) {
 //	byte i;
   	byte m=0;
@@ -769,6 +784,7 @@ byte scanSensors(byte max,byte addresses[][8]) {
 
 	return m;
 }
+#endif
 
 void loadSensorSetting(void)
 {
@@ -797,6 +813,7 @@ void loadSensorSetting(void)
 
     	if (gSensorAddresses[i][0] != 0x28
  	   	 		|| OneWire::crc8( gSensorAddresses[i], 7) != gSensorAddresses[i][7]) {
+			DBG_PRINTF("invalid sensor address! %x",OneWire::crc8( gSensorAddresses[i], 7));
 			break;
     	}
 
@@ -809,7 +826,7 @@ void loadSensorSetting(void)
 	gAuxSensorIndex =(gSensorNumber>1)? 1:0;
 
 #if SerialDebug == true
-		Serial.printf("Number of sensors:%d",gSensorNumber);
+		Serial.printf("Number of sensors:%d\n",gSensorNumber);
 #endif
 
 }
@@ -874,10 +891,7 @@ void tpInitialize(void)
 
 #if	MaximumNumberOfSensors	> 1
 
-	loadSensorSetting();
-
 	for(byte i=0;i< MaximumNumberOfSensors;i++){
-		_gIsSensorConverting[i]=false;
 		gTemperatureReading[i]= gIsUseFahrenheit? 67.8:19.9;
 	}
 #endif
@@ -1030,6 +1044,12 @@ uint32_t _lastValidTempRead[MaximumNumberOfSensors];
 void tpReadTemperature(void)
 {
 #if FakeHeating
+
+#if  MaximumNumberOfSensors > 1
+	for(int i=0;i<MaximumNumberOfSensors;i++){
+		if(gTemperatureReading[i]<0) gTemperatureReading[i] =0;
+	}
+#endif
 	return;
 #endif
 
@@ -2109,10 +2129,10 @@ void heatThread(void)
 #if MaximumNumberOfSensors > 1
 	if(_physicalHeattingOn){
 		for(byte i=0;i<gSensorNumber;i++)
-			gTemperatureReading[i] += (gCurrentTimeInMS - lastTime) * (0.00000002 + i*0.000000001);
+			gTemperatureReading[i] += (gCurrentTimeInMS - lastTime) * (0.0004 + i*0.0001);
 	}else{
 		for(byte i=0;i<gSensorNumber;i++)
-			gTemperatureReading[i] -= (gCurrentTimeInMS - lastTime) * (0.000000002+ i*0.0000000007);
+			gTemperatureReading[i] -= (gCurrentTimeInMS - lastTime) * (0.000025+ i*0.0007);
 	}
 	gCurrentTemperature = gTemperatureReading[gPrimarySensorIndex];
 	gAuxTemperature = gTemperatureReading[gAuxSensorIndex];

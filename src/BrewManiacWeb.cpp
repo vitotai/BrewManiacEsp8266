@@ -48,13 +48,13 @@ extern void  wiUpdateCalibrationOfSensor(byte i,byte value);
 
 extern float gTemperatureReading[MaximumNumberOfSensors];
 
-extern void wiUpdatePrimarySensor(byte i,byte v);
+extern byte wiUpdatePrimarySensor(byte i,byte v);
 
 extern void wiUpdateAuxSensor(byte i,byte v);
 extern byte wiReadPrimarySensor(byte i);
 extern byte wiReadAuxSensor(byte i);
 //extern byte scanSensors(byte max,byte addresses[][8]);
-extern void wiStartSensorScan(void);
+extern byte wiScanSensors(byte max,byte addresses[][8]);
 extern void saveSensor(byte idx,byte address[]);
 #endif
 
@@ -120,29 +120,19 @@ void BrewManiacWeb::automationChanged(void)
 /* end of from BM */
 
 #if	MaximumNumberOfSensors > 1
-void BrewManiacWeb::scanSensors(void)
-{
-	wiStartSensorScan();
+byte BrewManiacWeb::scanSensors(byte max,byte addresses[][8]) {
+
+	return wiScanSensors(max, addresses);
 }
 
-void BrewManiacWeb::updateSensorSetting(String& json)
-{
-}
-
-void   BrewManiacWeb::scanSensorDone(void)
-{
-	if(_eventHandler) _eventHandler(this,BmwEventSettingChanged);
-}
 #endif
 
 
-void BrewManiacWeb::setIp(uint8_t ip[],bool apmode)
-{
+void BrewManiacWeb::setIp(uint8_t ip[],bool apmode){
 	wiSetDeviceAddress(ip,apmode);
 }
 
-BrewManiacWeb::BrewManiacWeb(void)
-{
+BrewManiacWeb::BrewManiacWeb(void){
 	_reportPeriod=DEFAULT_REPORT_PERIOD;
 	_lastReportTime=0;
 
@@ -569,9 +559,7 @@ bool BrewManiacWeb::updateSettings(String& json)
 	// sensor setup
 	//"sensors":["0x0011223344556687","0x2211223344556687","0x3311223344556687"],
 	//"primary":[0,1,1,1,1,1],"auxiliary":[1,0,0,0,2,2]
-	if(root.containsKey("sensors")
-	    && root.containsKey("primary")
-	    && root.containsKey("auxiliary")){
+	if(root.containsKey("sensors")){
 	
 		#if ARDUINOJSON_VERSION_MAJOR == 6
     	JsonArray sensors = root["sensors"];
@@ -612,8 +600,11 @@ bool BrewManiacWeb::updateSettings(String& json)
     	    address[0]=0xFF;
 	        saveSensor(idx,address);
 	    }
+	}
+
+	if(root.containsKey("primary")){
 	    // primary
-	    idx=0;
+	    int idx=0;
 		#if ARDUINOJSON_VERSION_MAJOR == 6
 	    JsonArray primary = root["primary"];
 		#else
@@ -624,9 +615,13 @@ bool BrewManiacWeb::updateSettings(String& json)
     	    uint8_t sensor= it->as<unsigned char>();
     	    wiUpdatePrimarySensor(idx,sensor);
     	    DEBUGF("Primary sensor %d - %d\n",idx,sensor);
+			idx++;
     	}
-	    // primary
-	    idx=0;
+	}
+	if(root.containsKey("auxiliary")){
+
+	    // auxiliary
+	    int idx=0;
 		#if ARDUINOJSON_VERSION_MAJOR == 6
 	    JsonArray auxliary = root["auxiliary"];
 		#else
@@ -637,8 +632,8 @@ bool BrewManiacWeb::updateSettings(String& json)
     	    uint8_t sensor= it->as<unsigned char>();
     	    wiUpdateAuxSensor(idx,sensor);
     	    DEBUGF("Auxiliary sensor %d - %d\n",idx,sensor);
+			idx++;
     	}
-
 	}
 #endif
 	commitSetting();
