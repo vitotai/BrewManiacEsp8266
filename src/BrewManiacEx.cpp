@@ -297,8 +297,8 @@ public:
 		 || request->url() ==UPLOAD_PATH 
 		 || request->url() ==LS_PATH){
 			return true;
-//		}else if(request->url() == RECIPE_PREFERNECE){
-//			  return FileSystem.exists(request->url());
+		}else if(request->url() == RECIPE_PREFERNECE){
+			  return FileSystem.exists(request->url());
 	 	}else if(request->url().startsWith(RECIPE_PATH_Base)){
 		 	return FileSystem.exists(request->url());
 		}
@@ -385,50 +385,6 @@ TemperatureLogHandler logHandler;
 /**************************************************************************************/
 
 
-void requestRestart(bool disc);
-
-class NetworkConfig:public AsyncWebHandler
-{
-protected:
-	bool saveConfig(void)
-	{
-
-		File config=FileSystem.open(CONFIG_FILENAME,"w+");
-  		if(!config){
-  				return false;
-  		}
-		char configBuff[MAX_CONFIG_LEN];
-		static const char* configFormat =
-			R"END({"host":"%s","user":"%s","pass":"%s","secured":%d,"wifi":%s})END";
-
-		sprintf(configBuff,configFormat,_gHostname,_gUsername,_gPassword,_gSecuredAccess? 1:0,WiFiSetup.status().c_str());
-		config.printf(configBuff);
-  		config.close();
-		return true;
-	}
-public:
-	NetworkConfig(){}
-
-	void handleRequest(AsyncWebServerRequest *request){
-		if(request->url() == NETCFG_PATH) handleNetCfg(request);
-		else if(request->url() == WIFI_SCAN_PATH) handleNetworkScan(request);
-		else if(request->url() == WIFI_CONNECT_PATH) handleNetworkConnect(request);
-		else if(request->url() == WIFI_DISC_PATH) handleNetworkDisconnect(request);
-	}
-
-	void handleNetworkScan(AsyncWebServerRequest *request){
-		if(WiFiSetup.requestScanWifi())
-			requestSend(request,200);
-		else 
-			requestSend(request,403);
-	}
-
-	void handleNetworkDisconnect(AsyncWebServerRequest *request){
-		WiFiSetup.disconnect();
-		requestSend(request,200);
-		saveConfig();
-	}
-
 	IPAddress scanIP(const char *str)
 	{
     	// DBG_PRINTF("Scan IP length=%d :\"%s\"\n",len,buffer);
@@ -453,6 +409,49 @@ public:
     	return sip;
 	}
 
+void requestRestart(bool disc);
+
+class NetworkConfig:public AsyncWebHandler
+{
+public:
+	bool saveConfig(void)
+	{
+
+		File config=FileSystem.open(CONFIG_FILENAME,"w+");
+  		if(!config){
+  				return false;
+  		}
+		char configBuff[MAX_CONFIG_LEN];
+		static const char* configFormat =
+			R"END({"host":"%s","user":"%s","pass":"%s","secured":%d,"wifi":%s})END";
+
+		sprintf(configBuff,configFormat,_gHostname,_gUsername,_gPassword,_gSecuredAccess? 1:0,WiFiSetup.status().c_str());
+		config.printf(configBuff);
+  		config.close();
+		return true;
+	}
+	NetworkConfig(){}
+
+	void handleRequest(AsyncWebServerRequest *request){
+		if(request->url() == NETCFG_PATH) handleNetCfg(request);
+//		else if(request->url() == WIFI_SCAN_PATH) handleNetworkScan(request);
+//		else if(request->url() == WIFI_CONNECT_PATH) handleNetworkConnect(request);
+		else if(request->url() == WIFI_DISC_PATH) handleNetworkDisconnect(request);
+	}
+/*
+	void handleNetworkScan(AsyncWebServerRequest *request){
+		if(WiFiSetup.requestScanWifi())
+			requestSend(request,200);
+		else 
+			requestSend(request,403);
+	}
+*/
+	void handleNetworkDisconnect(AsyncWebServerRequest *request){
+		WiFiSetup.disconnect();
+		requestSend(request,200);
+		saveConfig();
+	}
+#if 0
 	void handleNetworkConnect(AsyncWebServerRequest *request){
 
 		if(!request->hasParam("nw",true) && !request->hasParam("ap",true)){
@@ -486,7 +485,7 @@ public:
 		saveConfig();
 		requestSend(request,200);
 	}
-
+#endif
 	void handleNetCfg(AsyncWebServerRequest *request){
 		if(request->method() == HTTP_POST){
 			String data=request->getParam("data", true, false)->value();
@@ -556,8 +555,8 @@ public:
 
 	bool canHandle(AsyncWebServerRequest *request){
 	 	if(request->url() == NETCFG_PATH) return true;
-		else if(request->url() == WIFI_SCAN_PATH) return true; 
-		else if(request->url() == WIFI_CONNECT_PATH) return true;
+//		else if(request->url() == WIFI_SCAN_PATH) return true; 
+//		else if(request->url() == WIFI_CONNECT_PATH) return true;
 		else if(request->url() == WIFI_DISC_PATH) return true;
 
 	 	return false;
@@ -974,6 +973,35 @@ AsyncWebSocket ws(WS_PATH);
 
 extern void printSensorAddress(char *buf, byte *addr);
 
+
+void wifiConnect(DynamicJsonDocument& root){
+
+	if(root.containsKey("ap")){
+			// AP only mode
+			WiFiSetup.disconnect();
+			// save to config
+	}else if(root.containsKey("nw")){
+		String ssid=root["nw"];
+		const char* pass=NULL;
+		if(root.containsKey("pass")){
+			pass = root["pass"].as<String>().c_str();
+		}
+		if(root.containsKey("ip") && root.containsKey("gw") && root.containsKey("nm")){
+			DBG_PRINTF("static IP\n");
+			WiFiSetup.connect(ssid.c_str(),pass, 
+							scanIP(root["ip"].as<String>().c_str()),
+							scanIP(root["gw"].as<String>().c_str()),
+							scanIP(root["nm"].as<String>().c_str())
+			);
+				// save to config
+		}else{
+				WiFiSetup.connect(ssid.c_str(),pass);
+				DBG_PRINTF("dynamic IP\n");
+		}
+	}
+	networkConfig.saveConfig();
+}
+
 void processRemoteCommand(AsyncWebSocketClient * client, uint8_t *data, size_t len)
 {
 	char buf[128];
@@ -1004,8 +1032,14 @@ void processRemoteCommand(AsyncWebSocketClient * client, uint8_t *data, size_t l
 		}else if(root.containsKey("btnx")){
 			int code = root["btnx"];
 			bmWeb.sendButton(code,false);
-		}
-		else if(root.containsKey(RPC_TAG)
+		}else if(root.containsKey("wificmd")){
+			String cmd=root["wificmd"];
+			if(cmd == "scan"){
+				WiFiSetup.requestScanWifi();
+			}else if (cmd =="con"){
+				wifiConnect(root);
+			}
+		}else if(root.containsKey(RPC_TAG)
 				&& root.containsKey(RPCID_TAG)){			
 			String rpcFunc=root[RPC_TAG];
 			String rpcID=root[RPCID_TAG];
