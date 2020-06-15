@@ -121,6 +121,9 @@ typedef union _address{
                 uint32_t dword;
 } IPV4Address;
 
+
+extern const uint8_t* getEmbeddedFile(const char* filename,bool &gzip, unsigned int &size);
+
 /**************************************************************************************/
 /* common response.  */
 /**************************************************************************************/
@@ -833,9 +836,22 @@ public:
 					}
 					response = request->beginResponse(file, path,getContentType(path));
 
-  			    }else{
+  			    }else if(FileSystem.exists(path)){
 	 			    response = request->beginResponse(FileSystem, path);
-			    }
+			    }else{
+					bool gzip;
+					uint32_t size;
+					const uint8_t* file=getEmbeddedFile(path.c_str(),gzip,size);
+					if(file){
+						response = request->beginResponse_P(200, "text/html", file, size);
+						if(gzip){
+               			 	response->addHeader("Content-Encoding", "gzip");
+						}
+					}else{
+						// error.
+						response = request->beginResponse(500);
+					}
+				}
 			    response->addHeader("Cache-Control","max-age=2592000");
 			    requestSend(request,response);
 			}
@@ -866,6 +882,10 @@ public:
 	 			//DBG_PRINTF("request:%s\n",path.c_str());
 				//if(fileExists(path)) return true;
 				
+				bool dum;
+	    		unsigned int dum2;
+			    if(getEmbeddedFile(path.c_str(),dum,dum2)) return true;
+
 				if(FileSystem.exists(path)) return true;
 				// special handling of jgz->js
   				if(path.endsWith(".js")){
@@ -1334,7 +1354,7 @@ AppleCNAHandler appleCNAHandler;
 
 #endif //#if ResponseAppleCNA == true
 
-HttpUpdateHandler httpUpdateHandler(FIRMWARE_UPDATE_URL,JS_UPDATE_URL);
+HttpUpdateHandler httpUpdateHandler(FIRMWARE_UPDATE_URL);
 /*
 bool testFileSystem(void)
 {
@@ -1385,48 +1405,7 @@ void displayIP(bool apmode){
 	}
 }
 
-String checkJSVersion(void){
 
-	String version="0";
-
-	Dir dir=FileSystem.openDir("/");
-	bool indexFileExist=false;
-	bool jsFileExist=false;
-	int lastIndex;
-	#if UseLittleFS
-	#define JS_FILE_START  "bm."
-	#else
-	#define JS_FILE_START  "/bm."
-	#endif
-	#define JS_FILE_EXTEND ".jgz"
-	
-	#if UseLittleFS
-	String FullindexFile = String(DEFAULT_INDEX_FILE);
-	#else
-	String FullindexFile = String("/") + String(DEFAULT_INDEX_FILE);
-	#endif
-
-	while (dir.next()) {
-    	String fn=dir.fileName();
-		DBG_PRINTF("file:%s, JS_START:%d Extend:%d\n",fn.c_str(),fn.startsWith(JS_FILE_START),fn.lastIndexOf( JS_FILE_EXTEND));
-		if(fn.compareTo(FullindexFile) == 0 ||
-			fn.compareTo(FullindexFile + ".gz") == 0){ // might be .htm or htm.gz
-			indexFileExist=true;
-			if(jsFileExist) break;
-		}else if((fn.startsWith(JS_FILE_START)) && ((lastIndex=fn.lastIndexOf( JS_FILE_EXTEND)) > 0)){
-			String verstr = fn.substring(strlen(JS_FILE_START),lastIndex);
-			version = verstr.substring(0,1) + String(".") + verstr.substring(1,2) + String(".") + verstr.substring(2);
-			DBG_PRINTF("version:%s\n",version.c_str());
-			jsFileExist = true;
-			if(indexFileExist) break;
-		}
-	}
-	if(!indexFileExist || !jsFileExist){
-		version="0";
-		DBG_PRINTF("missing index:%d  jsfile:%d!\n",indexFileExist,jsFileExist);	
-	}
-	return version;
-}
 /**************************************************************************************/
 /* Main procedure */
 /**************************************************************************************/
@@ -1480,26 +1459,12 @@ void setup(void){
 		TimeKeeper.begin("time.nist.gov","time.windows.com","de.pool.ntp.org");
 
 	//4. check version
-	bool forcedUpdate;
-	String jsVersion = checkJSVersion();
-	
-	if(jsVersion == "0"){
-  		forcedUpdate=true;
-	}else{
-		forcedUpdate=false;
-	}
 
-	//5. setup Web Server
-	if(forcedUpdate){
-		//5.1 forced to update
-		httpUpdateHandler.setUrl("/");
-	}else{
-		//5.1 HTTP Update page
-		httpUpdateHandler.setUrl(ONLINE_UPDATE_PATH);
-		httpUpdateHandler.setCredential(_gUsername,_gPassword);
-	}
+	//5.1 HTTP Update page
+	httpUpdateHandler.setUrl(ONLINE_UPDATE_PATH);
 
-	httpUpdateHandler.setVersion(BME8266_VERSION,jsVersion);
+	httpUpdateHandler.setCredential(_gUsername,_gPassword);
+	httpUpdateHandler.setVersion(BME8266_VERSION);
 	server.addHandler(&httpUpdateHandler);
 
 
@@ -1525,8 +1490,7 @@ void setup(void){
 		server.addHandler(&bmwHandler);
 
 #if ResponseAppleCNA == true
-	if(! forcedUpdate) //CNAHandler makes Mac thought it connected to the internet
-		server.addHandler(&appleCNAHandler);
+	server.addHandler(&appleCNAHandler);
 #endif
 
 	server.addHandler(&logHandler);

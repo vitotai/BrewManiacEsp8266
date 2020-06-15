@@ -71,7 +71,9 @@
 #ifndef UseLittleFS
 #define UseLittleFS true
 #endif
-
+#ifndef WebPageLanguage
+#define WebPageLanguage english
+#endif
 /**************************************************************************************/
 /*  BrewManiac Related settings                                                       */
 /**************************************************************************************/
@@ -164,7 +166,6 @@
 
 
 #define FIRMWARE_UPDATE_URL "http://brew.vito.tw/bmeupdate.php?info"
-#define JS_UPDATE_URL  "http://brew.vito.tw/bmejsupdate.i18n.php?v="
 
 // request status report period
 #define DEFAULT_REPORT_PERIOD 6000
@@ -179,7 +180,7 @@
 /*  version information     														  */
 /**************************************************************************************/
 
-#define BME8266_VERSION "0.4.9"
+#define BME8266_VERSION "0.5"
 
 #if MaximumNumberOfSensors >  1
 	#if LCD_USE_SSD1306 == true
