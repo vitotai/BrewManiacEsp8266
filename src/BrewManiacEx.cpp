@@ -926,6 +926,7 @@ void getSystemInfo(String& json){
 	FileSystem.info(fs_info);
 	json +=  String(", \"fs\":") + String(fs_info.totalBytes);
 
+	json += String(",\"buildtime\":\"") +String(__DATE__) +String(__TIME__) +String("\"");
 
 	uint8_t mac[WL_MAC_ADDR_LENGTH];
 	WiFi.macAddress(mac);
@@ -954,11 +955,11 @@ void getVersionInfo(String& json)
 	json += String(",\"paddle\":0");
 	#endif
 
-	json += String("},\"system\":");
+	json += String(",\"system\":");
 
 	getSystemInfo(json);
 
-	json +="}";
+	json +=" }}";
 }
 
 void greeting(std::function<void(const String&,const char*)> sendFunc){
