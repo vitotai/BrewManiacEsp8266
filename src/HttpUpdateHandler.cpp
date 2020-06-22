@@ -220,4 +220,3 @@ void HttpUpdateHandler::runUpdate(void)
             _state = US_FormatForDownloadFinished;
 	}
 }
-
