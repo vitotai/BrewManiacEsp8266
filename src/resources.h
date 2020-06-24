@@ -328,6 +328,7 @@ StringConst( Pbh_Number_x,"PBH #");
 
 StringConst( Manage_Recipes, "Manage Recipes");
 StringConst(Mash_x,"Mash ");
+StringConst(Pump_Inverse,"Pump Inverted");
 
 #if MaximumNumberOfSensors > 1
 StringConst(Sensor_Setting, "Sensor Setting");

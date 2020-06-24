@@ -926,7 +926,7 @@ void getSystemInfo(String& json){
 	FileSystem.info(fs_info);
 	json +=  String(", \"fs\":") + String(fs_info.totalBytes);
 
-	json += String(",\"buildtime\":\"") +String(__DATE__) +String(__TIME__) +String("\"");
+	json += String(",\"buildtime\":\"") +String(__DATE__) +String(" ")+String(__TIME__) +String("\"");
 
 	uint8_t mac[WL_MAC_ADDR_LENGTH];
 	WiFi.macAddress(mac);

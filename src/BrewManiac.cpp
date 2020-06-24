@@ -1436,19 +1436,20 @@ public:
 
 class PumpControl: public RestableDevice
 {
+	bool _inverted;
     public:
     PumpControl(){}
 
     void virtual deviceOn(void)
     {
-	    setPumpOut(HIGH);
+	    setPumpOut(_inverted? LOW:HIGH);
 	    uiPumpStatus(PumpStatus_On);
 	    wiReportPump(PumpStatus_On);
     }
 
     void virtual deviceOff(bool programOff)
     {
-        setPumpOut(LOW);
+        setPumpOut(_inverted? HIGH:LOW);
 	    if(programOff){
 		    uiPumpStatus(PumpStatus_On_PROGRAM_OFF);
 		    wiReportPump(PumpStatus_On_PROGRAM_OFF);
@@ -1461,6 +1462,7 @@ class PumpControl: public RestableDevice
     {
 	    setStopTemp( (float) readSetting(PS_TempPumpRest));
 	    resetRest();
+		_inverted = (bool) readSetting(PS_PumpActuatorInverted);
 
     #if UsePaddleInsteadOfPump
         setCycle((unsigned long) readSetting(PS_PumpCycle) *1000,(unsigned long) readSetting(PS_PumpRest) *1000);
@@ -3298,7 +3300,8 @@ const SettingItem miscSettingItems[] PROGMEM=
 /*1*/{STR(Button_Buzz), &displayYesNo, PS_ButtonFeedback,1,0},
 /*2*/{STR(PumpPrime), &displaySimpleInteger, PS_PumpPrimeCount,10,0},
 /*3*/{STR(PrimeOn), &displayMultiply250, PS_PumpPrimeOnTime,40,1},
-/*4*/{STR(PrimeOff), &displayMultiply250, PS_PumpPrimeOffTime,40,0}
+/*4*/{STR(PrimeOff), &displayMultiply250, PS_PumpPrimeOffTime,40,0},
+	 {STR(Pump_Inverse),&displayYesNo, PS_PumpActuatorInverted,1,0}
 #if SpargeHeaterSupport == true
 /*5*/,{STR(Sparge_Heater),&displayYesNo,PS_SpargeWaterEnableAddress,1,0,}
 #if MaximumNumberOfSensors >1

@@ -59,8 +59,8 @@
 #define PS_SpargeWaterTemperatureAddress	35
 #define PS_SpargeWaterTemperatureDifferenceAddress	36
 
-//     37 -  41 reserved
-
+//     37 -  40 reserved
+#define PS_PumpActuatorInverted 41
 #define PS_ButtonFeedback    42
 #define PS_PumpPrimeCount    43
 #define PS_PumpPrimeOnTime   44

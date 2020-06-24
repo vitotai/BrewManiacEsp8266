@@ -1,6 +1,6 @@
-## BrewManiacExManual_0.1.pdf
+## UserManual
 
-The user manual.
+The latest user manual is in MD format. PDF files are old ones.
 
 
 ## circuit.png
