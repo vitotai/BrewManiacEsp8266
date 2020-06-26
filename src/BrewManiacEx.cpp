@@ -362,7 +362,7 @@ public:
 	void handleNetworkScan(AsyncWebServerRequest *request){
 		if(WiFiSetup.requestScanWifi())
 			request->send(200,"application/json","{}");
-		else 
+		else
 			request->send(403);
 	}
 
@@ -415,7 +415,7 @@ public:
 			}
 			if(request->hasParam("ip",true) && request->hasParam("gw",true) && request->hasParam("nm",true)){
 				DBG_PRINTF("static IP\n");
-				WiFiSetup.connect(ssid.c_str(),pass, 
+				WiFiSetup.connect(ssid.c_str(),pass,
 							scanIP(request->getParam("ip",true)->value().c_str()),
 							scanIP(request->getParam("gw",true)->value().c_str()),
 							scanIP(request->getParam("nm",true)->value().c_str())
@@ -479,7 +479,7 @@ public:
 				_gSecuredAccess =( 0 != value);
 			}
 
-			if(saveConfig()){	
+			if(saveConfig()){
 				request->send(200,"text/json","{}");
 			}else{
 				request->send(500);
@@ -499,7 +499,7 @@ public:
 
 	bool canHandle(AsyncWebServerRequest *request){
 	 	if(request->url() == NETCFG_PATH) return true;
-		else if(request->url() == WIFI_SCAN_PATH) return true; 
+		else if(request->url() == WIFI_SCAN_PATH) return true;
 		else if(request->url() == WIFI_CONNECT_PATH) return true;
 		else if(request->url() == WIFI_DISC_PATH) return true;
 
@@ -519,8 +519,8 @@ public:
 		DynamicJsonDocument root(2048);
 		auto error=deserializeJson(root,config);
 
-		if(error 
-				|| !config 
+		if(error
+				|| !config
 				|| !root.containsKey("host")
 				|| !root.containsKey("user")
 				|| !root.containsKey("pass")){
@@ -771,7 +771,7 @@ public:
 	 		}else{
     	 		String pathWithGz = path + ".gz";
   	    		if(FileSystem.exists(pathWithGz)){
-			    	// AsyncFileResonse will add "content-disposion" header, result in "download" of Safari, instead of "render" 
+			    	// AsyncFileResonse will add "content-disposion" header, result in "download" of Safari, instead of "render"
 	 	    	  	// response = request->beginResponse(FileSystem, pathWithGz,"application/x-gzip");
 			      	// response->addHeader("Content-Encoding", "gzip");
 				  	File file=FileSystem.open(pathWithGz,"r");
@@ -854,7 +854,7 @@ void getSystemInfo(String& json){
 
 	for(int i=0;i<WL_MAC_ADDR_LENGTH;i++){
 
-		json += String(toHex(mac[i] >>4)) + String(toHex(mac[i] & 0x0F)); 
+		json += String(toHex(mac[i] >>4)) + String(toHex(mac[i] & 0x0F));
 	}
 	json +="\"}";
 }
@@ -865,7 +865,7 @@ void getVersionInfo(String& json)
 	json += String("{\"firmware\":{\"v\":\"") + String(BME8266_VERSION);
 	json += String("\",\"sensors\":") + String(MaximumNumberOfSensors);
 	#if SupportDistilling
-	json += String(",\"distill\":1");	
+	json += String(",\"distill\":1");
 	#endif
 	#if UsePaddleInsteadOfPump
 	json += String(",\"paddle\":1");
@@ -894,8 +894,8 @@ void greeting(std::function<void(const String&,const char*)> sendFunc){
 	bmWeb.getAutomation(automation);
 	sendFunc(automation,"auto");
 
-	char buf[128];
-	
+	char buf[MAX_CONFIG_LEN];
+
 	sprintf(buf,"{\"host\":\"%s\",\"secured\":%d,\"wifi\":%s}",_gHostname,_gSecuredAccess? 1:0,WiFiSetup.status().c_str());
 
 	sendFunc(buf,"netcfg");
@@ -904,7 +904,7 @@ void greeting(std::function<void(const String&,const char*)> sendFunc){
     sendFunc(String(buf),"timesync");
 	String status;
 	bmWeb.getCurrentStatus(status,true);
-	sendFunc(status,NULL);	
+	sendFunc(status,NULL);
 }
 
 #if UseWebSocket == true
@@ -918,7 +918,7 @@ void processRemoteCommand( uint8_t *data, size_t len)
 		buf[i]=data[i];
 	}
 	buf[i]='\0';
-	
+
 	DBG_PRINTF("processRemoteCommand:\"%s\"\n",buf);
 
 #if ARDUINOJSON_VERSION_MAJOR == 6
@@ -958,7 +958,7 @@ AsyncWebSocketClient * _lastWsClient=NULL;
 void wsHello()
 {
 	if(!_lastWsClient) return;
-	
+
 	wsMessageOnConnect(_lastWsClient);
 
 	_lastWsClient=NULL;
@@ -973,7 +973,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 		client->ping();
 #if ESPAsyncTCP_issue77_Workaround
 		_lastWsClient=client;
-#else		
+#else
 		wsMessageOnConnect(client);
 #endif
   	} else if(type == WS_EVT_DISCONNECT){
@@ -988,7 +988,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
     	if(info->final && info->index == 0 && info->len == len){
       		//the whole message is in a single frame and we got all of it's data
       		DBG_PRINTF("ws[%s][%u] %s-message[%llu]\n", server->url(), client->id(), (info->opcode == WS_TEXT)?"text":"binary", info->len);
-			
+
 			processRemoteCommand(data,info->len);
 
 		} else {
@@ -1266,7 +1266,7 @@ String checkJSVersion(void){
 	#define JS_FILE_START  "/bm."
 	#endif
 	#define JS_FILE_EXTEND ".jgz"
-	
+
 	#if UseLittleFS
 	String FullindexFile = String(DEFAULT_INDEX_FILE);
 	#else
@@ -1290,7 +1290,7 @@ String checkJSVersion(void){
 	}
 	if(!indexFileExist || !jsFileExist){
 		version="0";
-		DBG_PRINTF("missing index:%d  jsfile:%d!\n",indexFileExist,jsFileExist);	
+		DBG_PRINTF("missing index:%d  jsfile:%d!\n",indexFileExist,jsFileExist);
 	}
 	return version;
 }
@@ -1349,7 +1349,7 @@ void setup(void){
 	//4. check version
 	bool forcedUpdate;
 	String jsVersion = checkJSVersion();
-	
+
 	if(jsVersion == "0"){
   		forcedUpdate=true;
 	}else{
@@ -1465,7 +1465,7 @@ void loop(void){
 
 	ESPUpdateServer_loop();
   	bmWeb.loop();
-	
+
 	MDNS.update();
 
   	brewmaniac_loop();

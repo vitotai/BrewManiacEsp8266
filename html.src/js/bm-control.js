@@ -143,7 +143,7 @@ var BMScreen = {
     },
     setScreen: function(s, stage) {
         var t = this;
-        // title & other 
+        // title & other
         if (s == "S") $("#title").text(STR.Setup);
         else if (s == "I") {
             $("#title").text(STR.Idle);
@@ -210,10 +210,10 @@ var BMScreen = {
         if (s == "A") {
             if (t.screen != "A") {
                 t.autolist();
-                $("#auto-p").show();
+                $("#auto-p").css("visibility", "visible");
             }
         } else {
-            $("#auto-p").hide();
+            $("#auto-p").css("visibility", "hidden");
         }
         t.screen = s;
         t.stage = stage;
@@ -343,7 +343,7 @@ var BMScreen = {
         //$("#pwm").css("color", "");
             $("#pwm").closest(".block-body").removeClass("inactive-num");
         else {
-            //$("#pwm").css("color", "#550000"); 
+            //$("#pwm").css("color", "#550000");
             $("#pwm").closest(".block-body").addClass("inactive-num");
             $("#pwm").text("00");
         }
@@ -761,7 +761,7 @@ var BMScreen = {
 
 
         b.autorow = $("#auto-t .autot-row").remove();
-        $("#auto-p").hide();
+        $("#auto-p").css("visibility", "hidden");
 
         function savePair(div, left, top) {
             setCookie(div + "_x", left, 365);
