@@ -15,6 +15,8 @@
 #include <PID_v1.h>
 
 #include "config.h"
+#include "ps.h"
+
 #include "pins.h"
 #include "automation.h"
 
@@ -342,7 +344,6 @@ void setEventMask(byte mask)
 #include "resources.h"
 #include "ui.h"
 
-#include "ps.h"
 #include "wi.h"
 
 // *************************

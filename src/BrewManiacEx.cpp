@@ -1,11 +1,25 @@
 #include <Arduino.h>
 #include <pgmspace.h>
+
+#if ESP32
+#include <WiFi.h>
+#include <ESPmDNS.h>
+#else
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
+#endif
+
 #include <ArduinoOTA.h>
 #include <FS.h>
+#if ESP32
+#include <SPIFFS.h>
+#include <AsyncTCP.h>
+#include <rom/spi_flash.h>
+#else
 #include <Hash.h>
 #include <ESPAsyncTCP.h>
+#endif
+
 #include <ESPAsyncWebServer.h>
 #if UseSoftwareSerial == true
 #include <SoftwareSerial.h>
@@ -138,7 +152,8 @@ void requestSend(AsyncWebServerRequest *request,int code,const String& type="app
 	}else{
 		response= request->beginResponse(code);
 	}
-	response->addHeader("access-control-allow-origin","*");
+	DBG_PRINTF("Access-Control-Allow-Origin\n");
+	response->addHeader("Access-Control-Allow-Origin","*");
 	request->send(response);
 
 #else	
@@ -152,7 +167,7 @@ void requestSend(AsyncWebServerRequest *request,int code,const String& type="app
 
 void requestSend(AsyncWebServerRequest *request,AsyncWebServerResponse* response){
 	#if EnableCORS
-	response->addHeader("access-control-allow-origin","*");
+	response->addHeader("Access-Control-Allow-Origin","*");
 	#endif
 	request->send(response);
 }
@@ -162,7 +177,7 @@ void requestSend(AsyncWebServerRequest *request,FS &fs, const String& path, cons
 	DBG_PRINTF("Send file %s.\n",path.c_str());
 
 	AsyncWebServerResponse *response=request->beginResponse(fs,path,contentType);
-	response->addHeader("access-control-allow-origin","*");
+	response->addHeader("Access-Control-Allow-Origin","*");
 	request->send(response);
 
 	#else
@@ -194,14 +209,28 @@ class RecipeFileHandler:public AsyncWebHandler
 	}
 
 	String listDirectory(String path){
+		#if ESP32
+		File dir = FileSystem.open(path);
+		#else
 		Dir dir = FileSystem.openDir(path);
+		#endif
+
 		String json=String("[");
 		bool comma=false;
 		#if !UseLittleFS
 		uint16_t len=path.length();
 		#endif
+
+		#if defined(ESP32)
+  		File entry = dir.openNextFile();
+
+  		while(entry){
+			  String file=entry.name();
+		#else
+
 		while (dir.next()) {
 			String file=dir.fileName();
+		#endif
     		DBG_PRINTF("LS File:%s\n",file.c_str());
     		if(comma) json = json + String(",");
     		else comma=true;
@@ -210,6 +239,11 @@ class RecipeFileHandler:public AsyncWebHandler
 			#else
     		json += String("\"") + file.substring(len) + String("\"");
 			#endif
+
+			#if defined(ESP32)
+    		entry = dir.openNextFile();
+			#endif
+
 		}
 		return json + String("]");
 	}
@@ -913,18 +947,24 @@ BmwHandler bmwHandler;
 /**************************************************************************************/
 /* server push  */
 /**************************************************************************************/
-
+#ifndef WL_MAC_ADDR_LENGTH
+#define WL_MAC_ADDR_LENGTH 6
+#endif
 #define ESPAsyncTCP_issue77_Workaround 1
 
 void getSystemInfo(String& json){
-
+	#if ESP32
+	json += String("{\"fid\":") + String(g_rom_flashchip.device_id)
+			+ String(",\"rsize\":") + String(g_rom_flashchip.chip_size)
+			+ String(",\"ssize\":") + String(SPIFFS.totalBytes());
+	#else
 	json += String("{\"fid\":") + String(ESP.getFlashChipId())
 			+ String(",\"rsize\":") + String(ESP.getFlashChipRealSize())
 			+ String(",\"ssize\":") + String(ESP.getFlashChipSize());
-
 	FSInfo fs_info;
 	FileSystem.info(fs_info);
 	json +=  String(", \"fs\":") + String(fs_info.totalBytes);
+	#endif
 
 	json += String(",\"buildtime\":\"") +String(__DATE__) +String(" ")+String(__TIME__) +String("\"");
 
@@ -1425,7 +1465,11 @@ void setup(void){
 
 	//1.Initialize file system
 	//start SPI Filesystem
+	#if ESP32
+	if(!SPIFFS.begin()){
+	#else
   	if(!FileSystem.begin()){
+	#endif
   		// TO DO: what to do?
   		DebugOut("File System begin() failed\n");
   	}else{
@@ -1449,8 +1493,11 @@ void setup(void){
 
   	DebugOut("Connected! IP address: ");
   	DebugOut(WiFi.localIP());
-
+	#if ESP32
+	if (!MDNS.begin(_gHostname)) {
+	#else
 	if (!MDNS.begin(_gHostname,WiFi.localIP())) {
+	#endif
 		DebugOut("Error setting mDNS responder");
 	}
 	// TODO: SSDP responder
@@ -1499,7 +1546,15 @@ void setup(void){
 	//securedAccess need additional check
 	// server.serveStatic("/", FileSystem, "/","public, max-age=259200"); // 3 days
 
+#if ESP32
+	server.on("/system",[](AsyncWebServerRequest *request){
+		request->send(200,"","totalBytes:" +String(SPIFFS.totalBytes()) +
+		" usedBytes:" + String(SPIFFS.usedBytes()) +
+		" heap:"+String(ESP.getFreeHeap()));
+		//testSPIFFS();
+	});
 
+#else
 	server.on("/system",[](AsyncWebServerRequest *request){
 		FSInfo fs_info;
 		FileSystem.info(fs_info);
@@ -1508,6 +1563,7 @@ void setup(void){
 		+" pageSize:" + String(fs_info.pageSize)
 		+" heap:"+String(ESP.getFreeHeap()));
 	});
+#endif
 #if PROFILING == true
 	server.on("/profile",[](AsyncWebServerRequest *request){
 		request->send(200,"","max loop time:" +String(_profileMaximumLoop));
@@ -1564,7 +1620,9 @@ void loop(void){
 	ESPUpdateServer_loop();
   	bmWeb.loop();
 	
+	#if !ESP32
 	MDNS.update();
+	#endif
 
   	brewmaniac_loop();
 

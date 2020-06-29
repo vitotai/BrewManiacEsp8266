@@ -69,7 +69,12 @@
 #endif
 
 #ifndef UseLittleFS
+#if ESP32
+#define UseLittleFS false
+#else
 #define UseLittleFS true
+#endif
+
 #endif
 #ifndef WebPageLanguage
 #define WebPageLanguage english

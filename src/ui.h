@@ -394,7 +394,9 @@ void uiScanLcdAddress(void)
 
 	for(byte address = 0; address <= 127; address++ )
  	{
+		 #if !ESP32
  		if(address == PCF8574_ADDRESS) continue;
+		 #endif
  		Wire.beginTransmission(address);
 		byte error = Wire.endTransmission();
  		if (error == 0)

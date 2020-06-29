@@ -1,10 +1,19 @@
 #include <Arduino.h>
 #include <pgmspace.h>
+
+#if defined(ESP32)
+#include <WiFi.h>
+#include <ESPmDNS.h>
+#include <WebServer.h>
+#include "ESP32HTTPUpdateServer.h"
+#else
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266mDNS.h>
+#endif
+
 #include <FS.h>
 #include "config.h"
 
@@ -19,8 +28,13 @@ static  char* _password;
 #define DBG_PRINTLN(...)
 #endif
 
+#if ESP32
+static WebServer server(UPDATE_SERVER_PORT);
+static ESP32HTTPUpdateServer httpUpdater;
+#else
 static ESP8266WebServer server(UPDATE_SERVER_PORT);
 static ESP8266HTTPUpdateServer httpUpdater;
+#endif
 //holds the current upload
 static File fsUploadFile;
 
@@ -136,13 +150,23 @@ static void handleFileList(void) {
   DBG_PRINTLN("handleFileList: " + path);
   // linked list(queue) is needed. 
   // avoid recursive call, which might open too many directories 
-  
+  #if ESP32
+  File dir = FileSystem.open(path);
+  #else
   Dir dir = FileSystem.openDir(path);
+  #endif
   path = String();
 
   String output = "[";
+  #if ESP32
+
+  File entry = dir.openNextFile();
+  while(entry){
+
+  #else
   while(dir.next()){
     File entry = dir.openFile("r");
+  #endif
     if (output != "[") output += ',';
     #if UseLittleFS
     bool isDir = dir.isDirectory();
@@ -158,7 +182,11 @@ static void handleFileList(void) {
     output += String(entry.name()).substring(1);
     #endif
     output += "\"}";
-    entry.close();
+    entry.close();  
+  #if defined(ESP32)
+    entry = dir.openNextFile();
+  #endif
+
   }
 
   output += "]";
@@ -198,7 +226,11 @@ void ESPUpdateServer_setup(const char* user, const char* pass){
 
 
  // Flash update server
+#if ESP32
+  httpUpdater.setup(server,SYSTEM_UPDATE_PATH,user,pass);
+#else
 	httpUpdater.setup(&server,SYSTEM_UPDATE_PATH,user,pass);
+#endif
 
   server.begin();
   DBG_PRINTLN("HTTP Update server started\n");

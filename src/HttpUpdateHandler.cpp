@@ -1,7 +1,12 @@
 #include <ArduinoOTA.h>
 #include <FS.h>
+#if ESP32
+#include <SPIFFS.h>
+#include <AsyncTcp.h>
+#else
 #include <Hash.h>
 #include <ESPAsyncTCP.h>
+#endif
 #include <ESPAsyncWebServer.h>
 #include "config.h"
 #include "HttpUpdateHandler.h"
@@ -86,30 +91,7 @@ void HttpUpdateHandler::_sendHtml(AsyncWebServerRequest *request, const char *ht
 	request->send(response);
 }
 
-void HttpUpdateHandler::_firmwareUpdateStatus(AsyncWebServerRequest *request)
-{
-	if(_state == US_Idle){
-		if(_updateReturn==HTTP_UPDATE_FAILED) {
-        	DBG_PRINTF("[update] Update failed.");
-	      	request->send(200, "application/json", "{\"finished\":1, \"result\":\"Error:"+ ESPhttpUpdate.getLastErrorString() +"\"}");
-        }else if(_updateReturn == HTTP_UPDATE_NO_UPDATES){
-		    DBG_PRINTF("[update] Update no Update.");
-	      	request->send(200, "application/json", "{\"finished\":1, \"result\":\"Nothing to Update.\"}");
-		}else if(_updateReturn == HTTP_UPDATE_OK){
-			DBG_PRINTF("[update] Update ok.");
-	      	request->send(200, "application/json", "{\"finished\":1, \"refresh\":15, \"result\":\"OK\"}");
-	      	// start timer to reset
-	      	_state=US_RestartInitiated;
-		}else{
-			request->send(200, "application/json", "{\"finished\":1, \"result\":\"unknown error\"}");
-		}
-	}else if (_state == US_FirmwareUpdatePending || _state == US_FirmwareUpdating){
-		DBG_PRINTF("[RSP] Updating...\n");
-		request->send(200, "application/json",R"({"finished":0})");
-	}else{
-		request->send(500);
-	}
-}
+
 
 void HttpUpdateHandler::_firmwareUpdateStart(AsyncWebServerRequest *request)
 {
@@ -138,8 +120,6 @@ bool HttpUpdateHandler::canHandle(AsyncWebServerRequest *request)
 //    	|| request->url().equals(_url)
     	|| request->url().equals(SPIFFS_FORMAT_PATH)
     	|| request->url().equals(SPIFFS_FORMAT_EXE_PATH)
-    	|| request->url().equals("/updatefw")
-    	|| request->url().equals("/updatefwq")
     	|| request->url().equals("/system-reboot"))
 
         return true;
@@ -172,10 +152,6 @@ void HttpUpdateHandler::handleRequest(AsyncWebServerRequest *request)
     }else if(request->url().equals(SPIFFS_FORMAT_EXE_PATH)){
 		_sendHtml(request,spiffsformating_html);
 		_state = US_FormatPending;
-    }else if(request->url().equals("/updatefw")){
-    	_firmwareUpdateStart(request);
-    }else if(request->url().equals("/updatefwq")){
-	    _firmwareUpdateStatus(request);
     }else if(request->url().equals("/system-reboot")){
     	if(_state == US_Idle){
     		request->send(200);
@@ -186,20 +162,7 @@ void HttpUpdateHandler::handleRequest(AsyncWebServerRequest *request)
 
 void HttpUpdateHandler::runUpdate(void)
 {
-	if(_state ==US_FirmwareUpdatePending){
-		_state = US_FirmwareUpdating;
-		DBG_PRINTF("Start http update:%s\n",_firmwareUpdateUrl.c_str());
-		ESPhttpUpdate.rebootOnUpdate(false);
-        #ifndef FRAMEWORK_180
-        WiFiClient client;
-		_updateReturn = ESPhttpUpdate.update(client,_firmwareUpdateUrl, _fwVersion);
-        #else
-		_updateReturn = ESPhttpUpdate.update(_firmwareUpdateUrl, _fwVersion);
-        #endif
-		DBG_PRINTF("End of http update\n");
-
-		_state = US_Idle;
-    }else if(_state == US_RestartInitiated){
+	if(_state == US_RestartInitiated){
 		_resetInitiatedTimer= millis();
 		_state = US_RestartPending;
 	}else if(_state == US_RestartPending){
@@ -209,11 +172,20 @@ void HttpUpdateHandler::runUpdate(void)
         // todo: STOP normal web service
         UpdaterState oldstate=_state;
 		_state= US_Formating;
+		#if !ESP32
         BackupService.backup();
+		#endif
 		DBG_PRINTF("Start Formating FS\n");
+		#if ESP32
+		SPIFFS.format();
+		#else
 		FileSystem.format();
+		#endif
 		DBG_PRINTF("End Formating FS\n");
+		#if !ESP32
         BackupService.restore();
+		#endif
+
         if(oldstate == US_FormatPending)
     		_state = US_RestartInitiated;
         else

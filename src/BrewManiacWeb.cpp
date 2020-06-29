@@ -2,7 +2,11 @@
 #include <pgmspace.h>
 #include <EEPROM.h>
 #include <FS.h>
+#if ESP32
+#include <WiFi.h>
+#else
 #include <ESP8266WiFi.h>
+#endif
 #include <ArduinoJson.h>
 #include "BrewManiacWeb.h"
 #include "automation.h"

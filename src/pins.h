@@ -1,6 +1,106 @@
 #ifndef PINS_H
 #define PINS_H
+#if ESP32
 
+// Buttons are INPUT
+// byte btnReadPin(byte p){ return digitalRead(p);}
+#define I2C_SDA 21
+#define I2C_SCL 22
+#define SensorPin 23
+
+#define BuzzControlPin 18
+
+#define PumpControlPin  16
+#define HeatControlPin  17
+
+//#define CoolControlPin  19
+//#define SecondaryHeatControlPin  27
+
+
+#define ButtonUpPin    32 // P1
+#define ButtonDownPin  33 // p0 NODEMCU_PIN_D4
+#define ButtonStartPin 25 //P3 NODEMCU_PIN_D5
+#define ButtonEnterPin  26 //P2 NODEMCU_PIN_D6
+
+
+void btnPrepareRead(void){}
+#define btnReadPin digitalRead
+
+// Heater, Pump, Buzz are OUTPUTs
+inline void setHeaterOut(byte v)
+{
+	digitalWrite (HeatControlPin, v);
+}
+
+inline void setPumpOut(byte v)
+{
+	digitalWrite (PumpControlPin, v);
+}
+
+inline void setBuzzOut(byte v)
+{
+	digitalWrite (BuzzControlPin, v);
+}
+
+#if SpargeHeaterSupport == true
+inline void setAuxHeaterOut(byte v)
+{
+	digitalWrite (AuxHeatControlPin, v);
+}
+#endif
+
+#if SecondaryHeaterSupport == true
+inline void setSecondaryHeaterOut(byte v)
+{
+	digitalWrite (AuxHeatControlPin, v);
+}
+#endif
+
+void initIOPins(void)
+{
+
+  	pinMode (ButtonUpPin,    INPUT_PULLUP);
+  	pinMode (ButtonDownPin,    INPUT_PULLUP);
+  	pinMode (ButtonStartPin, INPUT_PULLUP);
+  	pinMode (ButtonEnterPin, INPUT_PULLUP);
+
+	pinMode (HeatControlPin, OUTPUT);
+	setHeaterOut(LOW);
+
+	pinMode (PumpControlPin, OUTPUT);
+	setPumpOut(readSetting(PS_PumpActuatorInverted)==0? LOW:HIGH);
+
+	pinMode (BuzzControlPin, OUTPUT);
+	setBuzzOut(LOW);
+
+#if SpargeHeaterSupport == true
+	pinMode (AuxHeatControlPin, OUTPUT);
+	setAuxHeaterOut(LOW);
+#endif
+
+#if EnableLevelSensor
+	pinMode (LevelSensorPin, INPUT_PULLUP);
+#endif
+}
+
+#if EnableLevelSensor
+// close/connected/ground: not full
+// open/disconnected/V+: full
+#if SensorNormalCloseOnNotFull
+bool isWaterLevelFull(void){
+	return digitalRead(LevelSensorPin) != 0;
+}
+
+#else
+
+bool isWaterLevelFull(void){
+	return digitalRead(LevelSensorPin) == 0;
+}
+
+#endif //#if SensorNormalCloseOnNotFull
+#endif // EnableLevelSensor
+
+#else
 #include <pcf8574_esp.h>
 
 /*
@@ -226,5 +326,7 @@ bool isWaterLevelFull(void){
 #endif //#if SensorNormalCloseOnNotFull
 #endif // EnableLevelSensor
 
+
+#endif
 
 #endif

@@ -1,8 +1,11 @@
 #ifndef HttpUpdateHandler_H
 #define HttpUpdateHandler_H
-
+#if ESP32
+#include <HTTPClient.h>
+#else
 #include <ESP8266httpUpdate.h>
 #include <ESP8266HTTPClient.h>
+#endif
 #define QueueSize 4
 typedef enum _UpdaterState
 {
@@ -28,7 +31,6 @@ class HttpUpdateHandler: public AsyncWebHandler
 
 
 	String _firmwareUpdateUrl;
-	t_httpUpdate_return _updateReturn;
 
 	void _sendHtml(AsyncWebServerRequest *request,const char* html);
 	void _sendVersion(AsyncWebServerRequest *request);
