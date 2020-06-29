@@ -1,0 +1,1691 @@
+<!doctype html>
+<html lang="<%= page_lang %>">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="lib/bootstrap-4.4.1/css/bootstrap.min.css">
+
+    <link rel="stylesheet" href="lib/dygraph/dygraph.css">
+
+    <link rel="stylesheet" href="css/bm.css">
+
+    <link rel="stylesheet" href="css/component-custom-switch.min.css">
+
+    <title><%= sb_title %></title>
+  </head>
+<body>
+
+<nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+        <a class="navbar-brand" href="#" data-toggle="modal" data-target="#dialog-about">BM</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      
+        <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+        <ul class="navbar-nav mr-auto" role="tablist" id="header-tablist">
+            <li class="nav-item">
+              <a class="nav-link active" href="#control-pane" id="control-tab" data-toggle="tab" role="tab" aria-controls="control-pane" aria-selected="true"><%= sb_panel %></a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link " href="#setting-pane" id="setting-tab"  data-toggle="tab" role="tab" aria-controls="setting-pane" aria-selected="false"><%= sb_settings %></a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#automation-pane" id="automation-tab" data-toggle="tab" role="tab" aria-controls="automation-pane" aria-selected="false"><%= sb_automation %></a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#recipe-pane" id="recipe-tab" data-toggle="tab" role="tab" aria-controls="recipe-pane" aria-selected="false"><%= sb_recipes %></a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#brewlog-pane" id="brewlogs-tab" data-toggle="tab" role="tab" aria-controls="brewlog-pane" aria-selected="false"><%= sb_brew_logs %></a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#network-pane" id="setting-tab" data-toggle="tab" role="tab" aria-controls="network-pane" aria-selected="false"><%= sb_network %></a>
+            </li>
+            <!-- TODO 
+            <li class="nav-item">
+              <a class="nav-link" href="#calculator-pane" data-toggle="tab" role="tab" aria-controls="calculator-pane" aria-selected="false">Calculators</a>
+            </li>
+            -->
+          </ul>
+      
+        <ul class="navbar-nav ml-md-auto">
+        <li class="nav-item">
+            <a class="nav-link p-2" href="#" onclick="return false" rel="noopener" title="?" id="rssi-anchor">
+            <div id="rssi">
+                <div class="rssi-bar rssi-bar1"></div>
+                <div class="rssi-bar rssi-bar2"></div>
+                <div class="rssi-bar rssi-bar3"></div>
+                <div class="rssi-bar rssi-bar4"></div>
+            </div>
+        </a>
+        </li>
+          <li class="nav-item">
+            <a class="nav-link p-2" href="https://github.com/vitotai/BrewManiacEsp8266" target="_blank" rel="noopener" aria-label="GitHub"><svg xmlns="http://www.w3.org/2000/svg" class="navbar-nav-svg" viewBox="0 0 512 499.36" role="img" focusable="false"><title>GitHub</title><path fill="currentColor" fill-rule="evenodd" d="M256 0C114.64 0 0 114.61 0 256c0 113.09 73.34 209 175.08 242.9 12.8 2.35 17.47-5.56 17.47-12.34 0-6.08-.22-22.18-.35-43.54-71.2 15.49-86.2-34.34-86.2-34.34-11.64-29.57-28.42-37.45-28.42-37.45-23.27-15.84 1.73-15.55 1.73-15.55 25.69 1.81 39.21 26.38 39.21 26.38 22.84 39.12 59.92 27.82 74.5 21.27 2.33-16.54 8.94-27.82 16.25-34.22-56.84-6.43-116.6-28.43-116.6-126.49 0-27.95 10-50.8 26.35-68.69-2.63-6.48-11.42-32.5 2.51-67.75 0 0 21.49-6.88 70.4 26.24a242.65 242.65 0 0 1 128.18 0c48.87-33.13 70.33-26.24 70.33-26.24 14 35.25 5.18 61.27 2.55 67.75 16.41 17.9 26.31 40.75 26.31 68.69 0 98.35-59.85 120-116.88 126.32 9.19 7.9 17.38 23.53 17.38 47.41 0 34.22-.31 61.83-.31 70.23 0 6.85 4.61 14.81 17.6 12.31C438.72 464.97 512 369.08 512 256.02 512 114.62 397.37 0 256 0z"></path></svg></a>
+          </li>
+        </ul>
+       </div>
+</nav>
+    
+<div class="container-fluid mb-2 p-4">
+<div class="tab-content" id="tabContent">
+<!-- Control  -->
+    <div class="tab-pane  fade  show active container-sm" id="control-pane" role="tabpanel" aria-labelledby="control-tab">
+        <!-- 1st row-->
+        <div class="row pb-3">
+            <div class="col-md-4"><!-- virtual panel-->
+                        <div class="row">
+                            <div class="col text-center"><canvas id=lcd></canvas></div>
+                        </div>
+                        <div class="row justify-content-center"  id="btnpanel">
+                            <div class="col-auto p-0">
+                                    <div class="round-button-circle">
+                                        <a id="btn-up" class="round-button noselect text-wrap"><%= button_up %></a>
+                                    </div>
+                            </div>
+                            <div class="col-auto p-0">
+                                <div class="round-button-circle">
+                                    <a id="btn-down" class="round-button noselect text-wrap"><%= button_down %></a>
+                                </div>
+                            </div>
+                            <div class="col-auto p-0">
+                                <div class="round-button-circle">
+                                    <a id="btn-start" class="round-button noselect text-wrap"><%= button_start %></a>
+                                </div>
+                            </div>
+                            <div class="col-auto p-0">
+                                <div class="round-button-circle">
+                                    <a id="btn-enter" class="round-button noselect text-wrap"><%= button_enter %></a>
+                                </div>
+                            </div>
+                        </div>
+            </div><!-- virtual panel-->
+            <div class="col d-none d-sm-block">
+                <div class="row h-60">
+                    <div class="col text-center">
+                        <div class="text-muted font-weight-light"><%= led_heating %></div>
+                        <div id="heatled" class="round-led-circle ledreddim"><span class="round-led"></span></div>
+                    </div>
+                    <div class="col text-center" id="heater2block">
+                        <div class="text-muted font-weight-light"><%= led_heating_no2 %></div>
+                        <div id="heat2led" class="round-led-circle ledreddim"><span class="round-led"></span></div>
+                    </div>
+                    <div class="col text-center" id="swhledblock">
+                        <div class="text-muted font-weight-light"><%=led_sparge_heater %></div>
+                        <div id="swhled" class="round-led-circle ledreddim"><span class="round-led"></span></div>
+                    </div>
+                    <div class="col text-center">
+                        <div class="text-muted font-weight-light" id="pump-led-label"><%=led_pump %></div>
+                        <div id="pumpled" class="round-led-circle ledgreendim"><span class="round-led"></span></div>
+                    </div>
+
+                    <div class="col  text-center px-0">               
+                        <div class="text-muted font-weight-light"><%= temperature_title %></div>
+                        <span class="text-monospace h4" id="currenttemp">--</span> <span class="h6 T-unit">&deg;C</span>
+                    </div>
+                    <div class="col  text-center px-0">
+                        <div class="text-muted font-weight-light"><%= setting_temperature %></div>
+                        <div id="setpoint-block"><span class="text-monospace h4" id="setpoint">--</span> <span class="h6 T-unit">&deg;C</span></div>
+                    </div>
+
+                </div>
+                <div class="row h-60">
+                    <div class="col  text-center ">
+                        <div class="text-muted font-weight-light"><%= pwm_title %></div>
+                        <div id="pwm-block"><span class="text-monospace h4" id="pwm">-- </span> <span class="h6">%</span></div>
+                    </div>
+                    <div class="col  text-center">
+                        <div class="text-muted font-weight-light"><%= time_title %></div>
+                        <span id="timer" class="text-monospace h5">00:00:00</span>
+                    </div>
+
+
+                    <div class="col text-center d-none px-0" id="sensor-block-1">           
+                        <div class="text-muted font-weight-light"> <%= sensor_label %> #1 </div>
+                        <span class="h4 text-monospace" id="sensor-1">-- </span> <span class="h6 T-unit">&deg;C</span>
+                    </div>
+                    <div class="col  text-center d-none" id="sensor-block-2">                
+                        <div class="text-muted font-weight-light"> <%= sensor_label %> #2 </div>
+                        <span class="text-monospace h4" id="sensor-2">-- </span> <span class="h6 T-unit">&deg;C</span>
+                    </div>
+                    <div class="col  text-center d-none px-0" id="sensor-block-3">                   
+                        <div class="text-muted font-weight-light"><%= sensor_label %> #3</div>
+                        <span class="text-monospace h4" id="sensor-3">-- </span> <span class="h6 T-unit">&deg;C</span>
+                    </div>
+                    <div class="col text-center d-none px-0" id="sensor-block-4">                   
+                        <div class="text-muted font-weight-light"><%= sensor_label %> #4</div>
+                        <span class="text-monospace h4" id="sensor-4">-- </span> <span class="h6 T-unit">&deg;C</span>
+                    </div>
+
+                </div> <!-- row-->
+            </div>
+ 
+        </div><!-- end of first row-->
+        <!-- 2nd row-->
+        <div class="row">
+            <div class="col-md-3" id="auto-p">
+
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title" id="title"></h6>
+                        <p id="hint-body"></p>
+                        <table id="auto-t" class="table">
+                            <tbody>
+                                <tr class="autot-row">
+                                    <td class="p-0"> <span class="autot-title"></span> <span class="autot-temp"></td></td>
+                                    <td class="p-0"> <span class="autot-time"></span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+    
+                    </div>
+                  </div>
+
+            </div> <!-- auto-p for progress-->
+
+            <div class="col">
+                <!-- chart-->
+                <div id="chart" style="width:95%;height:80%">
+                    <span id="viewlogname"></span>
+                    <div id="chart-canvas" style="width:100%"></div>
+                </div>    
+            </div>
+        </div>
+        <!-- end of 2nd row-->
+
+        <!-- <div aria-live="polite" aria-atomic="true" style="position: relative; min-height: 200px;"> -->
+        <div style="position: absolute; top: 5em; right: 0; min-width: 320px;" id="notifications">
+
+            <!-- Then put toasts within -->
+            <div class="toast" role="alert" aria-live="assertive" aria-atomic="true"  data-delay="10000">
+              <div class="toast-header">
+                <svg class=" rounded mr-2" width="20" height="20" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice"
+                focusable="false" role="img">
+                <rect fill="#007aff" width="100%" height="100%" /></svg>
+                <strong class="mr-auto toast-title"></strong>
+                <small class="text-muted pop-time"></small>
+                <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="toast-body">
+              </div>
+            </div>
+        </div>
+       <!-- </div>-->
+    </div><!-- end of Control  -->
+
+<!-- Setting  -->
+<div class="tab-pane fade" id="setting-pane" role="tabpanel" aria-labelledby="setting-tab">
+
+          <div class="bg-light p-4 container-sm">
+              <div class="row">
+                  <div class="col text-center">
+                  <h4 class="section"><%= setting_settings %></h4>
+                </div>
+            </div>
+
+          <div class="row">
+          <div class="col"><button id="esetting" class="setting-btn btn btn-outline-dark">
+             <span id="btn_edit"> <%= setting_set %></span>
+             <span id="btn_restore" style="display:none"><%= setting_undo %></span>
+            </button></div>
+          <div class="col"><button id="savesetting" class="setting-btn btn btn-outline-dark">
+            <%= setting_save %></button></div>
+          <div class="col"><button id="exportsetting" class="setting-btn btn btn-outline-dark"><%= setting_export %></button></div>
+          <div class="col"><button id="importsetting" class="setting-btn btn btn-outline-dark"><%= setting_import %></button></div>
+          </div>
+
+          <!--
+          <ul class="nav nav-tabs" id="setting-tablist" role="tablist">
+            <li class="nav-item">
+              <a class="nav-link active" id="set-pidpwm-tab" data-toggle="tab" href="#set-pidpwm-pane" role="tab" aria-controls="home" aria-selected="true"><%= pid_pwm %></a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="false">Profile</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" id="contact-tab" data-toggle="tab" href="#contact" role="tab" aria-controls="contact" aria-selected="false">Contact</a>
+            </li>
+          </ul>
+          <div class="tab-content" id="myTabContent">
+            <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">...</div>
+            <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">...</div>
+            <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">...</div>
+          </div>
+-->
+          <div class="row">
+            <div class="setting-category col alert-dark">
+              <%= pid_pwm %>
+            </div>
+          </div>
+          <div class="row">
+          <div class="col">
+              <%= setting_kp %><span class="dualheating"> <%= primary_heater %></span>
+          </div>
+          <div class="col"><div id="s_kp"> </div></div>
+        </div>
+      <div class="row">
+          <div class="col">
+              <%= setting_ki %><span class="dualheating"> <%= primary_heater %></span> </div>
+          <div class="col"><div id="s_ki"></div></div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= setting_kd %><span class="dualheating"> <%= primary_heater %></span> </div>
+          <div class="col"><div id="s_kd"> </div></div>
+      </div>
+      <div class="row dualheating">
+          <div class="col">
+              <%= kp_secondary_heater %>
+          </div>
+          <div class="col"><div id="s_kp2"></div></div>
+        </div>
+      <div class="row dualheating">
+          <div class="col">
+              <%= ki_secondary_heater %>
+          </div>
+          <div class="col"><div id="s_ki2"></div></div>
+        </div>
+      <div class="row dualheating">
+          <div class="col">
+              <%= kd_secondary_heater %>
+          </div>
+          <div class="col"><div id="s_kd2"> </div></div>
+        </div>
+      <div class="row dualheating">
+          <div class="col">
+              <%= kp_both_elements %>
+          </div>
+          <div class="col"><div id="s_kpall"> </div></div>
+        </div>
+      <div class="row dualheating">
+          <div class="col">
+              <%= ki_both_elements %>
+          </div>
+          <div class="col"><div id="s_kiall"> </div></div>
+      </div>
+      <div class="row dualheating">
+          <div class="col">
+              <%= kd_both_elements %>
+          </div>
+          <div class="col"><div id="s_kdall"> </div></div>
+      </div>
+
+      <div class="row">
+          <div class="col">
+              <%= sample_time %>
+          </div>
+          <div class="col"><div id="s_sample_time"> </div></div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= windowset %>
+          </div>
+          <div class="col"><div id="s_window"></div> <%= micro_second %>
+          </div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= heat_pwm_in_boil %>
+          </div>
+          <div class="col"><div id="s_pwm"></div> %</div>
+      </div>
+      <div class="row">
+          <div class="col TCAL_T">
+              <%= sensor_calibration %>
+          </div>
+          <div class="col"><div id="s_cal" class="TCAL_V"></div> <span class="tmp_unit">&deg;C</span></div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= pid_start %>
+          </div>
+          <div class="col"><div id="s_pidstart"></div> <span class="tmp_unit">&deg;C</span></div>
+      </div>
+      <div class="row">
+          <div class="col setting-category alert-dark">
+              <%= unit_parameters %>
+          </div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= temperature_unit %>
+          </div>
+          <div class="col">
+            <div id="s_unit"> </div>          
+          </div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= boil_temperature %>
+          </div>
+          <div class="col"><div id="s_boil"></div> <span class="tmp_unit">&deg;C</span></div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= pump_cycle %>
+          </div>
+          <div class="col"><div id="s_pumpcycle"> </div><span class="pump-rest-unit"> <%= minutes %></span>
+          </div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= pump_rest %>
+          </div>
+          <div class="col"><div id="s_pumprest"></div> <span class="pump-rest-unit"> <%= minutes %></span>
+          </div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= pump_premash %>
+          </div>
+          <div class="col">
+            <div  id="s_pumppremash">
+            </div>
+          </div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= pump_on_mash %>
+          </div>
+          <div class="col">
+            <div id="s_pumpmash">
+            </div>
+
+          </div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= pump_mashout %>
+          </div>
+          <div class="col">
+            <div id="s_pumpmashout">
+            </div>
+          </div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= pump_on_boil %>
+          </div>
+          <div class="col">
+            <div id="s_pumpboil">
+            </div>
+          </div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= pump_stop_temperature %>
+          </div>
+          <div class="col"><div id="s_pumpstop"></div><span class="tmp_unit">&deg;C</span></div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= pid_when_doughing_in %>
+          </div>
+          <div class="col">
+            <div id="s_piddoughin">
+            </div>
+          </div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= pid_when_remove_malt %>
+          </div>
+          <div class="col">
+            <div id="s_pipe">
+            </div>
+          </div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= skip_add %>
+          </div>
+          <div class="col">
+            <div id="s_skipadd">
+            </div>
+          </div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= skip_remove %>
+          </div>
+          <div class="col">
+            <div id="s_skipremove">
+            </div>
+          </div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= skip_iodine %>
+          </div>
+          <div class="col">
+            <div id="s_skipiodine">
+            </div>
+          </div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= iodine_time %>
+          </div>
+          <div class="col"><div id="s_iodine"></div></div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= whirlpool %>
+          </div>
+          <div class="col"><div id="s_whirlpool"></div></div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= heat_on_pump %>
+          </div>
+          <div class="col">
+            <div id="s_hop">
+            </div>
+          </div>
+      </div>
+
+      <div class="row">
+          <div class="col setting-category alert-dark">
+              <%= misc_settings %>
+          </div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= disable_delay_start %>
+          </div>
+          <div class="col">
+            <div id="s_nodelay">          
+            </div>
+         </div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= buzz_on_bitton %>
+          </div>
+          <div class="col">
+            <div id="s_btnbuzz">          
+            </div>          
+          </div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= pump_prime_cycle %>
+          </div>
+          <div class="col"><div id="s_pprime"></div></div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= pump_prime_on_time %>
+          </div>
+          <div class="col"><div id="s_ppon"></div>
+              <%= micro_second %>
+          </div>
+      </div>
+      <div class="row">
+          <div class="col">
+              <%= pump_prime_off_time %>
+          </div>
+          <div class="col"><div id="s_ppoff"></div>
+              <%= micro_second %>
+          </div>
+      </div>
+      <div class="row">
+        <div class="col">
+            <%= pump_inverted %>
+        </div>
+        <div class="col">
+          <div id="s_pinvert"></div>          
+        </div>
+       </div>
+
+      <div class="row spargeheating setting-subcategory alert-dark">
+          <div class="col" class="">
+              <%= sparge_water_heating_control %>
+          </div>
+      </div>
+      <div class="row spargeheating">
+          <div class="col">
+              <%= control_sparge_heating %>
+          </div>
+          <div class="col">
+            <div id="s_spenable">          
+            </div>          
+
+          </div>
+      </div>
+      <div class="row spargeheating tempctrl">
+          <div class="col">
+              <%= sparge_temperature_control %>
+          </div>
+          <div class="col">
+            <div id="s_sptempctrl">          
+            </div>          
+
+          </div>
+      </div>
+      <div class="row spargeheating tempctrl">
+          <div class="col">
+              <%= sensor_index %>
+          </div>
+          <div class="col"><div id="s_spsensor"></div></div>
+      </div>
+      <div class="row spargeheating tempctrl">
+          <div class="col">
+              <%= target_temperature %>
+          </div>
+          <div class="col"><div id="s_sptemp"></div><span class="tmp_unit">&deg;C</span></div>
+      </div>
+      <div class="row spargeheating tempctrl">
+          <div class="col">
+              <%= Temperature_difference %>
+          </div>
+          <div class="col"><div id="s_spdiff"></div></div>
+      </div>
+      <div class="row dualheating">
+          <div class="col setting-subcategory alert-dark">
+              <%= heating_element_usage %>
+          </div>
+      </div>
+      <div class="row dualheating">
+          <div class="col">
+              <%= premash_heating_element %>
+          </div>
+          <div class="col"><div id="s_preheat"></div></div>
+      </div>
+      <div class="row dualheating">
+          <div class="col">
+              <%= mashing_heating_element %>
+          </div>
+          <div class="col"><div id="s_mashheat"></div></div>
+      </div>
+      <div class="row dualheating">
+          <div class="col">
+              <%= boiling_heating_element %>
+          </div>
+          <div class="col"><div id="s_boilheat"></div></div>
+      </div>
+      <div class="row dualheating">
+          <div class="col">
+              <%= post_mash_heating_element %>
+          </div>
+          <div class="col"><div id="s_pbheat"></div></div>
+      </div>
+      <div class="row waterlevelsensor">
+          <div class="col setting-subcategory alert-dark">
+              <%= wort_water_level_sensor %>
+          </div>
+      </div>
+      <div class="row waterlevelsensor">
+          <div class="col">
+              <%= enable_water_level_sensor %>
+          </div>
+          <div class="col"><div id="s_wlv"></div></div>
+      </div>
+      <div class="row waterlevelsensor">
+          <div class="col">
+              <%= level_sensor_min_trigger_time %>
+          </div>
+          <div class="col"><div id="s_wlvtrigger"></div>
+              <%= micro_second %>
+          </div>
+      </div>
+      <div class="row waterlevelsensor">
+          <div class="col">
+              <%= extended_pump_rest %>
+          </div>
+          <div class="col"><div id="s_pmpminrest"></div>
+              <%= seconds %>
+          </div>
+      </div>
+
+  <!-- Sensors  -->
+
+    <div class="row multisensor">
+        <div class="col setting-subcategory alert-dark"><%= temperature_sensors %></div>
+    </div>
+    <div class="row multisensor">
+    <div class="col">
+      <table class="table">
+          <tr class="setting-category">
+              <th>#</th>
+              <th>
+                  <%= address %>
+              </th>
+              <th>
+                  <button type="button" class="btn btn-secondary" id="scan-sensor"><%= scan_sensor %></button>
+              </th>
+          </tr>
+          <tr class="sensor_row">
+              <td class="sensor_id">1</td>
+              <td class="sensor_addr"><%= no_sensor_available %></td>
+              <td>
+                  <div class="btn-group" role="group" aria-label="Basic example">
+                    <button type="button" class="btn-up btn btn-secondary py-1">
+                        <svg height="16" width="16">
+                            <polygon points="8,0 1,15 15,15" style="fill:white;stroke:white;stroke-width:1" />
+                        </svg>
+                    </button>
+                    <button type="button" class="btn-down btn btn-secondary py-1">
+                            <svg height="16" width="16">
+                                <polygon points="8,15 1,0 15,0" style="fill:white;stroke:white;stroke-width:1" />
+                            </svg>        
+                    </button>
+                </div>
+             </td>
+          </tr>
+      </table>
+    </div>
+    </div>
+    <div class="row multisensor setting-subcategory alert-dark">
+        <div class="col">
+        <%= sensor_assignment %>
+        </div>
+    </div>
+    <div class="row multisensor">
+        <div
+         class="col">
+        <table class="table">
+              <tr class="setting-category">
+                  <th>
+                      <%= stage %>
+                  </th>
+                  <th>
+                      <%= sensor_primary %>
+                  </th>
+                  <th>
+                      <%= sensor_auxiliary %>
+                  </th>
+              </tr>
+              <tr>
+                  <td>
+                      <%= main_screen %>
+                  </td>
+                  <td><div id="sensor_P_0"></div></td>
+                  <td><div id="sensor_S_0"></div></td>
+              </tr>
+              <tr>
+                  <td>
+                      <%= manual_mode %>
+                  </td>
+                  <td> <div id="sensor_P_1"></div></td>
+                  <td> <div id="sensor_S_1"></div></td>
+              </tr>
+              <tr>
+                  <td>
+                      <%= pre_mash %>
+                  </td>
+                  <td> <div id="sensor_P_2"></div></td>
+                  <td> <div id="sensor_S_2"></div></td>
+              </tr>
+              <tr>
+                  <td>
+                      <%= mashing %>
+                  </td>
+                  <td> <div id="sensor_P_3"></div></td>
+                  <td> <div id="sensor_S_3"></div></td>
+              </tr>
+              <tr>
+                  <td>
+                      <%= boil %>
+                  </td>
+                  <td> <div id="sensor_P_4"></div></td>
+                  <td> <div id="sensor_S_4"></div></td>
+              </tr>
+              <tr>
+                  <td>
+                      <%= cooling %>
+                  </td>
+                  <td> <div id="sensor_P_5"></div></td>
+                  <td> <div id="sensor_S_5"></div></td>
+              </tr>
+              <tr class="distilling">
+                <td>
+                    <%= distilling %>
+                </td>
+                <td> <div id="sensor_P_6"></div></td>
+                <td> <div id="sensor_S_6"></div></td>
+            </tr>
+
+        </table>
+  
+        </div>
+    </div>
+  <!-- div id="multisensor" -->
+
+    </div> <!-- jumbotron -->
+</div> <!-- setting tab-pane-->
+<!-- End Setting  -->            
+
+<!-- Automation  -->
+<div class="tab-pane fade" id="automation-pane" role="tabpanel" aria-labelledby="automation-tab">
+    <div class="bg-light container-sm p-4">
+        <div class="row">
+            <div class="col text-center">
+            <h4><%= automation_process %></h4>
+            </div>
+        </div>
+        <div class="row  text-center">
+            <div class="col">
+                <button id="editauto" class="btn-outline-dark btn"><%= edit %></button>
+            </div>
+            <div class="col">
+                <button id="saveauto" class="btn-outline-dark btn"><%= save %></button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+            <table id="auto_table" class="table">
+                <tr>
+                    <td colspan="3" class="setting-category alert-dark">
+                        <%= mash_schedule %> 
+                        <button id="addrest" class="editbtn btn mr-0 btn-outline-info" title="<%= add_mash_rest %>">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                            </button></td>
+                </tr>
+                <tr>
+                    <th>
+                        <%= mash_rest %>
+                    </th>
+                    <th>
+                        <%= mash_temp %>
+                    </th>
+                    <th>
+                        <%= mash_time %>
+                    </th>
+                </tr>
+                <tr class="mash-row">
+                    <td>
+                        <span class="rest-name"><%= mash_in  %> </span>
+                    </td>
+                    <td><input id="s0_tp" class="rest-temp"  type="number" step="1"><span class="tmp_unit">&deg;C</span></td>
+                    <td>-</td>
+                </tr>
+                <tr class="mash-row">
+                    <td>
+                        <span class="rest-name"></span>
+                    </td>
+                    <td><input id="s1_tp" class="rest-temp"  type="number" step="1"><span class="tmp_unit">&deg;C</span></td>
+                    <td><input id="s1_tm" class="rest-time"  type="number" step="1"><%= minute %>
+                        <button class="editbtn rest-del btn btn-danger justify-content-end"><%= delete_row %></button>
+                    </td>
+                </tr>
+                <tr  class="mash-row">
+                    <td>
+                        <span class="rest-name"><%= mash_out %></span>
+                    </td>
+                    <td><input id="s7_tp" class="rest-temp"  type="number" step="1"><span class="tmp_unit">&deg;C</span></td>
+                    <td><input id="s7_tm" class="rest-time"  type="number" step="1"><%= minute %>
+                    </td>
+                </tr>
+
+                <tr>
+                    <tr>
+                        <td colspan="3" class="setting-category alert-dark">
+                            <%= boil_n_hop %> <button id="addhop" class="editbtn btn btn-outline-info" title="<%= add_hop_schedule %>">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                                </button></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span><%= boil_time %></span>
+                        </td>
+                        <td colspan="2"><input id="boiltime" type="number" step="1"> <%= minute %>
+                        </td>
+                    </tr>
+                    <tr class="hop-row">
+                        <td>
+                            <span class="hop-name"></span>
+                        </td>
+                        <td colspan="2"><input type="number" step="1" class="hop-time"> <%= minute %>
+                            <button class="editbtn hop-del btn btn-danger"><%= delete_row %></button>
+                        </td>
+                    </tr>
+
+                    <tr id="hop-adding-anchor" style="display:none"><td></td></tr>
+                    <tr>
+                        <td colspan="3" class="setting-category alert-dark">
+                            <%= hop_stand %> <button id="addhopstand" class="editbtn btn btn-outline-info" title="<%= add_session %>">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                                </button></td>
+                    </tr>
+                    <tr class="session-row">
+                        <td>
+                            <%= hopstand_session %> <span class="session-number">1</span></td>
+                        <td>
+                            <%= hopstand_start %> <input class="session-start-temp"><span class="tmp_unit">&deg;C</span></td>
+                        <td>
+                            <%= hopstand_keep %><input class="session-hold-temp"> <span class="tmp_unit">&deg;C</span> 
+                            <button class="editbtn addpbh btn btn-outline-info" title="<%= add_hop_schedule %>">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                                </button>
+                        </td>
+                    </tr>
+                    <tr class="pbh-row">
+                        <td>
+                            <span class="pbh-name"></span>
+                        </td>
+                        <td colspan="2"><input type="number" step="1" class="pbh-time"> <%= minute %>
+                            <button class="editbtn hop-del btn btn-outline-danger"><%= delete_row %></button>
+                        </td>
+                    </tr>
+             </table>
+            </div>
+            </div>
+        </div>
+    </div>
+<!-- End of Automation  -->
+
+<!-- Recipe/BeerXml  -->
+<div class="tab-pane fade" id="recipe-pane" role="tabpanel" aria-labelledby="recipe-tab">
+    <div class="row">
+        <nav class="col-md-3 d-none d-md-block bg-light sidebar vh-100" id="recipe-sidebar">
+            <div class="sidebar-sticky">
+            <ul id="recipe-list-panel" class="nav flex-column mb-2">
+                <li class="nav-item" id="recipe-options">
+                    <a class="nav-link"  href="#">
+                    <%= recipe_user_settings %>
+                    </a>
+                </li>
+                <li class="nav-item" id="recipe-import">
+                    <a class="nav-link"  href="#">
+                    <%= recipe_import %>
+                    </a>
+                </li>
+            </ul>
+
+            <a id="local-recipe" href="#" class="h6 sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                <span>Saved Recipes</span>
+                <svg height="1em" width="1em" fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"><g><polyline points="9 18 15 12 9 6"></polyline></g></svg>                
+            </a>
+            <div class="recipe-list-pane border-left" id="local-recipe-pane">
+                <ul class="nav flex-column mb-2 recipe-list">
+                    <li class="nav-item">
+                      <a class="nav-link" href="#">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        <span class="rl-recipe-name"></span>
+                      </a>
+                    </li>
+                </ul> 
+                <div class="text-center spinner">
+                    <div class="spinner-border" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+                <div class="text-left load-more pl-3"> 
+                    <a href="#"><%= more__ %></a>
+                </div>
+                <div class="text-right summary">
+                     <span class="listed-number">0</span>/<span class="total-number"> 0</span>
+                     <%=reicpe_s %>
+                </div>
+            </div>
+            <div id="cloud-recipe-group">
+            <a id="cloud-recipe" href="#" class="h6 sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                <span id="cloud-souce-label"></span>
+                <svg height="1em" width="1em" fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"><g><polyline points="9 18 15 12 9 6"></polyline></g></svg>                
+            </a>
+            <div class="recipe-list-pane border-left" id="cloud-recipe-pane">
+                <ul class="nav flex-column mb-2 recipe-list">
+                </ul> 
+                <div class="text-center spinner">
+                    <div class="spinner-border" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+                <div class="text-left load-more pl-3"> 
+                    <a href="#"><%= more__ %></a>
+                </div>
+                <div class="text-center listing-error">
+                    <%= error_getting_recipe %>
+                </div>
+                <div class="text-right summary">
+                     <span class="listed-number">0</span>/<span class="total-number"> 0</span>
+                     <%=reicpe_s %>
+                </div>
+            </div> <!-- recipe-list-pane -->
+            </div>
+        </div>
+        </nav>
+        <main role="main" class="col-md-9 ml-sm-auto col-lg-9 px-4">
+        <div id="recipe-display" class="container-sm p-4">
+            <div id="recipe-options-panel">
+                <h3 class="text-center">
+                    <%= recipe_options %>
+                </h3>
+                <div style="display:none">
+                    <span id="disp_unit_liter"><%= liter_label %> </span>
+                    <span id="disp_unit_gallon"><%= gallon_label %> </span>
+                    <span id="disp_unit_qt"><%= quart_label %> </span>
+                    <span id="disp_unit_kg"><%= kg_label %> </span>
+                    <span id="disp_unit_lb"><%= lb_label %> </span>
+                    <span id="disp_unit_oz"><%= oz_label %> </span>
+                    <span id="disp_unit_g"><%= gram_label %> </span>
+                </div>
+                <form>
+                <div class="container">
+                    <div class="form-group row">
+                        <label class="col-3 col-form-label"><%= unit %></label>
+                        <div class="col">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio"  name="genunit" id="unit_metric" value="m">
+                                <label class="form-check-label" for="unit_metric"><%= metrics_unit %></label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio"  name="genunit" id="unit_us" value="u">
+                                <label class="form-check-label" for="unit_us"><%= us_unit %></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label class="col-3 col-form-label"><%= gravity_plato %></label>
+                        <div class="col">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="sugarunit" id="su_gravity" value="g">
+                                <label class="form-check-label" for="su_gravity"><%= gravity %></label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="sugarunit" id="su_plato" value="p">
+                                <label class="form-check-label" for="su_plato"><%= deg_plato %></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label class="col-3 col-form-label"><%= mash_in_temperature %></label>
+                        <div class="col">
+                            <div class="row">
+                                <div class="form-check col">
+                                    <input class="form-check-input" type="checkbox" name="prefer_infuse" id="mi_prefer_infuse">
+                                    <label class="form-check-label" for="mi_prefer_infuse">
+                                        <%= prefer_infuse_temp %>
+                                    </label>
+                                </div> 
+                            </div> <!-- row -->
+                            <div class="row">
+                                <div class="form-check col">
+                                    <input class="form-check-input"  type="radio" name="mashin_temp" id="mi_1stRest" value="1">
+                                    <label class="form-check-label" for="mi_1stRest">
+                                        <%= as_first_rest %>
+                                    </label>
+                                </div> 
+                            </div> <!-- row-->
+                            <div class="row">
+                                <div class="form-check col-4">
+                                    <input class="form-check-input"  type="radio" name="mashin_temp" id="mi_cal" value="c">
+                                    <label class="form-check-label" for="mi_cal"><%= calculated %></label>
+                                </div> 
+                                <div class="col">
+                                    <div class="form-group row">
+                                        <label for="grain-temp" class="col col-form-label"><%= grain_temperature %></label>
+                                        <div class="col">
+                                            <input type="number" step="0.1" id="grain-temp" size="4"></input><span class="tmp_unit">&deg;C</span>
+                                        </div>
+                                    </div><!-- row(3) -->
+                                    <div class="form-group row">
+                                        <label for="equip-adj" class="col col-form-label"><%= equipment_adjust %></label>
+                                        <div class="col">
+                                            <input type="number" step="0.1" id="equip-adj" size="4"></input><span class="tmp_unit">&deg;C</span>
+                                        </div>
+                                    </div><!-- row(3) -->
+
+                                    <div class="form-group row">
+                                        <label for="kettle-mass" class="col col-form-label"><%= kettle_equivelent_mass %></label>
+                                        <div class="col">
+                                            <input type="number" step="0.01" id="kettle-mass" size="4"></input><span id="kettlemass_unit">L</span>
+                                        </div>
+                                    </div><!-- row(3) -->
+                                </div><!-- col-->
+                            </div> <!-- row-->
+                            <div class="row">
+                                <div class="col form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="mashin_temp" id="mi_fixed" value="s">
+                                    <label  class="form-check-label" for="mi_fixed"><%= specified %></label>
+                               </div>
+                                <label class="col col-form-label" for="mashin-temp"><%= temperature %></label>
+                                <div class="col">
+                                    <input type="number" step="0.1" id="mashin-stemp" size="4"></input><span class="tmp_unit">&deg;C</span>
+                                </div>
+                            </div>
+                        </div> <!-- col -->
+                    </div><!-- row -->
+                    <div class="form-group row">
+                        <label class="col-3 col-form-label"><%= default_mashout %></label>
+                        <div class="col">
+                            <div class="row">
+                                <label class="col col-form-label" for="mo-temp"><%= temperature %></label>
+                                <div class="col">
+                                    <input type="number" step="0.1" id="mo-temp" size="4"></input><span class="tmp_unit">&deg;C</span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <label class="col col-form-label" for="mo-time"><%= time %></label>
+                                <div class="col">
+                                    <input type="number" step="0.1" id="mo-time" size="4"></input><span id=disp_unit_min><%= minute %></span>
+                                </div>
+                            </div>
+                        </div> <!-- col-->
+                    </div><!-- row -->
+                    <div class="row">
+                        <label class="col-3 col-form-label"> <%= default_hopstand %></label>
+                        <div class="col">
+                            <div class="row">
+                                <label class="col col-form-label" for="de-HS-temp"><%= start_temperature %></label>
+                                <div class="col">
+                                    <input type="number" id="de-HS-temp" step="0.1" size="4"></input><span class="tmp_unit">&deg;C</span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <label class="col col-form-label" for="de-HS-keep-temp"><%= keep_temperature %></label>
+                                <div class="col">
+                                    <input type="number" step="0.1" id="de-HS-keep-temp" size="4"></input><span class="tmp_unit">&deg;C</span>
+                                </div>
+                            </div>
+                        </div> <!-- col -->
+                    </div><!-- row -->
+                    <div class="form-group row">
+                        <label class="col-3 col-form-label">Custom Recipe JS</label>
+                        <div class="col">
+                            <input type="text" style="width:100%" id="custom-source-js"></input>
+                        </div>
+                    </div>
+                    <div class=" form-group row">
+                        <label class="col-3 col-form-label">Custom Recipe Options</label>
+                        <div class="col">
+                            <textarea class="form-control" id="custom-source-options" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <button id="recipe-option-update" class="btn btn-outline-dark"><%= update %></button>                
+                        </div>
+                    </div>
+                </div><!--container-->
+                </form>
+            </div> <!-- recipe-options-panel -->
+            <div id="recipe-import-panel">
+                <h3 class="text-center">
+                    <%= import_beerxml %>
+                </h3>
+                <div id="fileinputgrp" class="input-group mb-3">
+                        <div class="input-group-prepend">
+                          <span class="input-group-text" id="inputGroupFileAddon01">File:</span>
+                        </div>
+                        <div class="custom-file">
+                          <input type="file" id="fileinput" class="custom-file-input" id="inputGroupFile01" aria-describedby="inputGroupFileAddon01">
+                          <label class="custom-file-label" for="inputGroupFile01">Choose file</label>
+                        </div>
+                </div>
+                <div>
+                    <select name="xml-recipe-select" id="xml-recipe-select" class="custom-select mb-2"></select>
+                </div>
+            </div><!-- recipe-import-panel -->
+            <div id="recipe-view-pane">
+                <span class="h4 text-center" id="recipe-source"></span>
+                <div class="text-center spinner py-4">
+                    <div class="spinner-border" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </div><!-- recipe-view-panel -->
+            
+            <div id="recipe-table" class="col container-sm p-4">
+                    <div class="row" id="saveas-action"> <!-- save as-->
+                        <div class="col" >
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text" id="basic-addon3"><%= save_as %></span>
+                                </div>
+                                <input type="text" size="50" class="form-control" id="xml-savename" aria-describedby="basic-addon3">
+    
+                                <div class="input-group-append" id="button-addon4">
+                                    <button id="xml-save"  class="btn btn-outline-secondary" type="button"><%= save %></button>
+                                    <button id="xml-brew" class="btn btn-outline-secondary" type="button"><%= brew_xml %></button>
+                                </div>
+                            </div>
+                        </div>
+                </div>
+                <div class="row pb-4" id="local-recipe-action"> <!-- brew & delete -->
+                        <div class="col text-left">
+                            <button id="recipe-del" class="btn btn-outline-danger"><%= delete_recipe %></button>
+                        </div>
+                        <div class="col text-right">
+                            <button id="recipe-brew" class="btn btn-outline-primary"><%= brew_recipe %></button>
+                        </div>
+                </div>
+                <div class="row">
+                    <table id="xml-recipe"  class="table table-bordered">
+                        <tr>
+                            <td class="p-0">
+                                <table class="subcat table table-bordered mb-0">
+                                    <tr>
+                                        <th class="table-secondary">
+                                            <%= recipe_name %>
+                                        </th>
+                                        <td><span class="recipe-name"></span></td>
+                                    </tr>
+                                    <tr>
+                                        <th class="table-secondary">
+                                            <%= recipe_style %>
+                                        </th>
+                                        <td><span class="recipe-style"></span></td>
+                                    </tr>
+                                    <tr>
+                                        <th class="table-secondary">
+                                            <%= batch_size %>
+                                        </th>
+                                        <td><span class="batch-size"></span></td>
+                                    </tr>
+                                    <tr>
+                                        <th class="table-secondary"><span class="auto_value"><%= boil_time %></span></th>
+                                        <td><span class="boil-time"></span></td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+        
+                        <tr>
+                            <td class="p-0">
+                                <table class="subcat table table-bordered mb-0">
+                                    <tr>
+                                        <th class="table-secondary">
+                                            <%= recipe_efficiency %>
+                                        </th>
+                                        <th class="table-secondary">
+                                            <%= recipe_og %>
+                                        </th>
+                                        <th class="table-secondary">
+                                            <%= recipe_fg %>
+                                        </th>
+                                        <th class="table-secondary">
+                                            <%= recipe_abv %>
+                                        </th>
+                                        <th class="table-secondary">
+                                            <%= recipe_color %>
+                                        </th>
+                                        <th class="table-secondary">
+                                            <%= recipe_ibu %>
+                                        </th>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="recipe-eff">-</span>%</td>
+                                        <td><span class="recipe-og"></span></td>
+                                        <td><span class="recipe-fg"></span></td>
+                                        <td><span class="recipe-abv"></span>%</td>
+                                        <td><span class="recipe-color-circle"></span> <span class="recipe-color"></span></td>
+                                        <td><span class="recipe-ibu"></span></td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="table-secondary">
+                                <%= fermentables %>
+                            </th>
+                        </tr>
+                        <tr>
+                            <td class="p-0">
+                                <table class="subcat table table-bordered mb-0">
+                                    <tr class="ferm-header">
+                                        <th class="table-secondary">
+                                            <%= fermentable %>
+                                        </th>
+                                        <th class="table-secondary">
+                                            <%= weight %>
+                                        </th>
+                                        <th  class="table-secondary"><span class="yieldtitle"><%= fermentatble_yield %></span><span class="ppgtitle"><%= fermentable_ppg %></span></th>
+                                        <th class="table-secondary">
+                                            <%= fermentable_color %>
+                                        </th>
+                                        <th  class="table-secondary">
+                                            <%= note %>
+                                        </th>
+                                    </tr>
+                                    <tr class="r-ferm-row">
+                                        <td class="ferm-name">TT</td>
+                                        <td class="ferm-weight text-right"></td>
+                                        <td class="ferm-yield text-right"></td>
+                                        <td class="ferm-color text-right"></td>
+                                        <td class="ferm-af"></td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="table-secondary">
+                                <%= hop_n_misc %>
+                            </th>
+                        </tr>
+                        <tr>
+                            <td class="p-0">
+                                <table class="subcat table table-bordered mb-0">
+                                    <tr class="hop-header">
+                                        <th class="table-secondary">                                    
+                                        </th>
+                                        <th class="table-secondary">
+                                            <%= time %>
+                                        </th>
+                                        <th class="table-secondary">
+                                            <%= hop_name %>
+                                        </th>
+                                        <th class="table-secondary">
+                                            <%= weight %>
+                                        </th>
+                                        <th class="table-secondary">
+                                            <%= alpha %>
+                                        </th>
+                                        <th class="table-secondary">
+                                            <%= note %>
+                                        </th>
+                                    </tr>
+                                    <tr class="r-hop-row">
+                                        <td class="hop-order">
+                                            <span class="auto_value hop-boil"><%= hop_num %><span class="hop-order-id"></span></span>
+                                            <span class="auto_value hop-whirlpool"><%= postboilhop_num %><span class="hop-order-id"></span></span>
+                                        </td>
+                                        <td class="hop-time"></td>
+                                        <td class="hop-name"></td>
+                                        <td class="hop-weight text-right"></td>
+                                        <td class="hop-alpha text-right"></td>
+                                        <td class="hop-note"></td>
+                                    </tr>
+                                    <tr class="r-hopstand-row">
+                                        <td><%= hopstand_num %><span class="hopstand-order"></span></td>
+                                        <td class="hopstand-time"></td>
+                                        <td colspan="4"><span class="hopstand-stemp"></span> ~ <span class="hopstand-ktemp"></span> </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th  class="table-secondary">
+                                <%= mash_profile %>
+                            </th>
+                        </tr>
+                        <tr>
+                            <td class="p-0">
+                                <table class="subcat table table-bordered mb-0">
+                                    <tr class="mash-header">
+                                        <th  class="table-secondary"></th>
+                                        <th  class="table-secondary">
+                                            <%= rest_name %>
+                                        </th>
+                                        <th  class="table-secondary">
+                                            <%= temperature %>
+                                        </th>
+                                        <th  class="table-secondary">
+                                            <%= time %>
+                                        </th>
+                                        <th  class="table-secondary">
+                                            <%= rest_type %>
+                                        </th>
+                                        <th  class="table-secondary">
+                                            <%= water %>
+                                        </th>
+                                    </tr>
+                                    <tr class="r-mash-row">
+                                        <td class="mash-autorest">
+                                            <td class="mash-name"></td>
+                                            <td class="mash-temp text-right"></td>
+                                            <td class="mash-time"></td>
+                                            <td class="mash-type"></td>
+                                            <td class="mash-water text-right"></td>
+                                    </tr>
+                                </table>
+                                </td>
+                        </tr>
+                        <tr>
+                            <th  class="table-secondary">
+                                <%= yeast %>
+                            </th>
+                        </tr>
+                        <tr>
+                            <td class="p-0">
+                                <table class="subcat table table-bordered mb-0">
+                                    <tr class="yeast-header">
+                                        <th class="table-secondary">
+                                            <%= yeast_name %>
+                                        </th>
+                                        <th class="table-secondary">
+                                            <%= lab_product %>
+                                        </th>
+                                        <th class="table-secondary">
+                                            <%= temperature %>
+                                        </th>
+                                        <th class="table-secondary">
+                                            <%= attenuation %>
+                                        </th>
+                                    </tr>
+                                    <tr class="r-yeast-row">
+                                        <td><span class="yeast-name"></span></td>
+                                        <td><span class="yeast-pid"></span></td>
+                                        <td><span class="yeast-temp"></span></td>
+                                        <td><span class="yeast-att"></span>%</td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="table-secondary">
+                                <%= fermentation %>
+                            </th>
+                        </tr>
+                        <tr>
+                            <td class="p-0">
+                                <table class="subcat table table-bordered mb-0">
+                                    <tr class="fermstage-header">
+                                        <th class="table-secondary">
+                                            <%= fermenation_stage %>
+                                        </th>
+                                        <th class="table-secondary">
+                                            <%= temperature %>
+                                        </th>
+                                        <th class="table-secondary">
+                                            <%= duration %>
+                                        </th>
+                                    </tr>
+                                    <tr class="r-fermstage-row">
+                                        <td><span class="ferm-stage"></span></td>
+                                        <td><span class="ferm-temp"></span></td>
+                                        <td><span class="ferm-time"></span>
+                                            <%= days %>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="table-secondary">
+                                <%= recipe_note %>
+                            </th>
+                        </tr>
+                        <tr>
+                            <td class="recipe-note"></td>
+                        </tr>
+                    </table>
+                </div>        
+            </div>
+        </div>
+        </main>
+    </div> <!-- row-->
+</div>
+<!-- End of Recipe/BeerXml  -->
+
+<!-- Begin of Brewlogs  -->
+    <div class="tab-pane fade" id="brewlog-pane" role="tabpanel" aria-labelledby="brewlog-tab">
+        <div class="container-md">
+        <h4><%= brew_logs %></h4>
+
+        <table id="loglist" class="table pt-4">
+            <tr>
+                <th style="width:30%;"><%= log %></th>
+                <th style="width:40%;"><%= date %></th>
+                <th><%= action %> <button id="listfile" class="btn btn-success float-right"><%= refresh %></button></th>
+            </tr>
+            <tr>
+                <td class="logid"></td>
+                <td class="logdate"></td>
+                <td><button class="dlbutton btn btn-info"><%= download %></button>
+                    <button class="viewbutton btn btn-info"><%= view %></button></td>
+            </tr>
+        </table>
+
+        <div id="vchart" style="width:95%">
+            <div id="log-viewlogname"></div>
+            <div id="vchart-canvas" style="width:100%;height:320px"></div>
+        </div>
+
+        </div>
+    </div>
+<!-- End of BrewLogs  -->
+<!-- Begin of Network Settings  -->
+<div class="tab-pane fade" id="network-pane" role="tabpanel" aria-labelledby="network-tab">
+        <div class="container-sm">
+        <h4><%= network_settings %></h4>
+        <table class="table">
+            <tr>
+                <td><%= connected_network %></td>
+                <td><a href="#" id="wifissid">--</a></td>
+            </tr>
+
+            <tr>
+                <td><%= host_network_name %></td>
+                <td><input id="hostname" type="text" class="form-control"  size="20"></td>
+            </tr>
+            <tr>
+                <td><%= always_need_password %></td>
+                <td><input type="checkbox" id="protected" value="yes"></td>
+            </tr>
+            <tr>
+                <td><%= new_user_name %></td>
+                <td><input id="newusername" type="text" class="form-control" size="20" maxlength="20"></td>
+            </tr>
+            <tr>
+                <td><%= new_password %></td>
+                <td><input id="newpasswd" type="password" class="form-control"  size="20" maxlength="16"></td>
+            </tr>
+            <tr>
+                <td><%= retype_new_password %><span id="passmatch" class="badge badge-warning">!</span></td>
+                <td><input id="newpasswd2" type="password" class="form-control"  size="20" maxlength="16"></td>
+            </tr>
+            <tr>
+                <td><%=user_name %><span id="username-warning" class="badge badge-warning">!</span> </td>
+                <td><input id="username" type="text" class="form-control"  size="20" maxlength="20"></td>
+            </tr>
+            <tr>
+                <td><%= password %><span id="password-warning" class="badge badge-warning">!</span></td>
+                <td><input id="password" type="password" class="form-control" size="20" maxlength="16"></td>
+            </tr>
+            <tr><td></td><td></td></tr>
+        </table>
+            <div>
+                <button id="savecfg" class="btn btn-primary">Save</button>
+            </divr>
+            <div>
+                <div id="saveok" class="alert alert-success" role="alert">
+                    <%= new_setting_will_be_effective %>
+                </div>
+                <div  id="savefail" class="alert alert-danger" role="alert">
+                    <%= update_failed %>
+                </div>
+            </div>
+        </table>
+    </div>
+  </div>
+<!-- End of Network setting  -->  
+<!-- End of Calculator  -->
+<!--
+  <div class="tab-pane fade" id="calculator-pane" role="tabpanel" aria-labelledby="calculator-tab">
+    Calculator
+    </div>
+-->
+<!-- End of Calculator  -->
+
+    </div> <!-- tab-content -->
+</div> <!-- container -->
+<!-- modal dialogs-->
+
+<!-- About dialog -->
+<div id="dialog-about" title="About" class="modal fade" role="dialog" 
+            aria-labelledby="aboutlabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="aboutlabel">About</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <p> BrewManiacEx <span id="firmware-version"></span>
+                    <p>By Vito Tai. </p>
+ 
+                <div systeminfo="container-sm">
+                    <div class="row"><div class="col">Build Time</div><div class="col" id="firmware-built"></div></div>
+                    <div class="row"><div class="col">MAC Address</div><div class="col" id="mac-address"></div></div>
+                    <div class="row"><div class="col">Flash vendor ID</div><div class="col" id="flash-vendor"></div></div>
+                    <div class="row"><div class="col">Flash Chip ID</div><div class="col" id="flash-id"></div></div>
+                    <div class="row"><div class="col">Real Flash Size</div><div class="col" id="real-flash-size"></div></div>
+                    <div class="row"><div class="col">Specified Flash Size</div><div class="col" id="specified-flash-size"></div></div>
+                    <div class="row"><div class="col">File System Size</div><div class="col" id="fs-size"></div></div>
+                </div>
+
+            </div> <!--modal-body -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal"><%= close %></button>
+            </div>
+        </div> <!-- modal-content -->
+    </div> <!-- modal-dialog -->>
+</div>
+
+<!-- About dialog -->
+
+<!-- wifi dialog -->
+<div id="dialog-wifi" Title="" class="modal fade" role="dialog" 
+            aria-labelledby="wifiModalLabel" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="wifiModalLabel"><%= wifi_setting %></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+            <form method="get" action="#">
+                <div class="form-group form-check">
+                        <input type="checkbox" class="form-check-input" id="aponly">
+                        <label class="form-check-label" for="aponly"><%= ap_only %></label>
+                </div>
+
+                <div id="wifisetup">
+                    
+                    <div class="c pb-2"><a href="#" id="scanwifi" class="btn btn-primary"><%= scan_network %></a></div>
+
+                    <div>
+                        <ul id="networks">
+                            <li class="nwlist">
+                                    <a href="#" class="ssid"></a>&nbsp;<span class="q float-right"></span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div id="scanningwifi"><%= scanning %></div>
+                      
+                    <div class="form-group row">
+                            <label for="wifissidinput" class="col-sm-5 col-form-label"><%= network_ssid %></label>
+                            <div class="col-sm-7">
+                              <input type="text" class="form-control" id="wifissidinput">
+                            </div>
+                    </div>
+
+                    <div class="form-group row">
+                            <label for="wifipasswd" class="col-sm-5 col-form-label"><%= network_pass %></label>
+                            <div class="col-sm-7">
+                              <input type="password" class="form-control" id="wifipasswd">
+                            </div>
+                    </div>
+
+                    <div class="form-group row">
+                            <label for="staticip" class="col-sm-5 col-form-label"><%= static_ip %></label>
+                            <div class="col-sm-7">
+                              <input type="password" class="form-control" id="staticip">
+                            </div>
+                    </div>
+
+                    <div class="form-group row">
+                            <label for="gateway" class="col-sm-5 col-form-label"><%= gateway %></label>
+                            <div class="col-sm-7">
+                              <input type="password" class="form-control" id="gateway">
+                            </div>
+                    </div>
+
+                    <div class="form-group row">
+                            <label for="netmask" class="col-sm-5 col-form-label"><%= netmask %></label>
+                            <div class="col-sm-7">
+                              <input type="password" class="form-control" id="netmask">
+                            </div>
+                    </div>
+                </div>
+            </form>
+
+            </div> <!--modal-body -->
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary" id="savewifi"><%= setting_save %></button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal"><%= close %></button>
+            </div>
+        </div> <!-- modal-content -->
+    </div> <!-- modal-dialog -->>
+</div>
+<!--end of wifi dialog -->
+
+
+
+<!-- Alert dialog -->
+<div class="modal fade" id="alert-dialog" tabindex="-1" role="dialog" aria-labelledby="alert-dialog-title" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="alert-dialog-title"><span class="text-danger" id="alert-title">Alert</span><span class="text-info" id="notice-title">Notice</span></h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+</div>
+
+<!-- Alert dialog -->
+
+<!-- dialogs for import setting file selection -->
+
+<div class="modal fade" id="dialog-file" tabindex="-1" role="dialog" aria-labelledby="fileModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="fileModalCenterTitle"><%= select_file %></h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+            <p><input type="file"></input>
+                <span class="dialog-msg"></span></p>    
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal"><%= close %></button>
+        </div>
+      </div>
+    </div>
+</div>
+<!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="lib/jquery/jquery-3.4.1.min.js"></script>
+    <script src="lib/bootstrap-4.4.1/js/bootstrap.min.js"></script>
+    <script src="lib/dygraph/dygraph.min.js"></script>
+
+    <script src="js/resource.js"></script>
+    <script src="js/setting-resources.js"></script>
+    <script src="js/bm-settings.js"></script>
+    <script src="js/bm-automation.js"></script>
+
+    <script src="js/bm-beerxml.js"></script>
+    <script src="js/bm-beerxmlview.js"></script>
+    <script src="js/bm-recipe.js"></script>
+    <script src="js/bm-netcfg.js"></script>
+    <script src="js/bm-brewchart.js"></script>
+    <script src="js/bm-chartdata.js"></script>
+    <script src="js/lcd.js"></script>
+    <script src="js/bm-sound.js"></script>
+    <script src="js/bm-dashboard.js"></script>
+    <script src="js/bm-log.js"></script>
+    <script src="js/bm-ws.js"></script>
+    <script src="js/bm.js"></script>
+    <script src="js/bm-file.js"></script>
+
+</body>
+</html>
