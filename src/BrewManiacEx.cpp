@@ -65,8 +65,8 @@ extern String getContentType(String filename);
 #define NETCFG_PATH 		"/netcfg.php"
 #define DEFAULT_INDEX_FILE  "bm.htm"
 
-#define MAX_CONFIG_LEN 256
-#define JSON_BUFFER_SIZE 256
+#define MAX_CONFIG_LEN 1024
+#define JSON_BUFFER_SIZE 1024
 #define CONFIG_FILENAME 	"/network.cfg"
 
 #define LS_PATH				"/list.php"
