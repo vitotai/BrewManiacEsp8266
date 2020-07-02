@@ -152,7 +152,7 @@ void requestSend(AsyncWebServerRequest *request,int code,const String& type="app
 	}else{
 		response= request->beginResponse(code);
 	}
-	DBG_PRINTF("Access-Control-Allow-Origin\n");
+//	DBG_PRINTF("Access-Control-Allow-Origin\n");
 	response->addHeader("Access-Control-Allow-Origin","*");
 	request->send(response);
 
@@ -463,6 +463,7 @@ public:
 			R"END({"host":"%s","user":"%s","pass":"%s","secured":%d,"wifi":%s})END";
 
 		sprintf(configBuff,configFormat,_gHostname,_gUsername,_gPassword,_gSecuredAccess? 1:0,WiFiSetup.status().c_str());
+		DBG_PRINTF(configBuff);
 		config.printf(configBuff);
   		config.close();
 		return true;
@@ -526,6 +527,7 @@ public:
 	void handleNetCfg(AsyncWebServerRequest *request){
 		if(request->method() == HTTP_POST){
 			String data=request->getParam("data", true, false)->value();
+			DBG_PRINTF("netcfg:\"%s\"\n",data.c_str());
 
 			#if ARDUINOJSON_VERSION_MAJOR == 6
 
@@ -602,18 +604,18 @@ public:
 	void loadSetting(void){
 		// try open configuration
 		char configBuf[MAX_CONFIG_LEN];
-		File config=FileSystem.open(CONFIG_FILENAME,"r+");
+		File fh=FileSystem.open(CONFIG_FILENAME,"r+");
 
-		if(config){
-			size_t len=config.readBytes(configBuf,MAX_CONFIG_LEN);
+		if(fh){
+			size_t len=fh.readBytes(configBuf,MAX_CONFIG_LEN);
 			configBuf[len]='\0';
 		}
 		#if ARDUINOJSON_VERSION_MAJOR == 6
 		DynamicJsonDocument root(2048);
-		auto error=deserializeJson(root,config);
+		auto error=deserializeJson(root,configBuf);
 
 		if(error 
-				|| !config 
+				|| !fh 
 				|| !root.containsKey("host")
 				|| !root.containsKey("user")
 				|| !root.containsKey("pass")){
@@ -622,7 +624,7 @@ public:
 		DynamicJsonBuffer jsonBuffer(JSON_BUFFER_SIZE);
 		JsonObject& root = jsonBuffer.parseObject(configBuf);
 
-		if(!config
+		if(!fh
 				|| !root.success()
 				|| !root.containsKey("host")
 				|| !root.containsKey("user")
@@ -636,9 +638,10 @@ public:
 			_gSecuredAccess=false;
 
 			WiFiSetup.staConfig(false,WiFi.localIP(),WiFi.gatewayIP(),WiFi.subnetMask());
+			DBG_PRINTF("loading cfg error:%s\\n",configBuf);
 
 		}else{
-			config.close();
+			fh.close();
 
   			strcpy(_gHostname,root["host"]);
   			strcpy(_gUsername,root["user"]);
@@ -1479,7 +1482,7 @@ void setup(void){
 	//1b. load nsetwork conf
 	networkConfig.loadSetting();
 
-	//DBG_PRINTF("hostname:%s, user:%s, pass:%s, secured:%d\n",_gHostname,_gUsername,_gPassword,_gSecuredAccess);
+	DBG_PRINTF("hostname:%s, user:%s, pass:%s, secured:%d\n",_gHostname,_gUsername,_gPassword,_gSecuredAccess);
 
 	// 2. start brewmaniac part, so that LCD will be ON.
 	brewmaniac_setup();

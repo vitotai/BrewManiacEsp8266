@@ -119,7 +119,9 @@
 #endif
 
 //debug setting
-#define FakeHeating true
+#ifndef FakeHeating
+#define FakeHeating false
+#endif
 //#define DEVELOP_SETTING_VALUE false
 #define EnableCORS true
 #define SensorDiscGuardTime 10000
