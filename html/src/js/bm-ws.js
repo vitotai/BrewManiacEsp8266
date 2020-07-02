@@ -332,6 +332,7 @@ var BM = {
         xhr.send();
     },
     saveCfg:function(json,success,fail){
+        var bm=this;
         $.ajax({
             url: bm._url("netcfg.php"),
             type: "POST",
