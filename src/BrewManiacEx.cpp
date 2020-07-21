@@ -728,7 +728,7 @@ protected:
     }
 public:
 	BmwHandler(void){}
-		virtual bool isRequestHandlerTrivial() override final {return false;}
+	virtual bool isRequestHandlerTrivial() override final {return false;}
 
 	void handleRequest(AsyncWebServerRequest *request){
 
@@ -804,9 +804,11 @@ public:
 		 	AsyncWebServerResponse *response;
 
 			String path=request->url();
-	 		if(path.endsWith("/")) path +=DEFAULT_INDEX_FILE;
-
-  			if(path.endsWith(".js")){
+	 		if(path.endsWith("/")) path += String(DEFAULT_INDEX_FILE);
+			
+			DBG_PRINTF("checking#1 file:%s\n",path.c_str());
+  			
+			  if(path.endsWith(".js")){
 
 	 			String pathWithJgz = path.substring(0,path.lastIndexOf('.')) + ".jgz";
 				//DBG_PRINTF("checking with:%s\n",pathWithJgz.c_str());
@@ -821,6 +823,7 @@ public:
   			}else{
   				//DBG_PRINTF("non js file:\"%s\"\n",path.c_str());
   			}
+			
 	 		if(path.endsWith(".m4a") || path.endsWith(".mp3") || path.endsWith(".ogg")){
 
     	 		int start=0;
@@ -831,10 +834,10 @@ public:
                     decodeRange(h->value(),start,end);
                     DBG_PRINTF("decode: %d - %d\n", start, end);
                 }
-			        const char *mime=NULL;
-			        if(path.endsWith(".m4a")) mime = "audio/mp4";
-			        else if(path.endsWith(".mp3")) mime="audio/mepg";
-			        else /*if(path.endsWith(".ogg"))*/ mime = "audio/ogg";
+			    const char *mime=NULL;
+			    if(path.endsWith(".m4a")) mime = "audio/mp4";
+			    else if(path.endsWith(".mp3")) mime="audio/mepg";
+			    else /*if(path.endsWith(".ogg"))*/ mime = "audio/ogg";
 
                 if(start ==0 && end == -1){
     	 			response = request->beginResponse(FileSystem, path,mime);
@@ -861,7 +864,8 @@ public:
 		    	    requestSend(request,response);
 			    }
 	 		}else{
-    	 		String pathWithGz = path + ".gz";
+    	 		String pathWithGz = path + String(".gz");
+				DBG_PRINTF("checking file:%s, gz:%s\n",path.c_str(),pathWithGz.c_str());
   	    		if(FileSystem.exists(pathWithGz)){
 			    	// AsyncFileResonse will add "content-disposion" header, result in "download" of Safari, instead of "render" 
 	 	    	  	// response = request->beginResponse(FileSystem, pathWithGz,"application/x-gzip");
@@ -872,25 +876,31 @@ public:
 						return;
 					}
 					response = request->beginResponse(file, path,getContentType(path));
+				    response->addHeader("Cache-Control","max-age=2592000");
+				    requestSend(request,response);
 
   			    }else if(FileSystem.exists(path)){
 	 			    response = request->beginResponse(FileSystem, path);
+				    response->addHeader("Cache-Control","max-age=2592000");
+				    requestSend(request,response);
 			    }else{
+					DBG_PRINTF("embedded file\n");
 					bool gzip;
 					uint32_t size;
 					const uint8_t* file=getEmbeddedFile(path.c_str(),gzip,size);
 					if(file){
 						response = request->beginResponse_P(200, "text/html", file, size);
 						if(gzip){
-               			 	response->addHeader("Content-Encoding", "gzip");
+    	           			response->addHeader("Content-Encoding", "gzip");
+				    		response->addHeader("Cache-Control","max-age=2592000");
+						    requestSend(request,response);
 						}
 					}else{
 						// error.
-						response = request->beginResponse(500);
+						requestSend(request,500);
+						return;
 					}
 				}
-			    response->addHeader("Cache-Control","max-age=2592000");
-			    requestSend(request,response);
 			}
 		}
 	 }
@@ -1469,7 +1479,7 @@ void setup(void){
 	//1.Initialize file system
 	//start SPI Filesystem
 	#if ESP32
-	if(!SPIFFS.begin()){
+	if(!SPIFFS.begin(true)){
 	#else
   	if(!FileSystem.begin()){
 	#endif

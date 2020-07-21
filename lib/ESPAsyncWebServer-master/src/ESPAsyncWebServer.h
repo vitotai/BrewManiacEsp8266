@@ -51,6 +51,7 @@ class AsyncStaticWebHandler;
 class AsyncCallbackWebHandler;
 class AsyncResponseStream;
 
+#ifndef WEBSERVER_H
 typedef enum {
   HTTP_GET     = 0b00000001,
   HTTP_POST    = 0b00000010,
@@ -61,6 +62,11 @@ typedef enum {
   HTTP_OPTIONS = 0b01000000,
   HTTP_ANY     = 0b01111111,
 } WebRequestMethod;
+#endif
+
+//if this value is returned when asked for data, packet will not be sent and you will be asked for data again
+#define RESPONSE_TRY_AGAIN 0xFFFFFFFF
+
 typedef uint8_t WebRequestMethodComposite;
 typedef std::function<void(void)> ArDisconnectHandler;
 
@@ -297,11 +303,13 @@ class AsyncWebRewrite {
         _toUrl = _toUrl.substring(0, index);
       }
     }
+    virtual ~AsyncWebRewrite(){}
     AsyncWebRewrite& setFilter(ArRequestFilterFunction fn) { _filter = fn; return *this; }
     bool filter(AsyncWebServerRequest *request) const { return _filter == NULL || _filter(request); }
     const String& from(void) const { return _from; }
     const String& toUrl(void) const { return _toUrl; }
     const String& params(void) const { return _params; }
+    virtual bool match(AsyncWebServerRequest *request) { return from() == request->url() && filter(request); }
 };
 
 /*
@@ -387,6 +395,7 @@ class AsyncWebServer {
     ~AsyncWebServer();
 
     void begin();
+    void end();
 
 #if ASYNC_TCP_SSL_ENABLED
     void onSslFileRequest(AcSSlFileHandler cb, void* arg);

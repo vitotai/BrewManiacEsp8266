@@ -1,7 +1,5 @@
 sudo: false
-
-language: python
-
+language: bash
 os:
   - linux
 
@@ -14,15 +12,10 @@ stages:
 jobs:
   include:
 
-    - name: "Build Arduino ESP32"
+    - name: "Build Examples"
       if: tag IS blank AND (type = pull_request OR (type = push AND branch = master))
       stage: build
-      script: bash $TRAVIS_BUILD_DIR/travis/build.sh esp32
-
-    - name: "Build Arduino ESP8266"
-      if: tag IS blank AND (type = pull_request OR (type = push AND branch = master))
-      stage: build
-      script: bash $TRAVIS_BUILD_DIR/travis/build.sh esp8266
+      script: bash $TRAVIS_BUILD_DIR/travis/build.sh
 
 notifications:
   email:

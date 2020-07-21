@@ -52,8 +52,9 @@ AsyncWebServer::AsyncWebServer(uint16_t port)
 }
 
 AsyncWebServer::~AsyncWebServer(){
-  reset();
-  delete _catchAllHandler;
+  reset();  
+  end();
+  if(_catchAllHandler) delete _catchAllHandler;
 }
 
 AsyncWebRewrite& AsyncWebServer::addRewrite(AsyncWebRewrite* rewrite){
@@ -79,7 +80,12 @@ bool AsyncWebServer::removeHandler(AsyncWebHandler *handler){
 }
 
 void AsyncWebServer::begin(){
+  _server.setNoDelay(true);
   _server.begin();
+}
+
+void AsyncWebServer::end(){
+  _server.end();
 }
 
 #if ASYNC_TCP_SSL_ENABLED
@@ -98,7 +104,7 @@ void AsyncWebServer::_handleDisconnect(AsyncWebServerRequest *request){
 
 void AsyncWebServer::_rewriteRequest(AsyncWebServerRequest *request){
   for(const auto& r: _rewrites){
-    if (r->from() == request->_url && r->filter(request)){
+    if (r->match(request)){
       request->_url = r->toUrl();
       request->_addGetParams(r->params());
     }
