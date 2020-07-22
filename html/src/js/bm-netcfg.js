@@ -105,13 +105,23 @@ var NetworkConfig = {
         else if (con)
             $("#wifissid").text(ssid );
         else
-            $("#wifissid").texgt(ssid + "!");
+            $("#wifissid").text(ssid + "!");
+    },
+    processStatus:function(msg){
+        var b=this;
+        if(typeof msg["ap"] !="undefined"){
+            if(msg.ap) b.ssidbtn(msg.ap,msg.con,"");
+            else b.ssidbtn(msg.ap,msg.con,msg.ssid);
+        }
     },
     init: function(bm) {
         var b = this;
         b.bm=bm;
         bm.addMsgHandler("netcfg",function(cfg){
             b.processCfg(cfg);
+        });
+        bm.addMsgHandler("wifi",function(msg){
+            b.processStatus(msg);
         });
 
         $("#wifissid").click(function(e) {
