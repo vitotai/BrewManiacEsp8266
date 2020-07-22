@@ -481,7 +481,7 @@ void btnInitialize(void)
 #define BUTTON_DEBUG false
 #endif
 
-#define BUTTON_DEBUG true
+//#define BUTTON_DEBUG true
 
 
 boolean _virtualButtonPressed=false;

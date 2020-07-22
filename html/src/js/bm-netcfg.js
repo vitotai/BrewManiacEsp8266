@@ -231,6 +231,7 @@ init:function(bm){
         $("#savewifi").click(function(e) {
             e.preventDefault();
             b.savewifi();
+            $("#dialog-wifi").modal("hide");
             return false;
         });
 }
