@@ -21,7 +21,7 @@ WiFiSetupClass WiFiSetup;
 #endif
 
 #if SerialDebug
-#define wifi_info(a)	DBG_PRINTF("%s,SSID:%s pass:%s IP:%s, gw:%s\n",(a),WiFi.SSID().c_str(),WiFi.psk().c_str(),WiFi.localIP().toString().c_str(),WiFi.gatewayIP().toString().c_str())
+#define wifi_info(a)	DBG_PRINTF("%s:SSID:%s pass:%s IP:%s, gw:%s\n",(a),WiFi.SSID().c_str(),WiFi.psk().c_str(),WiFi.localIP().toString().c_str(),WiFi.gatewayIP().toString().c_str())
 #else
 #define wifi_info(a)
 #endif
@@ -66,7 +66,8 @@ void WiFiSetupClass::begin(char const *ssid,const char *passwd)
 		if(_ip !=INADDR_NONE){
 			WiFi.config(_ip,_gw,_nm);
 		}
-		WiFi.begin();
+		if(_targetSSID.isEmpty()) WiFi.begin();
+		else WiFi.begin(_targetSSID.c_str(),_targetPass.isEmpty()? NULL:_targetPass.c_str());
 	}
 	WiFi.softAP(_apName, _apPassword);
 	setupApService();
@@ -74,19 +75,16 @@ void WiFiSetupClass::begin(char const *ssid,const char *passwd)
 	
 }
 
-bool WiFiSetupClass::connect(char const *ssid,const char *passwd,IPAddress ip,IPAddress gw, IPAddress nm){
-	DBG_PRINTF("Connect to %s pass:%s, ip=%s\n",ssid, passwd,ip.toString().c_str());
+void WiFiSetupClass::staNetwork(const String& ssid,const String& pass){
+	_targetSSID=ssid;
+	_targetPass=pass;
+}
 
-	if(_targetSSID) free((void*)_targetSSID);
-	_targetSSID=strdup(ssid);
-	if(_targetPass) free((void*)_targetPass);
-	_targetPass=(passwd)? strdup(passwd):NULL;
+bool WiFiSetupClass::connect(const String& ssid,const String& passwd){
+	DBG_PRINTF("Connect to %s pass:%s\n",ssid.c_str(), passwd.c_str());
 
-	//if((ip !=INADDR_NONE) && (gw!=INADDR_NONE) & (nm!=INADDR_NONE)){
-		_ip=ip;
-		_gw=gw;
-		_nm=nm;
-	//}
+	_targetSSID=ssid;
+	_targetPass=passwd;
 
 	_wifiState = WiFiStateChangeConnectPending;
 	if(_apMode){
@@ -143,7 +141,7 @@ bool WiFiSetupClass::stayConnected(void)
 			if(_ip != INADDR_NONE){
 				WiFi.config(_ip,_gw,_nm);
 			}
-			WiFi.begin(_targetSSID,_targetPass);
+			WiFi.begin(_targetSSID.c_str(),_targetPass.isEmpty()? NULL:_targetPass.c_str());
 			_time=millis();
 			_reconnect =0;
 			_wifiState = WiFiStateConnecting;

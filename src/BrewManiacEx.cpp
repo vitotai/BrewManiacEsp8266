@@ -451,6 +451,25 @@ void requestRestart(bool disc);
 class NetworkConfig:public AsyncWebHandler
 {
 public:
+	void configString(String &str){
+
+		const size_t capacity = JSON_OBJECT_SIZE(16);
+		DynamicJsonDocument doc(capacity);
+
+		doc["host"] = _gHostname;
+		doc["user"] =_gUsername;
+		doc["pass"] =_gPassword;
+		doc["secured"] = _gSecuredAccess? 1:0;
+		doc["ip"] = WiFiSetup.staIp();
+		doc["gw"] = WiFiSetup.staGateway();
+		doc["nm"] = WiFiSetup.staNetmask();
+		doc["ap"] = WiFiSetup.isApMode()? 1:0;
+		doc["ssid"] =WiFiSetup.staSsid();
+		doc["stapass"] = WiFiSetup.staPass();
+		serializeJson(doc, str);
+		DBG_PRINTF("sav netcfg:%s",str.c_str());
+	}
+
 	bool saveConfig(void)
 	{
 
@@ -458,13 +477,9 @@ public:
   		if(!config){
   				return false;
   		}
-		char configBuff[MAX_CONFIG_LEN];
-		static const char* configFormat =
-			R"END({"host":"%s","user":"%s","pass":"%s","secured":%d,"wifi":%s})END";
-
-		sprintf(configBuff,configFormat,_gHostname,_gUsername,_gPassword,_gSecuredAccess? 1:0,WiFiSetup.status().c_str());
-		DBG_PRINTF(configBuff);
-		config.printf(configBuff);
+		String configStr;
+		configString(configStr);
+		config.print(configStr);
   		config.close();
 		return true;
 	}
@@ -472,58 +487,13 @@ public:
 
 	void handleRequest(AsyncWebServerRequest *request){
 		if(request->url() == NETCFG_PATH) handleNetCfg(request);
-//		else if(request->url() == WIFI_SCAN_PATH) handleNetworkScan(request);
-//		else if(request->url() == WIFI_CONNECT_PATH) handleNetworkConnect(request);
 		else if(request->url() == WIFI_DISC_PATH) handleNetworkDisconnect(request);
 	}
-/*
-	void handleNetworkScan(AsyncWebServerRequest *request){
-		if(WiFiSetup.requestScanWifi())
-			requestSend(request,200);
-		else 
-			requestSend(request,403);
-	}
-*/
 	void handleNetworkDisconnect(AsyncWebServerRequest *request){
 		WiFiSetup.disconnect();
 		requestSend(request,200);
 		saveConfig();
 	}
-#if 0
-	void handleNetworkConnect(AsyncWebServerRequest *request){
-
-		if(!request->hasParam("nw",true) && !request->hasParam("ap",true)){
-			requestSend(request,400);
-			return;
-		}
-
-		if(request->hasParam("ap",true)){
-			// AP only mode
-			WiFiSetup.disconnect();
-			// save to config
-		}else{
-			String ssid=request->getParam("nw",true)->value();
-			const char *pass=NULL;
-			if(request->hasParam("pass",true)){
-				pass = request->getParam("pass",true)->value().c_str();
-			}
-			if(request->hasParam("ip",true) && request->hasParam("gw",true) && request->hasParam("nm",true)){
-				DBG_PRINTF("static IP\n");
-				WiFiSetup.connect(ssid.c_str(),pass, 
-							scanIP(request->getParam("ip",true)->value().c_str()),
-							scanIP(request->getParam("gw",true)->value().c_str()),
-							scanIP(request->getParam("nm",true)->value().c_str())
-				);
-				// save to config
-			}else{
-				WiFiSetup.connect(ssid.c_str(),pass);
-				DBG_PRINTF("dynamic IP\n");
-			}
-		}
-		saveConfig();
-		requestSend(request,200);
-	}
-#endif
 	void handleNetCfg(AsyncWebServerRequest *request){
 		if(request->method() == HTTP_POST){
 			String data=request->getParam("data", true, false)->value();
@@ -584,9 +554,8 @@ public:
 			if(FileSystem.exists(CONFIG_FILENAME)){
 				requestSend(request,FileSystem,CONFIG_FILENAME, "application/json");
 			}else{
-				String rsp=String("{\"host\":\"") + String(_gHostname)
-				+ String("\",\"secured\":") + (_gSecuredAccess? "1":"0")
-				+ String(",\"wifi\":\"") +WiFiSetup.status() + String("}");
+				String rsp;
+				configString(rsp);
 				requestSend(request,200, "application/json",rsp);
 			}
 		}
@@ -594,8 +563,6 @@ public:
 
 	bool canHandle(AsyncWebServerRequest *request){
 	 	if(request->url() == NETCFG_PATH) return true;
-//		else if(request->url() == WIFI_SCAN_PATH) return true; 
-//		else if(request->url() == WIFI_CONNECT_PATH) return true;
 		else if(request->url() == WIFI_DISC_PATH) return true;
 
 	 	return false;
@@ -637,7 +604,7 @@ public:
   			strcpy(_gPassword,Default_PASSWORD);
 			_gSecuredAccess=false;
 
-			WiFiSetup.staConfig(false,WiFi.localIP(),WiFi.gatewayIP(),WiFi.subnetMask());
+			WiFiSetup.staConfig(false);
 			DBG_PRINTF("loading cfg error:%s\\n",configBuf);
 
 		}else{
@@ -658,7 +625,10 @@ public:
 					WiFiSetup.staConfig(false,ip,gw,nm);
 				}
 			}else{
-				WiFiSetup.staConfig(false,WiFi.localIP(),WiFi.gatewayIP(),WiFi.subnetMask());
+				WiFiSetup.staConfig(false);
+			}
+			if(root.containsKey("ssid")){
+				WiFiSetup.staNetwork(root["ssid"],root.containsKey("stapass")? root["stapass"]:emptyString);
 			}
   		}
 
@@ -1056,22 +1026,14 @@ void wifiConnect(DynamicJsonDocument& root){
 			// save to config
 	}else if(root.containsKey("nw")){
 		String ssid=root["nw"];
-		const char* pass=NULL;
-		if(root.containsKey("pass")){
-			pass = root["pass"].as<String>().c_str();
-		}
 		if(root.containsKey("ip") && root.containsKey("gw") && root.containsKey("nm")){
 			DBG_PRINTF("static IP\n");
-			WiFiSetup.connect(ssid.c_str(),pass, 
-							scanIP(root["ip"].as<String>().c_str()),
+			WiFiSetup.staConfig(false,scanIP(root["ip"].as<String>().c_str()),
 							scanIP(root["gw"].as<String>().c_str()),
-							scanIP(root["nm"].as<String>().c_str())
-			);
+							scanIP(root["nm"].as<String>().c_str()));
 				// save to config
-		}else{
-				WiFiSetup.connect(ssid.c_str(),pass);
-				DBG_PRINTF("dynamic IP\n");
 		}
+		WiFiSetup.connect(ssid,root.containsKey("pass")? root["pass"]:emptyString);
 	}
 	networkConfig.saveConfig();
 }
@@ -1499,8 +1461,6 @@ void setup(void){
 
 
 	//3. Start WiFi
-//	WiFiSetup.setBreakCallback(&readSkipNetCfgButton);
-//	WiFiSetup.setAPCallback(&brewmaniac_ApPrompt);
 	WiFiSetup.onEvent(wiFiEvent);
 	WiFiSetup.begin((const char*)_gHostname,(const char*)_gPassword);
 

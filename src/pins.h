@@ -100,7 +100,7 @@ bool isWaterLevelFull(void){
 #endif //#if SensorNormalCloseOnNotFull
 #endif // EnableLevelSensor
 
-#else
+#else //ESP8266
 #include <pcf8574_esp.h>
 
 /*

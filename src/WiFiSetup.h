@@ -23,9 +23,11 @@ class WiFiSetupClass
 {
 public:
 	WiFiSetupClass():_wifiState(WiFiStateConnected),_wifiScanState(WiFiScanStateNone),_settingApMode(false),_apMode(false),_switchToAp(true),_autoReconnect(true),
-		 _maxReconnect(5),_eventHandler(NULL),_targetSSID(NULL),_targetPass(NULL),_ip(INADDR_NONE),_gw(INADDR_NONE),_nm(INADDR_NONE){}
+		 _maxReconnect(5),_eventHandler(NULL),_targetSSID(emptyString),_targetPass(emptyString),_ip(INADDR_NONE),_gw(INADDR_NONE),_nm(INADDR_NONE){}
 
-	void begin(char const *ssid,const char *passwd=NULL);
+	void begin(char const *ssid,const char *passwd); // dangerous
+	bool connect(const String& ssid,const String& passwd);
+
 	void staConfig(bool apMode,IPAddress ip=(uint32_t)0x00000000,IPAddress gw=(uint32_t)0x00000000, IPAddress nm=(uint32_t)0x00000000);
 
 	void onEvent(std::function<void(const char*)> handler){ _eventHandler = handler;}
@@ -39,11 +41,17 @@ public:
 
 	String scanWifi(void);
 	bool requestScanWifi(void);
-	bool connect(char const *ssid,const char *passwd=NULL,IPAddress ip=(uint32_t)0x00000000,IPAddress gw=(uint32_t)0x00000000, IPAddress nm=(uint32_t)0x00000000);
 	bool disconnect(void);
 
 	bool isConnected(void);
 	String status(void);
+
+	IPAddress staIp(){ return _ip;}
+	IPAddress staNetmask(){ return _nm;}
+	IPAddress staGateway(){ return _gw;}
+	String    staSsid(){ return _targetSSID;}
+	String    staPass() {return _targetPass;}
+	void staNetwork(const String& ssid,const String& pass);
 private:
 	byte _wifiState;
 	byte _wifiScanState;
@@ -63,8 +71,8 @@ private:
 	const char *_apName;
 	const char *_apPassword;
 
-	const char *_targetSSID;
-	const char *_targetPass;
+	String _targetSSID;
+	String _targetPass;
 	IPAddress _ip;
 	IPAddress _gw;
 	IPAddress _nm;
