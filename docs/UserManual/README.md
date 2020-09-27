@@ -1,5 +1,7 @@
 **BrewManiacEx Manual**
 
+The PDFs are out of date.
+
 ![image alt text](images/image_0.jpg)
 
 **Version 0.4 draft v1**
