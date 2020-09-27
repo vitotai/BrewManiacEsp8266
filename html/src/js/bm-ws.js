@@ -212,8 +212,22 @@ var BM = {
         var b = this;
         b.wdt = setTimeout(function() {
             // reconnect, or failed
-            location.reload();
-        }, 20000);
+            //location.reload();
+            b.reconnect;
+        }, 10000);
+    },
+    reconnecting:false,
+    reconnect: function(forced) {
+        forced = (typeof forced == "undefined") ? false : true;
+        var me = this;
+        if (me.reconnecting) return;
+        if (!forced && me.ws.readyState == 1) return;
+        console.log("reconnect forced:" + forced + " state:" + me.ws.readyState);
+        me.reconnecting = true;
+        me.ws.close();
+        // this might triger onerror, and result in "reconnect" call again.
+        me.setupWS();
+        me.reconnecting = false;
     },
     kick_wdt: function() {
         //	console.log("kick wdt");
@@ -341,7 +355,7 @@ var BM = {
                 success();
             },
             error: function(xhr, status, errorThrown) {
-                fail();
+                fail(xhr, status, errorThrown);
             }
         });
     },

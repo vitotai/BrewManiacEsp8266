@@ -334,7 +334,11 @@
     "user_name": "Usuário",
     "password": "Senha",
     "new_setting_will_be_effective": "A nova configuração será efetivada após o reinício.",
-    "update_failed": "Atualização falhou!!",
+    "cfg_incorrect_userpass":"Incorrect username/password.",
+    "cfg_error_format":"Error format!",
+    "cfg_error_internal":"Internal error.",
+    "cfg_error_network":"Network error.",
+    "cfg_error_unknown":"Uknown error.",
 
     "__logs__": "Logs tab",
     "brew_logs": "Registros de brassagem",

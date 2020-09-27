@@ -334,7 +334,11 @@
     "user_name": "User Name",
     "password": "Password",
     "new_setting_will_be_effective": "New setting will be effective after restart.",
-    "update_failed": "Update Failed!!",
+    "cfg_incorrect_userpass":"Incorrect username/password.",
+    "cfg_error_format":"Error format!",
+    "cfg_error_internal":"Internal error.",
+    "cfg_error_network":"Network error.",
+    "cfg_error_unknown":"Uknown error.",
 
     "__logs__": "Logs tab",
     "brew_logs": "Brew Logs",

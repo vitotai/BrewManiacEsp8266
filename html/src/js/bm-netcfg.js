@@ -26,9 +26,14 @@ var NetworkConfig = {
                 function() {
                     $("#saveok").show();
                 },
-                function() {
-                    $("#savefail").show();
-                    console.log("Error saving automation, server response:" + errorThrown);
+                function(xhr) {
+                    //console.log("Error saving config:" +xhr.status + ", server response:" + errorThrown);
+                    if (xhr.readyState == 4){ 
+                        if(xhr.status == 400) $("#fail_userpass").show();
+                        else if(xhr.status == 404) $("#fail_format").show();
+                        else if(xhr.status == 500) $("#fail_internal").show();
+                        else  $("#fail_unknown").show();
+                    }else  $("#fail_network").show();                    
                 }
             );
     },
@@ -53,6 +58,7 @@ var NetworkConfig = {
         if (this.dirty &&
             $.trim($("#username").val()) !== "" 
             && $.trim($("#password").val()) !== ""
+            &&  ($("#newpasswd").val()=="" || $("#newpasswd").val().length >= 8)
             && $("#newpasswd").val() === $("#newpasswd2").val()) {
 
             $("#savecfg").attr("disabled", false);
@@ -62,10 +68,11 @@ var NetworkConfig = {
             // $("#wifidisc").button({ disabled: true });
         }
         $("#saveok").hide();
-        $("#savefail").hide();
+        $(".savefail").hide();
     },
     vchange: function() {
         this.dirty =true;
+        if($("#newpasswd").val()!=""  && $("#newpasswd").val().length <8) alert("password must be longer than 8!");
         this.verify();
     },
     inputs: function() {
@@ -97,7 +104,7 @@ var NetworkConfig = {
         });
 
         $("#saveok").hide();
-        $("#savefail").hide();
+        $(".savefail").hide();
     },
     ssidbtn: function(ap, con, ssid) {
         if (ap)
@@ -144,6 +151,11 @@ var WiFiDialog={
             if (msg.ap) $("#aponly").prop('checked', true);
             else $("#aponly").prop('checked', false);
             if(msg.ssid) $("#wifissidinput").val(msg.ssid);
+            if(typeof msg["ip"] != "undefined" && msg.ip!="0.0.0.0"){
+                $("#staticip").val(msg.ip);
+                $("#gateway").val(msg.gw);
+                $("#netmask").val(msg.nm);
+            }
         }
     },
 
@@ -217,7 +229,25 @@ init:function(bm){
         if(typeof msg["wifi"] !="undefined") b.netstatus(msg.wifi);
     });
 
-        // wifi scan handling
+    $("#staticip").change(function(){
+        if(!b.validIP($(this).val())){
+            $(this).val("0.0.0.0");
+        }
+    });
+    $("#gateway").change(function(){
+        if(!b.validIP($(this).val())){
+            $(this).val("0.0.0.0");
+        }
+    });
+    $("#netmask").change(function(){
+        if(!b.validIP($(this).val())){
+            $(this).val("255.255.255.0");
+        }
+    });
+
+
+
+    // wifi scan handling
         b.nwlitem = $("#dialog-wifi .nwlist").remove();
         // remove scanning
         $("#scanningwifi").hide();

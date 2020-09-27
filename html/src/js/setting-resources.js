@@ -140,6 +140,67 @@
                     return v * 10 + 50;
                 }
             },
+            "s_cal_1": {
+                max: 5,
+                min: -5,
+                inc: 0.1,
+                tus:1,
+                decode: function(v) {
+                    return (v - 50) / 10;
+                },
+                encode: function(v) {
+                    return v * 10 + 50;
+                }
+            },
+            "s_cal_2": {
+                max: 5,
+                min: -5,
+                inc: 0.1,
+                tus:1,
+                decode: function(v) {
+                    return (v - 50) / 10;
+                },
+                encode: function(v) {
+                    return v * 10 + 50;
+                }
+            },
+            "s_cal_3": {
+                max: 5,
+                min: -5,
+                inc: 0.1,
+                tus:1,
+                decode: function(v) {
+                    return (v - 50) / 10;
+                },
+                encode: function(v) {
+                    return v * 10 + 50;
+                }
+            },
+            "s_cal_4": {
+                max: 5,
+                min: -5,
+                inc: 0.1,
+                tus:1,
+                decode: function(v) {
+                    return (v - 50) / 10;
+                },
+                encode: function(v) {
+                    return v * 10 + 50;
+                }
+            },
+            "s_cal_5": {
+                max: 5,
+                min: -5,
+                inc: 0.1,
+                tus:1,
+                decode: function(v) {
+                    return (v - 50) / 10;
+                },
+                encode: function(v) {
+                    return v * 10 + 50;
+                }
+            },
+
             "s_pidstart": {
                 max: 3.5,
                 min: 1.0,

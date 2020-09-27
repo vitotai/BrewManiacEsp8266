@@ -19,6 +19,7 @@ text: function(lines) {
     lcd.clear();
     for (var row = 0; row < lines.length; row++) {
         var line = lines[row];
+//        console.log("lcd-"+row+":"+ line);
         var col = 0;
         while (col < 20) {
             var ch = parseInt(line.substr(col * 2, 2), 16);

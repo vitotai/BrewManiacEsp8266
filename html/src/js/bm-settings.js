@@ -162,8 +162,6 @@ var BMSetting = {
 
         var start;
         var row;
-        var crow;
-        var lb;
 
         if (b._numsensor == 0) { //first time change to multisensor
             row = $("tr.sensor_row");
@@ -171,25 +169,16 @@ var BMSetting = {
             row.find("div.btn-group").hide();
 
             row.find(".btn-down").click(function(){
-                console.log("1st row down");
+//                console.log("1st row down");
                 b._sensorswap(0,1);
             });
 
-
             start = 2;
             // calibration
-            crow = $("#s_cal").closest("div.row");
-            lb = $(crow).find(".TCAL_T").text();
-            $(crow).find(".TCAL_T").text(lb + " #1");
-            $(crow).find(".TCAL_V").attr("id", "s_cal_1");
-            EEPROM["s_cal_1"] = EEPROM["s_cal"];
-            b._sclabel = lb;
+            $(".unosensor").hide();
         } else {
             row = $("#SA_" + b._numsensor).closest("tr.sensor_row");
             start = b._numsensor + 1;
-             // calibration
-            crow = $("#s_cal_" + b._numsensor).closest("div.row");
-            lb = b._sclabel;
         }
 
         if (n > b._numsensor) {
@@ -200,16 +189,7 @@ var BMSetting = {
                 nr.insertAfter(row);
                 nr.find("div.btn-group").hide();
                 row = nr;
-
-                var cnr = crow.clone();
                 //calibration
-                var did = "s_cal_" + i;
-                cnr.find(".TCAL_T").text(lb + " #" + i);
-                cnr.find(".TCAL_V").attr("id", did);
-                cnr.insertAfter(crow);
-
-                EEPROM[did] = EEPROM["s_cal"];
-                crow = cnr;
                 nr.find(".btn-up").click(function(){
                     var idx=$(this).closest("tr").find("td.sensor_id").text() -1;
                     b._sensorswap(idx,idx-1);
@@ -218,19 +198,19 @@ var BMSetting = {
                     var idx=$(this).closest("tr").find("td.sensor_id").text() -1;
                     b._sensorswap(idx,idx+1);
                 });
-    
-
             }
         } else { //t._numsensor > n
             // remove additional
             for (var i = n + 1; i <= b._numsensor; i++) {
                 var con = $("#SA_" + i).closest("tr.sensor_row");
                 con.remove();
-                var calr = $("#s_cal_" + i).closest("div.row");
-                calr.remove();
             }
         }
         b._numsensor = n;
+        // show/hide calibration
+        $(".msensorcal:lt(" + n + ")").show();
+        $(".msensorcal:eq(" + n + ")").hide();
+        $(".msensorcal:gt(" + n + ")").hide();
     },
     _sensoredit:function(edit){
         var b=this;
@@ -250,7 +230,7 @@ var BMSetting = {
     _valuechange: function(s) {
         var b=this;
         var n = $(s).attr("id");
-        var v = parseInt($(s).val());
+        var v = parseFloat($(s).val());
         var rv=v;
         var p = EEPROM[n];
         if (typeof p["type"] != "undefined") {

@@ -333,12 +333,44 @@
           </div>
           <div class="col"><div id="s_pwm"></div> %</div>
       </div>
-      <div class="row">
-          <div class="col TCAL_T">
+      <div class="row unosensor">
+          <div class="col">
               <%= sensor_calibration %>
           </div>
-          <div class="col"><div id="s_cal" class="TCAL_V"></div> <span class="tmp_unit">&deg;C</span></div>
+          <div class="col"><div id="s_cal"></div> <span class="tmp_unit">&deg;C</span></div>
       </div>
+
+      <div class="row multisensor msensorcal">
+        <div class="col">
+            <%= sensor_calibration %> #1
+        </div>
+        <div class="col"><div id="s_cal_1"></div> <span class="tmp_unit">&deg;C</span></div>
+    </div>
+    <div class="row multisensor msensorcal">
+        <div class="col">
+            <%= sensor_calibration %> #2
+        </div>
+        <div class="col"><div id="s_cal_2"></div> <span class="tmp_unit">&deg;C</span></div>
+    </div>
+    <div class="row multisensor msensorcal">
+        <div class="col">
+            <%= sensor_calibration %> #3
+        </div>
+        <div class="col"><div id="s_cal_3""></div> <span class="tmp_unit">&deg;C</span></div>
+    </div>
+    <div class="row multisensor msensorcal">
+        <div class="col">
+            <%= sensor_calibration %> #4
+        </div>
+        <div class="col"><div id="s_cal_4"></div> <span class="tmp_unit">&deg;C</span></div>
+    </div>
+    <div class="row multisensor msensorcal">
+        <div class="col">
+            <%= sensor_calibration %> #5
+        </div>
+        <div class="col"><div id="s_cal_5"></div> <span class="tmp_unit">&deg;C</span></div>
+    </div>
+
       <div class="row">
           <div class="col">
               <%= pid_start %>
@@ -1489,9 +1521,23 @@
                 <div id="saveok" class="alert alert-success" role="alert">
                     <%= new_setting_will_be_effective %>
                 </div>
-                <div  id="savefail" class="alert alert-danger" role="alert">
-                    <%= update_failed %>
+                <div  id="fail_userpass" class="savefail alert alert-danger" role="alert">
+                    <%= cfg_incorrect_userpass %>
                 </div>
+                <div  id="fail_format" class="savefail alert alert-danger" role="alert">
+                    <%= cfg_error_format %>
+                </div>
+
+                <div  id="fail_internal" class="savefail alert alert-danger" role="alert">
+                    <%= cfg_error_internal %>
+                </div>
+                <div  id="fail_network" class="savefail alert alert-danger" role="alert">
+                    <%= cfg_error_network %>
+                </div>
+                <div  id="fail_unknown" class="savefail alert alert-danger" role="alert">
+                    <%= cfg_error_unknown %>
+                </div>
+
             </div>
         </table>
     </div>
@@ -1588,21 +1634,21 @@
                     <div class="form-group row">
                             <label for="staticip" class="col-sm-5 col-form-label"><%= static_ip %></label>
                             <div class="col-sm-7">
-                              <input type="password" class="form-control" id="staticip">
+                              <input type="text" class="form-control" id="staticip">
                             </div>
                     </div>
 
                     <div class="form-group row">
                             <label for="gateway" class="col-sm-5 col-form-label"><%= gateway %></label>
                             <div class="col-sm-7">
-                              <input type="password" class="form-control" id="gateway">
+                              <input type="text" class="form-control" id="gateway">
                             </div>
                     </div>
 
                     <div class="form-group row">
                             <label for="netmask" class="col-sm-5 col-form-label"><%= netmask %></label>
                             <div class="col-sm-7">
-                              <input type="password" class="form-control" id="netmask">
+                              <input type="text" class="form-control" id="netmask">
                             </div>
                     </div>
                 </div>

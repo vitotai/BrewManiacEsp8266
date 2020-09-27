@@ -337,7 +337,11 @@
     "user_name": "Nombre de usuario",
     "password": "Contrasena",
     "new_setting_will_be_effective": "Los ajustes tomaran efecto despues de reiniciar.",
-    "update_failed": "Actualizacion fallida!!",
+    "cfg_incorrect_userpass":"Incorrect username/password.",
+    "cfg_error_format":"Error format!",
+    "cfg_error_internal":"Internal error.",
+    "cfg_error_network":"Network error.",
+    "cfg_error_unknown":"Uknown error.",
 
     "__logs__": "Pestana de logs",
     "brew_logs": "Logueo de datos",
