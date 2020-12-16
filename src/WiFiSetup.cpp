@@ -111,15 +111,29 @@ void WiFiSetupClass::onConnected(){
 	}
 }
 
+/* in ESP32/Arduino, 0.0.0.0 is INADDR_NONE
+	for ESP8266,     0.0.0.0 is INADDR_ANY
+	                255.255.255.255 is INADDR_NONE	                   
+    there is NO isSet() for ESP32 framework.
+    ESP8266 output "IP unset" while ESP32 outputs directly what it has.
+*/
+
+#if ESP32
+#define IPAddress_String(ip) ip.toString()
+#else
+#define IPAddress_String(ip) ip.isSet()? ip.toString():String("0.0.0.0")
+#endif
+
+
 String WiFiSetupClass::status(void){
 	String ret;
 	ret  = String("{\"ap\":") + String(_settingApMode? 1:0) + String(",\"con\":") + String((WiFi.status() == WL_CONNECTED)? 1:0);
 
 	if(!_settingApMode){
 		ret += String(",\"ssid\":\"") + WiFi.SSID() 
-			 + String("\",\"ip\":\"") + (_ip.isSet()? _ip.toString():"0.0.0.0")
-			 + String("\",\"gw\":\"") + (_gw.isSet()? _gw.toString():"0.0.0.0")
-			 + String("\",\"nm\":\"") + (_nm.isSet()? _nm.toString():"0.0.0.0")
+			 + String("\",\"ip\":\"") + IPAddress_String(_ip)
+			 + String("\",\"gw\":\"") + IPAddress_String(_gw)
+			 + String("\",\"nm\":\"") + IPAddress_String(_nm)
 			 + String("\"");
 	}
 

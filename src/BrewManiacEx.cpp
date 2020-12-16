@@ -138,6 +138,20 @@ typedef union _address{
 
 extern const uint8_t* getEmbeddedFile(const char* filename,bool &gzip, unsigned int &size);
 
+/* in ESP32/Arduino, 0.0.0.0 is INADDR_NONE
+	for ESP8266,     0.0.0.0 is INADDR_ANY
+	                255.255.255.255 is INADDR_NONE	                   
+    there is NO isSet() for ESP32 framework.
+    ESP8266 output "IP unset" while ESP32 outputs directly what it has.
+*/
+
+#if ESP32
+#define IPAddress_String(ip) ip.toString()
+#else
+#define IPAddress_String(ip) ip.isSet()? ip.toString():String("0.0.0.0")
+#endif
+
+
 /**************************************************************************************/
 /* common response.  */
 /**************************************************************************************/
@@ -448,6 +462,7 @@ TemperatureLogHandler logHandler;
 
 void requestRestart(bool disc);
 
+
 class NetworkConfig:public AsyncWebHandler
 {
 public:
@@ -460,9 +475,9 @@ public:
 		doc["user"] =_gUsername;
 		doc["pass"] =_gPassword;
 		doc["secured"] = _gSecuredAccess? 1:0;
-		doc["ip"] = WiFiSetup.staIp().isSet()? WiFiSetup.staIp().toString():"0.0.0.0";
-		doc["gw"] = WiFiSetup.staGateway().isSet()? WiFiSetup.staGateway().toString():"0.0.0.0";
-		doc["nm"] = WiFiSetup.staNetmask().isSet()? WiFiSetup.staNetmask().toString():"0.0.0.0";
+		doc["ip"] = IPAddress_String(WiFiSetup.staIp());
+		doc["gw"] = IPAddress_String(WiFiSetup.staGateway());
+		doc["nm"] = IPAddress_String(WiFiSetup.staNetmask());
 		doc["ap"] = WiFiSetup.isApMode()? 1:0;
 		doc["ssid"] =WiFiSetup.staSsid();
 		doc["stapass"] = WiFiSetup.staPass();
