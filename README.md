@@ -36,6 +36,7 @@ the stability is in doubt. Please be aware.
    * Sensor management from web pages
    * Customizable Recipe Source
    * embedded HTML/Javascript
+   * (Partial) Russian LCD text 
    * Bugs fix
       * Heating is turned on during Hopstand
       * Time isn't synchronized

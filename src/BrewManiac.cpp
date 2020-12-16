@@ -340,8 +340,8 @@ void setEventMask(byte mask)
 //*  includes, follow Arduino conveniention
 // *************************
 #include "buzz.h"
-#if WebPageLanguage == russian
-//#warning "Using Russian locale!"
+#if MenuLanguage == MENU_russian
+#warning "Using Russian locale!"
 #include "resources_ru.h"
 #else
 #include "resources.h"

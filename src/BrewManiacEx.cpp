@@ -460,9 +460,9 @@ public:
 		doc["user"] =_gUsername;
 		doc["pass"] =_gPassword;
 		doc["secured"] = _gSecuredAccess? 1:0;
-		doc["ip"] = WiFiSetup.staIp();
-		doc["gw"] = WiFiSetup.staGateway();
-		doc["nm"] = WiFiSetup.staNetmask();
+		doc["ip"] = WiFiSetup.staIp().isSet()? WiFiSetup.staIp().toString():"0.0.0.0";
+		doc["gw"] = WiFiSetup.staGateway().isSet()? WiFiSetup.staGateway().toString():"0.0.0.0";
+		doc["nm"] = WiFiSetup.staNetmask().isSet()? WiFiSetup.staNetmask().toString():"0.0.0.0";
 		doc["ap"] = WiFiSetup.isApMode()? 1:0;
 		doc["ssid"] =WiFiSetup.staSsid();
 		doc["stapass"] = WiFiSetup.staPass();
@@ -572,17 +572,24 @@ public:
 		// try open configuration
 		char configBuf[MAX_CONFIG_LEN];
 		File fh=FileSystem.open(CONFIG_FILENAME,"r+");
-
+		bool fileError=true;
 		if(fh){
 			size_t len=fh.readBytes(configBuf,MAX_CONFIG_LEN);
 			configBuf[len]='\0';
+			DBG_PRINTF("read %d bytes:%s\n",len,configBuf);
+			fh.close();
+			fileError =false;
+		}
+		else{
+			DBG_PRINTF("read failed\n");
 		}
 		#if ARDUINOJSON_VERSION_MAJOR == 6
 		DynamicJsonDocument root(2048);
 		auto error=deserializeJson(root,configBuf);
-
+		
+		DBG_PRINTF("deserialzeJson:%d\n",error);
 		if(error 
-				|| !fh 
+				|| fileError 
 				|| !root.containsKey("host")
 				|| !root.containsKey("user")
 				|| !root.containsKey("pass")){
@@ -608,20 +615,18 @@ public:
 			DBG_PRINTF("loading cfg error:%s\\n",configBuf);
 
 		}else{
-			fh.close();
-
-  			strcpy(_gHostname,root["host"]);
-  			strcpy(_gUsername,root["user"]);
-  			strcpy(_gPassword,root["pass"]);
+  			strcpy(_gHostname,root["host"].as<String>().c_str());
+  			strcpy(_gUsername,root["user"].as<String>().c_str());
+  			strcpy(_gPassword,root["pass"].as<String>().c_str());
   			_gSecuredAccess=(root.containsKey("secured"))? (bool)(root["secured"]):false;
 
 			if(root.containsKey("ap")){
 				bool apmode=root["ap"];
 				if(apmode) WiFiSetup.staConfig(true);
 				else{
-					IPAddress ip=root.containsKey("ip")? scanIP(root["ip"]):INADDR_NONE;
-					IPAddress gw=root.containsKey("gw")? scanIP(root["gw"]):INADDR_NONE;
-					IPAddress nm=root.containsKey("nm")? scanIP(root["nm"]):INADDR_NONE;
+					IPAddress ip=root.containsKey("ip")? scanIP(root["ip"].as<String>().c_str()):INADDR_NONE;
+					IPAddress gw=root.containsKey("gw")? scanIP(root["gw"].as<String>().c_str()):INADDR_NONE;
+					IPAddress nm=root.containsKey("nm")? scanIP(root["nm"].as<String>().c_str()):INADDR_NONE;
 					WiFiSetup.staConfig(false,ip,gw,nm);
 				}
 			}else{
@@ -1032,6 +1037,8 @@ void wifiConnect(DynamicJsonDocument& root){
 							scanIP(root["gw"].as<String>().c_str()),
 							scanIP(root["nm"].as<String>().c_str()));
 				// save to config
+		}else{
+			WiFiSetup.staConfig(false,IPAddress(0,0,0,0),IPAddress(0,0,0,0),IPAddress(0,0,0,0));
 		}
 		WiFiSetup.connect(ssid,root.containsKey("pass")? root["pass"]:emptyString);
 	}

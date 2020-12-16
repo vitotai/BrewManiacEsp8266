@@ -66,8 +66,9 @@ void WiFiSetupClass::begin(char const *ssid,const char *passwd)
 		if(_ip !=INADDR_NONE){
 			WiFi.config(_ip,_gw,_nm);
 		}
-		if(_targetSSID.isEmpty()) WiFi.begin();
-		else WiFi.begin(_targetSSID.c_str(),_targetPass.isEmpty()? NULL:_targetPass.c_str());
+
+		if(_targetSSID== emptyString) WiFi.begin();
+		else WiFi.begin(_targetSSID.c_str(),_targetPass==emptyString? NULL:_targetPass.c_str());
 	}
 	WiFi.softAP(_apName, _apPassword);
 	setupApService();
@@ -116,9 +117,10 @@ String WiFiSetupClass::status(void){
 
 	if(!_settingApMode){
 		ret += String(",\"ssid\":\"") + WiFi.SSID() 
-			 + String("\",\"ip\":\"") + _ip.toString()
-			 + String("\",\"gw\":\"") + _gw.toString()
-			 + String("\",\"nm\":\"") + _nm.toString() + String("\"");
+			 + String("\",\"ip\":\"") + (_ip.isSet()? _ip.toString():"0.0.0.0")
+			 + String("\",\"gw\":\"") + (_gw.isSet()? _gw.toString():"0.0.0.0")
+			 + String("\",\"nm\":\"") + (_nm.isSet()? _nm.toString():"0.0.0.0")
+			 + String("\"");
 	}
 
 	ret += String("}");
@@ -141,7 +143,7 @@ bool WiFiSetupClass::stayConnected(void)
 			if(_ip != INADDR_NONE){
 				WiFi.config(_ip,_gw,_nm);
 			}
-			WiFi.begin(_targetSSID.c_str(),_targetPass.isEmpty()? NULL:_targetPass.c_str());
+			WiFi.begin(_targetSSID.c_str(),_targetPass==emptyString? NULL:_targetPass.c_str());
 			_time=millis();
 			_reconnect =0;
 			_wifiState = WiFiStateConnecting;

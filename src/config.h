@@ -72,13 +72,24 @@
 #if ESP32
 #define UseLittleFS false
 #else
-#define UseLittleFS true
+#define UseLittleFS false
 #endif
 
 #endif
+
+
 #ifndef WebPageLanguage
 #define WebPageLanguage english
 #endif
+
+#define MENU_english 0
+#define MENU_russian 1
+
+#ifndef MenuLanguage
+#define MenuLanguage LANGUAGE_english
+#endif
+
+
 /**************************************************************************************/
 /*  BrewManiac Related settings                                                       */
 /**************************************************************************************/
