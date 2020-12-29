@@ -2,7 +2,7 @@
 #include <FS.h>
 #if ESP32
 #include <SPIFFS.h>
-#include <AsyncTcp.h>
+#include <AsyncTCP.h>
 #else
 #include <Hash.h>
 #include <ESPAsyncTCP.h>
