@@ -29,7 +29,7 @@ public:
 
     bool load(void);
     void save(void);
-    String json(void);
+    void json(String& output);
 
     float stageTemperature(uint8_t stage) { return _stageTemperatures[stage]; }
     void  setStageTemperature(uint8_t stage, float temp) { _stageTemperatures[stage] = temp; }

@@ -41,7 +41,7 @@ static File fsUploadFile;
 extern FS& FileSystem;
 #include "data_edit_html_gz.h"
 
-String getContentType(String filename){
+const String getContentType(const String& filename){
   if(server.hasArg("download")) return "application/octet-stream";
   else if(filename.endsWith(".htm")) return "text/html";
   else if(filename.endsWith(".html")) return "text/html";

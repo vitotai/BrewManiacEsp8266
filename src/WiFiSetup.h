@@ -39,18 +39,18 @@ public:
 	void setSwitchToApWhenDisconnected(bool toAp){  _switchToAp= toAp; }
 	void setAutoReconnect(bool reconnect){ _autoReconnect=reconnect; }
 
-	String scanWifi(void);
+	void scanWifi(String& output);
 	bool requestScanWifi(void);
 	bool disconnect(void);
 
 	bool isConnected(void);
-	String status(void);
+	void status(String& output);
 
 	IPAddress staIp(){ return _ip;}
 	IPAddress staNetmask(){ return _nm;}
 	IPAddress staGateway(){ return _gw;}
-	String    staSsid(){ return _targetSSID;}
-	String    staPass() {return _targetPass;}
+	const String    staSsid(){ return _targetSSID;}
+	const String    staPass() {return _targetPass;}
 	void staNetwork(const String& ssid,const String& pass);
 private:
 	byte _wifiState;

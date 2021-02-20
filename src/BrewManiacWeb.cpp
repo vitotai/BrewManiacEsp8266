@@ -390,10 +390,7 @@ void BrewManiacWeb::getSettings(String& json)
 
 void BrewManiacWeb::getAutomation(String& json)
 {
-//    json = "{\"code\":0,\"result\":\"OK\", \"data\":";
-//    json += automation.json();
-//	json += "}";
-    json = automation.json();
+    automation.json(json);
 }
 #define HEXCode(a) (((a) < 10)? ('0'+(a)):('A'-10+(a)))
 

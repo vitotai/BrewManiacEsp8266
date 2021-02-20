@@ -234,12 +234,12 @@ void CAutomation::save(void)
     }
 }
 
-String CAutomation::json(void)
+void CAutomation::json(String& output)
 {
     char buffer[BUFFER_SIZE];
     size_t length=formatJson(buffer,BUFFER_SIZE);
     buffer[length]='\0';
-    return String(buffer);
+    output=String(buffer);
 }
 
 

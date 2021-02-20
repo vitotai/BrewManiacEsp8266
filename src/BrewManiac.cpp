@@ -7108,7 +7108,7 @@ void startBrewManiac()
 	switchApplication(MAIN_SCREEN);
 }
 
-void brewmaniac_setup() {
+bool brewmaniac_setup() {
 
 	EepromInit();
 	automation.load();
@@ -7132,6 +7132,24 @@ void brewmaniac_setup() {
 	uiPrintInitialScreen();
 
 	wiInitialize();
+	// RecoveryMode
+	DBG_PRINTF("delay\n");
+	DBG_PRINTF("gButtonPressed=%d\n",gButtonPressed);
+	delay(3000);
+	DBG_PRINTF("gButtonPressed=%d\n",gButtonPressed);
+	btnReadButtons();
+	delay(150);
+	btnReadButtons();
+	DBG_PRINTF("gButtonPressed=%d\n",gButtonPressed);
+
+	if(btnIsUpPressed){
+		delay(500);
+		if(btnIsUpPressed){
+			return true;
+		}
+	}
+	return false;
+	// RecoveryMode
 }
 
 //*********************************************************************

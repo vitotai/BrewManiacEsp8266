@@ -53,13 +53,13 @@
 #include "BrewLogger.h"
 #endif
 
-extern void brewmaniac_setup();
+extern bool brewmaniac_setup();
 //extern void brewmaniac_ApPrompt(void);
 extern void brewmaniac_loop();
 //extern bool readSkipNetCfgButton(void);
 extern void startBrewManiac(void);
 
-extern String getContentType(String filename);
+extern const String getContentType(const String& filename);
 #define ResponseAppleCNA true
 
 /**************************************************************************************/
@@ -222,14 +222,14 @@ class RecipeFileHandler:public AsyncWebHandler
 		return true;
 	}
 
-	String listDirectory(String path){
+	void listDirectory(const String& path,String& json){
 		#if ESP32
 		File dir = FileSystem.open(path);
 		#else
 		Dir dir = FileSystem.openDir(path);
 		#endif
 
-		String json=String("[");
+		json=String("[");
 		bool comma=false;
 		#if !UseLittleFS
 		uint16_t len=path.length();
@@ -259,7 +259,7 @@ class RecipeFileHandler:public AsyncWebHandler
 			#endif
 
 		}
-		return json + String("]");
+		json += String("]");
 	}
 public:
 	RecipeFileHandler(){}
@@ -306,7 +306,9 @@ public:
 				String file=request->getParam("dir", true)->value();
 				DBG_PRINTF("LS request:%s\n",file.c_str());
 				if(accessAllow(file,EXECUTE_MASK | READ_MASK)){
-					requestSend(request,200, "application/json", listDirectory(file));
+					String list;
+					listDirectory(file,list);
+					requestSend(request,200, "application/json",list);
 				}
 				else
 					requestSend(request,401);
@@ -602,7 +604,6 @@ public:
 		DynamicJsonDocument root(2048);
 		auto error=deserializeJson(root,configBuf);
 		
-		DBG_PRINTF("deserialzeJson:%d\n",error);
 		if(error 
 				|| fileError 
 				|| !root.containsKey("host")
@@ -1019,13 +1020,13 @@ void greeting(std::function<void(const String&,const char*)> sendFunc){
 	bmWeb.getAutomation(automation);
 	sendFunc(automation,"auto");
 
-	char buf[128];
+	char buf[256];
+	String netstat;
+	WiFiSetup.status(netstat);
+	sprintf(buf,"{\"host\":\"%s\",\"secured\":%d,\"wifi\":%s}",_gHostname,_gSecuredAccess? 1:0,netstat.c_str());
 	
-	sprintf(buf,"{\"host\":\"%s\",\"secured\":%d,\"wifi\":%s}",_gHostname,_gSecuredAccess? 1:0,WiFiSetup.status().c_str());
-
 	sendFunc(buf,"netcfg");
 	sprintf(buf,"{\"time\":%ld}",TimeKeeper.getTimeSeconds());
-
     sendFunc(String(buf),"timesync");
 	String status;
 	bmWeb.getCurrentStatus(status,true);
@@ -1479,7 +1480,10 @@ void setup(void){
 	DBG_PRINTF("hostname:%s, user:%s, pass:%s, secured:%d\n",_gHostname,_gUsername,_gPassword,_gSecuredAccess);
 
 	// 2. start brewmaniac part, so that LCD will be ON.
-	brewmaniac_setup();
+	if(brewmaniac_setup()){
+		DBG_PRINTF("recovery mode!\n");
+		WiFiSetup.staConfig(true);
+	}
 
 
 	//3. Start WiFi

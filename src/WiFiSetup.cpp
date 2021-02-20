@@ -7,6 +7,7 @@
 #include <DNSServer.h>
 #include "config.h"
 #include "WiFiSetup.h"
+#include <ArduinoJson.h>
 
 WiFiSetupClass WiFiSetup;
 
@@ -21,7 +22,7 @@ WiFiSetupClass WiFiSetup;
 #endif
 
 #if SerialDebug
-#define wifi_info(a)	DBG_PRINTF("%s:SSID:%s pass:%s IP:%s, gw:%s\n",(a),WiFi.SSID().c_str(),WiFi.psk().c_str(),WiFi.localIP().toString().c_str(),WiFi.gatewayIP().toString().c_str())
+#define wifi_info(a)	DBG_PRINTF("%s: %d ,SSID:%s pass:%s IP:%s, gw:%s\n",(a), WiFi.status(),WiFi.SSID().c_str(),WiFi.psk().c_str(),WiFi.localIP().toString().c_str(),WiFi.gatewayIP().toString().c_str())
 #else
 #define wifi_info(a)
 #endif
@@ -107,7 +108,9 @@ bool WiFiSetupClass::isConnected(void){
 
 void WiFiSetupClass::onConnected(){
 	if(_eventHandler){
-		_eventHandler(status().c_str());
+		String netstat;
+		status(netstat);
+		_eventHandler(netstat.c_str());
 	}
 }
 
@@ -125,8 +128,9 @@ void WiFiSetupClass::onConnected(){
 #endif
 
 
-String WiFiSetupClass::status(void){
-	String ret;
+void WiFiSetupClass::status(String& output){
+
+/*	String ret;
 	ret  = String("{\"ap\":") + String(_settingApMode? 1:0) + String(",\"con\":") + String((WiFi.status() == WL_CONNECTED)? 1:0);
 
 	if(!_settingApMode){
@@ -138,7 +142,22 @@ String WiFiSetupClass::status(void){
 	}
 
 	ret += String("}");
+	DBG_PRINTF("Status:%s\n",ret.c_str());
 	return ret;
+*/
+
+	StaticJsonDocument<256> json;
+	json["ap"] =_settingApMode? 1:0;
+	json["con"] = (WiFi.status() == WL_CONNECTED)? 1:0;
+
+	if(!_settingApMode){
+		json["ssid"] = WiFi.SSID();
+		json["ip"] = IPAddress_String(_ip);
+		json["gw"] =  IPAddress_String(_gw);
+		json["nm"] =  IPAddress_String(_nm);
+	}
+
+	serializeJson(json,output);
 }
 
 bool WiFiSetupClass::stayConnected(void)
@@ -229,7 +248,8 @@ bool WiFiSetupClass::stayConnected(void)
 	}
 	
 	if(_wifiScanState == WiFiScanStatePending){
-		String nets=scanWifi();
+		String nets;
+		scanWifi(nets);
 		_wifiScanState = WiFiScanStateNone;
 		if(_eventHandler) _eventHandler(nets.c_str());
 	}
@@ -245,9 +265,9 @@ bool WiFiSetupClass::requestScanWifi(void) {
 	return false;
 }
 
-String WiFiSetupClass::scanWifi(void) {
+void WiFiSetupClass::scanWifi(String& output) {
 	
-	String rst="{\"list\":[";
+	output="{\"list\":[";
 	
 	DBG_PRINTF("Scan Networks...\n");
 	int n = WiFi.scanNetworks();
@@ -300,14 +320,13 @@ String WiFiSetupClass::scanWifi(void) {
 			#endif
 			+ String("}");
 			if(comma){
-				rst += ",";	
+				output += ",";	
 			}else{
 				comma=true;
 			}
-			rst += item;
+			output += item;
       	}
     }
-	rst += "]}";
-	DBG_PRINTF("scan result:%s\n",rst.c_str());
-	return rst;
+	output += "]}";
+	DBG_PRINTF("scan result:%s\n",output.c_str());
 }
