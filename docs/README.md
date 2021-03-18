@@ -1,6 +1,6 @@
-## BrewManiacExManual_0.1.pdf
+## UserManual
 
-The user manual.
+The latest user manual is in MD format. PDF files are old ones.
 
 
 ## circuit.png
@@ -13,7 +13,6 @@ A simplfied setup withoug custom PCB. It is my initial platform, and I used it t
 * Supply 5V to Nodemcu. Use at least 1A ~ 1.5A power supply.
 * Relay module.
     * Supply 5V. 
-    * Sometimes you might get negative relay module. Add `-DPUMP_INVERTED_LOGIC=true` to build_flags in platformio.ini if you have that. 
  * PCF8574 module
     * Ground all adress section jumpers.
     * Check the lable on the IC. You might get PCF8574 or PCF8574A. Change line 27 in pins.h to

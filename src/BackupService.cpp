@@ -1,7 +1,7 @@
 #include "FS.h"
 #include "config.h"
 #include "BackupService.h"
-
+#if !ESP32
 extern "C" {
 #include "c_types.h"
 #include "ets_sys.h"
@@ -189,3 +189,5 @@ void BackupServiceClass::restore(){
     }
     if(buffer) free(buffer);
 }
+
+#endif

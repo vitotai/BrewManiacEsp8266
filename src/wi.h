@@ -136,11 +136,11 @@ void wiUpdateAuxSensor(byte i,byte v)
 	updateSetting(PS_AuxSensorAddressOf(i),v);
 }
 
-static byte _wiSensorScanRequest;
-
-void wiStartSensorScan(void)
+byte wiScanSensors(byte max,byte addresses[][8])
 {
-	_wiSensorScanRequest =1;
+	byte num=scanSensors(max,addresses);
+
+	return num;
 }
 #endif //#if	MaximumNumberOfSensors	> 1
 
@@ -170,21 +170,10 @@ void wiLcdBufferEnd(bool update=true)
 }
 
 void wiInitialize(){
-#if	MaximumNumberOfSensors	> 1
-	_wiSensorScanRequest =0;
-#endif
 }
 
 void wiThread()
 {
-#if	MaximumNumberOfSensors	> 1
-	if(_wiSensorScanRequest)
-	{
-		gSensorNumber=scanSensors(MaximumNumberOfSensors,gSensorAddresses);
-		_wiSensorScanRequest =0;
-		bmWeb.scanSensorDone();
-	}
-#endif
 }
 
 

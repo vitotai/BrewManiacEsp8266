@@ -1,8 +1,13 @@
+#if ESP32
+#include <WiFi.h>
+#else
 #include <ESP8266WiFi.h>          //https://github.com/esp8266/Arduino
+#endif
 //needed for library
 #include <DNSServer.h>
 #include "config.h"
 #include "WiFiSetup.h"
+#include <ArduinoJson.h>
 
 WiFiSetupClass WiFiSetup;
 
@@ -17,7 +22,7 @@ WiFiSetupClass WiFiSetup;
 #endif
 
 #if SerialDebug
-#define wifi_info(a)	DBG_PRINTF("%s,SSID:%s pass:%s IP:%s, gw:%s\n",(a),WiFi.SSID().c_str(),WiFi.psk().c_str(),WiFi.localIP().toString().c_str(),WiFi.gatewayIP().toString().c_str())
+#define wifi_info(a)	DBG_PRINTF("%s: %d ,SSID:%s pass:%s IP:%s, gw:%s\n",(a), WiFi.status(),WiFi.SSID().c_str(),WiFi.psk().c_str(),WiFi.localIP().toString().c_str(),WiFi.gatewayIP().toString().c_str())
 #else
 #define wifi_info(a)
 #endif
@@ -62,7 +67,9 @@ void WiFiSetupClass::begin(char const *ssid,const char *passwd)
 		if(_ip !=INADDR_NONE){
 			WiFi.config(_ip,_gw,_nm);
 		}
-		WiFi.begin();
+
+		if(_targetSSID== emptyString) WiFi.begin();
+		else WiFi.begin(_targetSSID.c_str(),_targetPass==emptyString? NULL:_targetPass.c_str());
 	}
 	WiFi.softAP(_apName, _apPassword);
 	setupApService();
@@ -70,19 +77,16 @@ void WiFiSetupClass::begin(char const *ssid,const char *passwd)
 	
 }
 
-bool WiFiSetupClass::connect(char const *ssid,const char *passwd,IPAddress ip,IPAddress gw, IPAddress nm){
-	DBG_PRINTF("Connect to %s pass:%s, ip=%s\n",ssid, passwd,ip.toString().c_str());
+void WiFiSetupClass::staNetwork(const String& ssid,const String& pass){
+	_targetSSID=ssid;
+	_targetPass=pass;
+}
 
-	if(_targetSSID) free((void*)_targetSSID);
-	_targetSSID=strdup(ssid);
-	if(_targetPass) free((void*)_targetPass);
-	_targetPass=(passwd)? strdup(passwd):NULL;
+bool WiFiSetupClass::connect(const String& ssid,const String& passwd){
+	DBG_PRINTF("Connect to %s pass:%s\n",ssid.c_str(), passwd.c_str());
 
-	//if((ip !=INADDR_NONE) && (gw!=INADDR_NONE) & (nm!=INADDR_NONE)){
-		_ip=ip;
-		_gw=gw;
-		_nm=nm;
-	//}
+	_targetSSID=ssid;
+	_targetPass=passwd;
 
 	_wifiState = WiFiStateChangeConnectPending;
 	if(_apMode){
@@ -104,23 +108,56 @@ bool WiFiSetupClass::isConnected(void){
 
 void WiFiSetupClass::onConnected(){
 	if(_eventHandler){
-		_eventHandler(status().c_str());
+		String netstat;
+		status(netstat);
+		_eventHandler(netstat.c_str());
 	}
 }
 
-String WiFiSetupClass::status(void){
-	String ret;
+/* in ESP32/Arduino, 0.0.0.0 is INADDR_NONE
+	for ESP8266,     0.0.0.0 is INADDR_ANY
+	                255.255.255.255 is INADDR_NONE	                   
+    there is NO isSet() for ESP32 framework.
+    ESP8266 output "IP unset" while ESP32 outputs directly what it has.
+*/
+
+#if ESP32
+#define IPAddress_String(ip) ip.toString()
+#else
+#define IPAddress_String(ip) ip.isSet()? ip.toString():String("0.0.0.0")
+#endif
+
+
+void WiFiSetupClass::status(String& output){
+
+/*	String ret;
 	ret  = String("{\"ap\":") + String(_settingApMode? 1:0) + String(",\"con\":") + String((WiFi.status() == WL_CONNECTED)? 1:0);
 
 	if(!_settingApMode){
 		ret += String(",\"ssid\":\"") + WiFi.SSID() 
-			 + String("\",\"ip\":\"") + _ip.toString()
-			 + String("\",\"gw\":\"") + _gw.toString()
-			 + String("\",\"nm\":\"") + _nm.toString() + String("\"");
+			 + String("\",\"ip\":\"") + IPAddress_String(_ip)
+			 + String("\",\"gw\":\"") + IPAddress_String(_gw)
+			 + String("\",\"nm\":\"") + IPAddress_String(_nm)
+			 + String("\"");
 	}
 
 	ret += String("}");
+	DBG_PRINTF("Status:%s\n",ret.c_str());
 	return ret;
+*/
+
+	StaticJsonDocument<256> json;
+	json["ap"] =_settingApMode? 1:0;
+	json["con"] = (WiFi.status() == WL_CONNECTED)? 1:0;
+
+	if(!_settingApMode){
+		json["ssid"] = WiFi.SSID();
+		json["ip"] = IPAddress_String(_ip);
+		json["gw"] =  IPAddress_String(_gw);
+		json["nm"] =  IPAddress_String(_nm);
+	}
+
+	serializeJson(json,output);
 }
 
 bool WiFiSetupClass::stayConnected(void)
@@ -139,7 +176,7 @@ bool WiFiSetupClass::stayConnected(void)
 			if(_ip != INADDR_NONE){
 				WiFi.config(_ip,_gw,_nm);
 			}
-			WiFi.begin(_targetSSID,_targetPass);
+			WiFi.begin(_targetSSID.c_str(),_targetPass==emptyString? NULL:_targetPass.c_str());
 			_time=millis();
 			_reconnect =0;
 			_wifiState = WiFiStateConnecting;
@@ -211,7 +248,8 @@ bool WiFiSetupClass::stayConnected(void)
 	}
 	
 	if(_wifiScanState == WiFiScanStatePending){
-		String nets=scanWifi();
+		String nets;
+		scanWifi(nets);
 		_wifiScanState = WiFiScanStateNone;
 		if(_eventHandler) _eventHandler(nets.c_str());
 	}
@@ -227,9 +265,9 @@ bool WiFiSetupClass::requestScanWifi(void) {
 	return false;
 }
 
-String WiFiSetupClass::scanWifi(void) {
+void WiFiSetupClass::scanWifi(String& output) {
 	
-	String rst="{\"list\":[";
+	output="{\"list\":[";
 	
 	DBG_PRINTF("Scan Networks...\n");
 	int n = WiFi.scanNetworks();
@@ -274,17 +312,21 @@ String WiFiSetupClass::scanWifi(void) {
         	//int quality = getRSSIasQuality(WiFi.RSSI(indices[i]));
 			String item=String("{\"ssid\":\"") + WiFi.SSID(indices[i]) + 
 			String("\",\"rssi\":") + WiFi.RSSI(indices[i]) +
-			String(",\"enc\":") +  String((WiFi.encryptionType(indices[i]) != ENC_TYPE_NONE)? "1":"0")
+			String(",\"enc\":") + 
+			#if ESP32			
+			String((WiFi.encryptionType(indices[i]) != WIFI_AUTH_OPEN)? "1":"0")
+			#else
+			String((WiFi.encryptionType(indices[i]) != ENC_TYPE_NONE)? "1":"0")
+			#endif
 			+ String("}");
 			if(comma){
-				rst += ",";	
+				output += ",";	
 			}else{
 				comma=true;
 			}
-			rst += item;
+			output += item;
       	}
     }
-	rst += "]}";
-	DBG_PRINTF("scan result:%s\n",rst.c_str());
-	return rst;
+	output += "]}";
+	DBG_PRINTF("scan result:%s\n",output.c_str());
 }

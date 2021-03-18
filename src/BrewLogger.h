@@ -120,7 +120,17 @@ public:
 			int fidx=newLogFileIndex();
 			char buf[32];
 			createFilename(buf,fidx);
+
+			#if UseLittleFS
+			if(!FileSystem.exists(LOG_PATH)){
+				FileSystem.mkdir(LOG_PATH);
+			}
+			#endif
+			#if SerialDebug
+			bool success=
+			#endif
 			FileSystem.rename(BREWING_TMPFILE,buf);
+			DBG_PRINTF("move file success:%d",success);
 		}
 	}
 	// tracking

@@ -1,11 +1,25 @@
 #include <Arduino.h>
 #include <pgmspace.h>
+
+#if ESP32
+#include <WiFi.h>
+#include <ESPmDNS.h>
+#else
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
+#endif
+
 #include <ArduinoOTA.h>
 #include <FS.h>
+#if ESP32
+#include <SPIFFS.h>
+#include <AsyncTCP.h>
+#include <rom/spi_flash.h>
+#else
 #include <Hash.h>
 #include <ESPAsyncTCP.h>
+#endif
+
 #include <ESPAsyncWebServer.h>
 #if UseSoftwareSerial == true
 #include <SoftwareSerial.h>
@@ -39,13 +53,13 @@
 #include "BrewLogger.h"
 #endif
 
-extern void brewmaniac_setup();
+extern bool brewmaniac_setup();
 //extern void brewmaniac_ApPrompt(void);
 extern void brewmaniac_loop();
 //extern bool readSkipNetCfgButton(void);
 extern void startBrewManiac(void);
 
-extern String getContentType(String filename);
+extern const String getContentType(const String& filename);
 #define ResponseAppleCNA true
 
 /**************************************************************************************/
@@ -63,11 +77,10 @@ extern String getContentType(String filename);
 #define UPDATE_SETTING_PATH 	"/savesettings.php"
 
 #define NETCFG_PATH 		"/netcfg.php"
-#define SCAN_SENSOR_PATH 	"/scan.php"
 #define DEFAULT_INDEX_FILE  "bm.htm"
 
-#define MAX_CONFIG_LEN 256
-#define JSON_BUFFER_SIZE 256
+#define MAX_CONFIG_LEN 1024
+#define JSON_BUFFER_SIZE 1024
 #define CONFIG_FILENAME 	"/network.cfg"
 
 #define LS_PATH				"/list.php"
@@ -84,6 +97,11 @@ extern String getContentType(String filename);
 #define WIFI_SCAN_PATH "/wifiscan"
 #define WIFI_CONNECT_PATH "/wificon"
 #define WIFI_DISC_PATH "/wifidisc"
+
+#define RPC_TAG "rpc"
+#define RPCID_TAG "id"
+
+#define SCAN_SENSOR_CMD 	"scansensor"
 
 #define MaxNameLength 32
 
@@ -118,6 +136,69 @@ typedef union _address{
 } IPV4Address;
 
 
+extern const uint8_t* getEmbeddedFile(const char* filename,bool &gzip, unsigned int &size);
+
+/* in ESP32/Arduino, 0.0.0.0 is INADDR_NONE
+	for ESP8266,     0.0.0.0 is INADDR_ANY
+	                255.255.255.255 is INADDR_NONE	                   
+    there is NO isSet() for ESP32 framework.
+    ESP8266 output "IP unset" while ESP32 outputs directly what it has.
+*/
+
+#if ESP32
+#define IPAddress_String(ip) ip.toString()
+#else
+#define IPAddress_String(ip) ip.isSet()? ip.toString():String("0.0.0.0")
+#endif
+
+
+/**************************************************************************************/
+/* common response.  */
+/**************************************************************************************/
+// it's kind of ugly, but might reduce the code size and simpler to modify
+void requestSend(AsyncWebServerRequest *request,int code,const String& type="application/json",const String& content="{}"){
+#if EnableCORS
+
+	AsyncWebServerResponse *response;
+	
+	if(code == 200){
+		response= request->beginResponse(200,type, content);
+	}else{
+		response= request->beginResponse(code);
+	}
+//	DBG_PRINTF("Access-Control-Allow-Origin\n");
+	response->addHeader("Access-Control-Allow-Origin","*");
+	request->send(response);
+
+#else	
+	if(code == 200){
+		request->send(200,type, content);
+	}else{
+		request->send(code);
+	}
+#endif
+}
+
+void requestSend(AsyncWebServerRequest *request,AsyncWebServerResponse* response){
+	#if EnableCORS
+	response->addHeader("Access-Control-Allow-Origin","*");
+	#endif
+	request->send(response);
+}
+
+void requestSend(AsyncWebServerRequest *request,FS &fs, const String& path, const String& contentType=String() ){
+	#if EnableCORS
+	DBG_PRINTF("Send file %s.\n",path.c_str());
+
+	AsyncWebServerResponse *response=request->beginResponse(fs,path,contentType);
+	response->addHeader("Access-Control-Allow-Origin","*");
+	request->send(response);
+
+	#else
+	request->send(fs,path,contentType);
+	#endif
+}
+
 /**************************************************************************************/
 /* Recipe Fle management interface */
 /**************************************************************************************/
@@ -141,13 +222,29 @@ class RecipeFileHandler:public AsyncWebHandler
 		return true;
 	}
 
-	String listDirectory(String path){
+	void listDirectory(const String& path,String& json){
+		#if ESP32
+		File dir = FileSystem.open(path);
+		#else
 		Dir dir = FileSystem.openDir(path);
-		String json=String("[");
+		#endif
+
+		json=String("[");
 		bool comma=false;
+		#if !UseLittleFS
 		uint16_t len=path.length();
+		#endif
+
+		#if defined(ESP32)
+  		File entry = dir.openNextFile();
+
+  		while(entry){
+			  String file=entry.name();
+		#else
+
 		while (dir.next()) {
 			String file=dir.fileName();
+		#endif
     		DBG_PRINTF("LS File:%s\n",file.c_str());
     		if(comma) json = json + String(",");
     		else comma=true;
@@ -156,8 +253,13 @@ class RecipeFileHandler:public AsyncWebHandler
 			#else
     		json += String("\"") + file.substring(len) + String("\"");
 			#endif
+
+			#if defined(ESP32)
+    		entry = dir.openNextFile();
+			#endif
+
 		}
-		return json + String("]");
+		json += String("]");
 	}
 public:
 	RecipeFileHandler(){}
@@ -171,14 +273,14 @@ public:
 				if(accessAllow(file,WRITE_MASK)){
 					DBG_PRINTF("RM executed:%s\n",file.c_str());
 					FileSystem.remove(file.c_str());
-					request->send(200, "", "{}");
+					requestSend(request,200);
 				}else{
 					DBG_PRINTF("RM not allowed:%s\n",file.c_str());
-					request->send(400);
+					requestSend(request,400);
 				}
 			}else{
 				DBG_PRINTF("miss file in req.");
-				request->send(400);
+				requestSend(request,400);
 			}
 		}else if(request->url() == UPLOAD_PATH){
 			if( request->hasParam("file",true,true)){
@@ -186,34 +288,37 @@ public:
 				if(accessAllow(file,WRITE_MASK)){
 					if( FileSystem.exists(file)){
 						DBG_PRINTF("File UL success:%s\n",file.c_str());
-						request->send(200, "", "{}");
+						requestSend(request,200);
 					}else{
 						DBG_PRINTF("File UL Failed:%s\n",file.c_str());
-						request->send(500);
+						requestSend(request,500);
 					}
 				}else{
-					request->send(401);
+					requestSend(request,401);
 					DBG_PRINTF("File UL not allowed:%s\n",file.c_str());
 				}
 			}else{
 				DBG_PRINTF("miss file in req.");
-				request->send(404);
+				requestSend(request,404);
 			}
 		}else if(request->url() == LS_PATH){
 			if(request->hasParam("dir",true)){
 				String file=request->getParam("dir", true)->value();
 				DBG_PRINTF("LS request:%s\n",file.c_str());
 				if(accessAllow(file,EXECUTE_MASK | READ_MASK)){
-					request->send(200, "application/json", listDirectory(file));
+					String list;
+					listDirectory(file,list);
+					requestSend(request,200, "application/json",list);
 				}
 				else
-					request->send(401);
+					requestSend(request,401);
 			}else
-				request->send(400);
+				requestSend(request,400);
 
 		}else{
 			// just return the file WITHOUT CACHE!
-			request->send(FileSystem,request->url());
+			DBG_PRINTF("requestin recipe file:%s",request->url().c_str());
+			requestSend(request,FileSystem,request->url());
 		}
 	}
     virtual void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final)
@@ -241,10 +346,14 @@ public:
     }
 
 	bool canHandle(AsyncWebServerRequest *request){
-	 	if(request->url() == RM_PATH || request->url() ==UPLOAD_PATH || request->url() ==LS_PATH) return true;
-	 	if(request->url() == RECIPE_PREFERNECE) return true;
-	 	if(request->url().startsWith(RECIPE_PATH_Base)){
-		 	if(FileSystem.exists(request->url())) return true;
+	 	if(request->url() == RM_PATH 
+		 || request->url() ==UPLOAD_PATH 
+		 || request->url() ==LS_PATH){
+			return true;
+		}else if(request->url() == RECIPE_PREFERNECE){
+			  return FileSystem.exists(request->url());
+	 	}else if(request->url().startsWith(RECIPE_PATH_Base)){
+		 	return FileSystem.exists(request->url());
 		}
 	 	return false;
 	}
@@ -270,9 +379,9 @@ public:
 				char buf[40];
 				brewLogger.createFilename(buf,index);
 				if(FileSystem.exists(buf)){
-					request->send(FileSystem,buf,"application/octet-stream");
+					requestSend(request,FileSystem,buf,"application/octet-stream");
 				}else{
-					request->send(404);
+					requestSend(request,404);
 				}
 			}else{
 				// list
@@ -291,7 +400,7 @@ public:
 					}
 				}
 				json += "]";
-				request->send(200, "text/json;",json);
+				requestSend(request,200, "application/json;",json);
 			}
 			return;
 		}
@@ -304,11 +413,12 @@ public:
 		}
 		size_t size=brewLogger.beginCopyAfter(offset);
 		if(size >0){
-			request->send("application/octet-stream", size, [](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+			AsyncWebServerResponse *response=request->beginResponse("application/octet-stream", size, [](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
 				return brewLogger.read(buffer, maxLen,index);
 			});
+			requestSend(request,response);
 		}else{
-			request->send(204);
+			requestSend(request,204);
 		}
 	}
 	TemperatureLogHandler(){}
@@ -327,50 +437,6 @@ TemperatureLogHandler logHandler;
 /* network configuration */
 /**************************************************************************************/
 
-
-void requestRestart(bool disc);
-
-class NetworkConfig:public AsyncWebHandler
-{
-protected:
-	bool saveConfig(void)
-	{
-
-		File config=FileSystem.open(CONFIG_FILENAME,"w+");
-  		if(!config){
-  				return false;
-  		}
-		char configBuff[MAX_CONFIG_LEN];
-		static const char* configFormat =
-			R"END({"host":"%s","user":"%s","pass":"%s","secured":%d,"wifi":%s})END";
-
-		sprintf(configBuff,configFormat,_gHostname,_gUsername,_gPassword,_gSecuredAccess? 1:0,WiFiSetup.status().c_str());
-		config.printf(configBuff);
-  		config.close();
-		return true;
-	}
-public:
-	NetworkConfig(){}
-
-	void handleRequest(AsyncWebServerRequest *request){
-		if(request->url() == NETCFG_PATH) handleNetCfg(request);
-		else if(request->url() == WIFI_SCAN_PATH) handleNetworkScan(request);
-		else if(request->url() == WIFI_CONNECT_PATH) handleNetworkConnect(request);
-		else if(request->url() == WIFI_DISC_PATH) handleNetworkDisconnect(request);
-	}
-
-	void handleNetworkScan(AsyncWebServerRequest *request){
-		if(WiFiSetup.requestScanWifi())
-			request->send(200,"application/json","{}");
-		else
-			request->send(403);
-	}
-
-	void handleNetworkDisconnect(AsyncWebServerRequest *request){
-		WiFiSetup.disconnect();
-		request->send(200,"application/json","{}");
-		saveConfig();
-	}
 
 	IPAddress scanIP(const char *str)
 	{
@@ -396,43 +462,59 @@ public:
     	return sip;
 	}
 
-	void handleNetworkConnect(AsyncWebServerRequest *request){
+void requestRestart(bool disc);
 
-		if(!request->hasParam("nw",true) && !request->hasParam("ap",true)){
-			request->send(400);
-			return;
-		}
 
-		if(request->hasParam("ap",true)){
-			// AP only mode
-			WiFiSetup.disconnect();
-			// save to config
-		}else{
-			String ssid=request->getParam("nw",true)->value();
-			const char *pass=NULL;
-			if(request->hasParam("pass",true)){
-				pass = request->getParam("pass",true)->value().c_str();
-			}
-			if(request->hasParam("ip",true) && request->hasParam("gw",true) && request->hasParam("nm",true)){
-				DBG_PRINTF("static IP\n");
-				WiFiSetup.connect(ssid.c_str(),pass,
-							scanIP(request->getParam("ip",true)->value().c_str()),
-							scanIP(request->getParam("gw",true)->value().c_str()),
-							scanIP(request->getParam("nm",true)->value().c_str())
-				);
-				// save to config
-			}else{
-				WiFiSetup.connect(ssid.c_str(),pass);
-				DBG_PRINTF("dynamic IP\n");
-			}
-		}
-		saveConfig();
-		request->send(200,"application/json","{}");
+class NetworkConfig:public AsyncWebHandler
+{
+public:
+	void configString(String &str){
+
+		const size_t capacity = JSON_OBJECT_SIZE(16);
+		DynamicJsonDocument doc(capacity);
+
+		doc["host"] = _gHostname;
+		doc["user"] =_gUsername;
+		doc["pass"] =_gPassword;
+		doc["secured"] = _gSecuredAccess? 1:0;
+		doc["ip"] = IPAddress_String(WiFiSetup.staIp());
+		doc["gw"] = IPAddress_String(WiFiSetup.staGateway());
+		doc["nm"] = IPAddress_String(WiFiSetup.staNetmask());
+		doc["ap"] = WiFiSetup.isApMode()? 1:0;
+		doc["ssid"] =WiFiSetup.staSsid();
+		doc["stapass"] = WiFiSetup.staPass();
+		serializeJson(doc, str);
+		DBG_PRINTF("sav netcfg:%s",str.c_str());
 	}
 
+	bool saveConfig(void)
+	{
+
+		File config=FileSystem.open(CONFIG_FILENAME,"w+");
+  		if(!config){
+  				return false;
+  		}
+		String configStr;
+		configString(configStr);
+		config.print(configStr);
+  		config.close();
+		return true;
+	}
+	NetworkConfig(){}
+
+	void handleRequest(AsyncWebServerRequest *request){
+		if(request->url() == NETCFG_PATH) handleNetCfg(request);
+		else if(request->url() == WIFI_DISC_PATH) handleNetworkDisconnect(request);
+	}
+	void handleNetworkDisconnect(AsyncWebServerRequest *request){
+		WiFiSetup.disconnect();
+		requestSend(request,200);
+		saveConfig();
+	}
 	void handleNetCfg(AsyncWebServerRequest *request){
 		if(request->method() == HTTP_POST){
 			String data=request->getParam("data", true, false)->value();
+			DBG_PRINTF("netcfg:\"%s\"\n",data.c_str());
 
 			#if ARDUINOJSON_VERSION_MAJOR == 6
 
@@ -446,19 +528,19 @@ public:
 			if (!root.success()){
 			#endif
 				DBG_PRINTF("Invalid JSON string\n");
-				request->send(404);
+				requestSend(request,404);
 				return;
 			}
 			if(!root.containsKey("user") || !root.containsKey("pass")
 			 || (strcmp(_gUsername,root["user"]) !=0)
 			 || (strcmp(_gPassword,root["pass"]) !=0) ){
 				//DBG_PRINTF("expected user:%s pass:%s\n",_gUsername,_gPassword);
-			 	request->send(400);
+			 	requestSend(request,400);
 			 	return;
 			}
 			if(root.containsKey("disconnect")){
 				requestRestart(true);
-  				request->send(200);
+  				requestSend(request,200);
   				return;
 			}
 
@@ -479,28 +561,25 @@ public:
 				_gSecuredAccess =( 0 != value);
 			}
 
-			if(saveConfig()){
-				request->send(200,"text/json","{}");
+			if(saveConfig()){	
+				requestSend(request,200);
 			}else{
-				request->send(500);
+				requestSend(request,500);
 			}
 
 		}else if(request->method() == HTTP_GET){
 			if(FileSystem.exists(CONFIG_FILENAME)){
-				request->send(FileSystem,CONFIG_FILENAME, "text/json");
+				requestSend(request,FileSystem,CONFIG_FILENAME, "application/json");
 			}else{
-				String rsp=String("{\"host\":\"") + String(_gHostname)
-				+ String("\",\"secured\":") + (_gSecuredAccess? "1":"0")
-				+ String(",\"wifi\":\"") +WiFiSetup.status() + String("}");
-				request->send(200, "text/json",rsp);
+				String rsp;
+				configString(rsp);
+				requestSend(request,200, "application/json",rsp);
 			}
 		}
 	}
 
 	bool canHandle(AsyncWebServerRequest *request){
 	 	if(request->url() == NETCFG_PATH) return true;
-		else if(request->url() == WIFI_SCAN_PATH) return true;
-		else if(request->url() == WIFI_CONNECT_PATH) return true;
 		else if(request->url() == WIFI_DISC_PATH) return true;
 
 	 	return false;
@@ -509,18 +588,24 @@ public:
 	void loadSetting(void){
 		// try open configuration
 		char configBuf[MAX_CONFIG_LEN];
-		File config=FileSystem.open(CONFIG_FILENAME,"r+");
-
-		if(config){
-			size_t len=config.readBytes(configBuf,MAX_CONFIG_LEN);
+		File fh=FileSystem.open(CONFIG_FILENAME,"r+");
+		bool fileError=true;
+		if(fh){
+			size_t len=fh.readBytes(configBuf,MAX_CONFIG_LEN);
 			configBuf[len]='\0';
+			DBG_PRINTF("read %d bytes:%s\n",len,configBuf);
+			fh.close();
+			fileError =false;
+		}
+		else{
+			DBG_PRINTF("read failed\n");
 		}
 		#if ARDUINOJSON_VERSION_MAJOR == 6
 		DynamicJsonDocument root(2048);
-		auto error=deserializeJson(root,config);
-
-		if(error
-				|| !config
+		auto error=deserializeJson(root,configBuf);
+		
+		if(error 
+				|| fileError 
 				|| !root.containsKey("host")
 				|| !root.containsKey("user")
 				|| !root.containsKey("pass")){
@@ -529,7 +614,7 @@ public:
 		DynamicJsonBuffer jsonBuffer(JSON_BUFFER_SIZE);
 		JsonObject& root = jsonBuffer.parseObject(configBuf);
 
-		if(!config
+		if(!fh
 				|| !root.success()
 				|| !root.containsKey("host")
 				|| !root.containsKey("user")
@@ -542,27 +627,29 @@ public:
   			strcpy(_gPassword,Default_PASSWORD);
 			_gSecuredAccess=false;
 
-			WiFiSetup.staConfig(false,WiFi.localIP(),WiFi.gatewayIP(),WiFi.subnetMask());
+			WiFiSetup.staConfig(false);
+			DBG_PRINTF("loading cfg error:%s\\n",configBuf);
 
 		}else{
-			config.close();
-
-  			strcpy(_gHostname,root["host"]);
-  			strcpy(_gUsername,root["user"]);
-  			strcpy(_gPassword,root["pass"]);
+  			strcpy(_gHostname,root["host"].as<String>().c_str());
+  			strcpy(_gUsername,root["user"].as<String>().c_str());
+  			strcpy(_gPassword,root["pass"].as<String>().c_str());
   			_gSecuredAccess=(root.containsKey("secured"))? (bool)(root["secured"]):false;
 
 			if(root.containsKey("ap")){
 				bool apmode=root["ap"];
 				if(apmode) WiFiSetup.staConfig(true);
 				else{
-					IPAddress ip=root.containsKey("ip")? scanIP(root["ip"]):INADDR_NONE;
-					IPAddress gw=root.containsKey("gw")? scanIP(root["gw"]):INADDR_NONE;
-					IPAddress nm=root.containsKey("nm")? scanIP(root["nm"]):INADDR_NONE;
+					IPAddress ip=root.containsKey("ip")? scanIP(root["ip"].as<String>().c_str()):INADDR_NONE;
+					IPAddress gw=root.containsKey("gw")? scanIP(root["gw"].as<String>().c_str()):INADDR_NONE;
+					IPAddress nm=root.containsKey("nm")? scanIP(root["nm"].as<String>().c_str()):INADDR_NONE;
 					WiFiSetup.staConfig(false,ip,gw,nm);
 				}
 			}else{
-				WiFiSetup.staConfig(false,WiFi.localIP(),WiFi.gatewayIP(),WiFi.subnetMask());
+				WiFiSetup.staConfig(false);
+			}
+			if(root.containsKey("ssid")){
+				WiFiSetup.staNetwork(root["ssid"],root.containsKey("stapass")? root["stapass"]:emptyString);
 			}
   		}
 
@@ -632,7 +719,7 @@ protected:
     }
 public:
 	BmwHandler(void){}
-		virtual bool isRequestHandlerTrivial() override final {return false;}
+	virtual bool isRequestHandlerTrivial() override final {return false;}
 
 	void handleRequest(AsyncWebServerRequest *request){
 
@@ -643,14 +730,14 @@ public:
   				AsyncWebParameter* tvalue = request->getParam("time");
   				DBG_PRINTF("Set Time:%ld, current:%ld\n",tvalue->value().toInt(),TimeKeeper.getTimeSeconds());
 	 			TimeKeeper.setCurrentTime(tvalue->value().toInt());
-	 			request->send(200);
+	 			requestSend(request,200);
 	 		}
-	 		else request->send(400);
-	 	}else if(request->method() == HTTP_GET && request->url() == SETTING_PATH ){
+	 		else requestSend(request,400);
+	 	}else if(request->method() == HTTP_GET && request->url() == SETTING_PATH ){ // deprecated.
 	 		String setting;
 	 		bmWeb.getSettings(setting);
 	 		String json= "{\"code\":0,\"result\":\"OK\", \"data\":"+ setting + "}";
-	 		request->send(200, "text/json", json);
+	 		requestSend(request,200, "application/json", json);
 
 			//piggyback the time from browser
 			if(request->hasParam("time")){
@@ -659,7 +746,7 @@ public:
 	 			TimeKeeper.setCurrentTime(tvalue->value().toInt());
 	 		}
 
-	 	}else if(request->method() == HTTP_GET && request->url() == AUTOMATION_PATH){
+	 	}else if(request->method() == HTTP_GET && request->url() == AUTOMATION_PATH){ // deprecated.
 	 		String json;
 	 		String autojson;
 
@@ -667,29 +754,24 @@ public:
 	 		json = "{\"code\":0,\"result\":\"OK\", \"data\":";
             json += autojson;
             json += "}";
-	 		request->send(200, "text/json", json);
-#if	MaximumNumberOfSensors	> 1
-	 	}else if(request->method() == HTTP_GET && request->url() == SCAN_SENSOR_PATH){
-	 		bmWeb.scanSensors();
-	 		request->send(200,"text/json","{}");
-#endif
+	 		requestSend(request,200, "application/json", json);
 	 	}else if(request->method() == HTTP_GET && request->url() == BUTTON_PATH){
 			if(request->hasParam("code")){
 				AsyncWebParameter* p = request->getParam("code");
 				byte code=p->value().toInt();
 	 			bmWeb.sendButton(code & 0xF, (code & 0xF0)!=0);
-	 			request->send(200,"text/json","{}");
+	 			requestSend(request,200);
 	 		}else{
-	 			request->send(400);
+	 			requestSend(request,400);
 	 		}
 	 	}else if(request->method() == HTTP_POST && request->url() == UPDATE_AUTOMATION_PATH){
 	 		String data=request->getParam("data", true, false)->value();
 //	 		DebugOut("saveauto.php:\n");
 //	 		DebugOut(data.c_str());
 	 		if(bmWeb.updateAutomation(data)){
-	 			request->send(200, "text/json", "{\"code\":0,\"result\":\"OK\"}");
+	 			requestSend(request,200);
 	 		}else{
-	 			request->send(400);
+	 			requestSend(request,400);
 	 		}
 
 	 	}else if(request->method() == HTTP_POST && request->url() == UPDATE_SETTING_PATH){
@@ -697,25 +779,27 @@ public:
 	 		DebugOut("savesettings.php:\n");
 	 		DebugOut(data.c_str());
 	 		if(bmWeb.updateSettings(data)){
-	 			request->send(200, "text/json", "{\"code\":0,\"result\":\"OK\"}");
+	 			requestSend(request,200);
 	 		}else{
-	 			request->send(400);
+	 			requestSend(request,400);
 	 		}
 	 	}else if(request->method() == HTTP_GET){
 
 	 	    if(request->url() == AUDIO_PATH){
 	 	        // no cache.
-    	 		 request->send(FileSystem,AUDIO_FILE);
+    	 		 requestSend(request,FileSystem,AUDIO_FILE);
     	 		 return;
 	 		}
-
+			// file retrievl.
 
 		 	AsyncWebServerResponse *response;
 
 			String path=request->url();
-	 		if(path.endsWith("/")) path +=DEFAULT_INDEX_FILE;
-
-  			if(path.endsWith(".js")){
+	 		if(path.endsWith("/")) path += String(DEFAULT_INDEX_FILE);
+			
+			DBG_PRINTF("checking#1 file:%s\n",path.c_str());
+  			
+			  if(path.endsWith(".js")){
 
 	 			String pathWithJgz = path.substring(0,path.lastIndexOf('.')) + ".jgz";
 				//DBG_PRINTF("checking with:%s\n",pathWithJgz.c_str());
@@ -724,35 +808,36 @@ public:
 		 			response = request->beginResponse(FileSystem, pathWithJgz,"application/javascript");
 					response->addHeader("Content-Encoding", "gzip");
 					response->addHeader("Cache-Control","max-age=2592000");
-					request->send(response);
+					requestSend(request,response);
 					return;
 				}
   			}else{
   				//DBG_PRINTF("non js file:\"%s\"\n",path.c_str());
   			}
+			
 	 		if(path.endsWith(".m4a") || path.endsWith(".mp3") || path.endsWith(".ogg")){
 
     	 		int start=0;
     	 		int end = -1;
-    	 		if(request->hasHeader("Range")){
-                    AsyncWebHeader* h = request->getHeader("Range");
+    	 		if(request->hasHeader("range")){
+                    AsyncWebHeader* h = request->getHeader("range");
                     DBG_PRINTF("Range: %s\n", h->value().c_str());
                     decodeRange(h->value(),start,end);
                     DBG_PRINTF("decode: %d - %d\n", start, end);
                 }
-			        const char *mime=NULL;
-			        if(path.endsWith(".m4a")) mime = "audio/mp4";
-			        else if(path.endsWith(".mp3")) mime="audio/mepg";
-			        else /*if(path.endsWith(".ogg"))*/ mime = "audio/ogg";
+			    const char *mime=NULL;
+			    if(path.endsWith(".m4a")) mime = "audio/mp4";
+			    else if(path.endsWith(".mp3")) mime="audio/mepg";
+			    else /*if(path.endsWith(".ogg"))*/ mime = "audio/ogg";
 
                 if(start ==0 && end == -1){
     	 			response = request->beginResponse(FileSystem, path,mime);
 	    		    response->addHeader("Accept-Ranges","bytes");
 		    	    response->addHeader("Cache-Control","max-age=2592000");
-			        request->send(response);
+			        requestSend(request,response);
 			    }else{
 			        if(! fileReader.prepare(path,start,end)) {
-			            request->send(500);
+			            requestSend(request,500);
 			            return;
 			        }
 
@@ -762,69 +847,103 @@ public:
                     char buff[128];
                     sprintf(buff,"bytes %d-%d/%d",start,fileReader.end(),fileReader.filesize());
                     //response->addHeader("Content-Range",buff);
+			
 	    		    response->addHeader("Accept-Ranges","bytes");
 		    	    response->addHeader("Cache-Control","max-age=2592000");
 		    	    response->setCode(206);
 
-		    	    request->send(response);
+		    	    requestSend(request,response);
 			    }
 	 		}else{
-    	 		String pathWithGz = path + ".gz";
+    	 		String pathWithGz = path + String(".gz");
+				DBG_PRINTF("checking file:%s, gz:%s\n",path.c_str(),pathWithGz.c_str());
   	    		if(FileSystem.exists(pathWithGz)){
 			    	// AsyncFileResonse will add "content-disposion" header, result in "download" of Safari, instead of "render"
 	 	    	  	// response = request->beginResponse(FileSystem, pathWithGz,"application/x-gzip");
 			      	// response->addHeader("Content-Encoding", "gzip");
 				  	File file=FileSystem.open(pathWithGz,"r");
 			 	  	if(!file){
-						request->send(500);
+						requestSend(request,500);
 						return;
 					}
 					response = request->beginResponse(file, path,getContentType(path));
+				    response->addHeader("Cache-Control","max-age=2592000");
+				    requestSend(request,response);
 
-  			    }else{
+  			    }else if(FileSystem.exists(path)){
 	 			    response = request->beginResponse(FileSystem, path);
-			    }
-
-			    response->addHeader("Cache-Control","max-age=2592000");
-			    request->send(response);
+				    response->addHeader("Cache-Control","max-age=2592000");
+				    requestSend(request,response);
+			    }else{
+					DBG_PRINTF("embedded file\n");
+					bool gzip;
+					uint32_t size;
+					const uint8_t* file=getEmbeddedFile(path.c_str(),gzip,size);
+					if(file){
+						response = request->beginResponse_P(200, "text/html", file, size);
+						if(gzip){
+    	           			response->addHeader("Content-Encoding", "gzip");
+				    		response->addHeader("Cache-Control","max-age=2592000");
+						    requestSend(request,response);
+						}
+					}else{
+						// error.
+						requestSend(request,500);
+						return;
+					}
+				}
 			}
 		}
 	 }
 
 	bool canHandle(AsyncWebServerRequest *request){
 	 	if(request->method() == HTTP_GET){
-	 		if(request->url() == SETTIME_PATH || request->url() == SETTING_PATH || request->url() == AUTOMATION_PATH
-	 		    || request->url() == BUTTON_PATH  || request->url() == SCAN_SENSOR_PATH)
+	 		if(request->url() == SETTIME_PATH 
+			 	|| request->url() == SETTING_PATH 
+				|| request->url() == AUTOMATION_PATH
+	 		    || request->url() == BUTTON_PATH){
 	 			return true;
-	 		else{
+	 		}else{
+				DBG_PRINTF("BmwHandler canHandle file:%s\n",request->url().c_str());
+
 	 		    if(request->url() == AUDIO_PATH){
     	 		    return FileSystem.exists(AUDIO_FILE);
 	 		    }
-				// get file
-				request->addInterestingHeader("Range");
 
+				// get file
+				if(request->url().endsWith(".m4a") || request->url().endsWith(".mp3") || request->url().endsWith(".ogg")){
+					request->addInterestingHeader("range");
+				}
+				
 				String path=request->url();
 	 			if(path.endsWith("/")) path +=DEFAULT_INDEX_FILE;
 	 			//DBG_PRINTF("request:%s\n",path.c_str());
 				//if(fileExists(path)) return true;
-				if(FileSystem.exists(path)) return true;
+				
+				bool dum;
+	    		unsigned int dum2;
+			    if(getEmbeddedFile(path.c_str(),dum,dum2)) return true;
 
+				if(FileSystem.exists(path)) return true;
+				// special handling of jgz->js
   				if(path.endsWith(".js")){
 	 				String pathWithJgz = path.substring(0,path.lastIndexOf('.')) + ".jgz";
 					//DBG_PRINTF("checking with:%s\n",pathWithJgz.c_str());
   			  		if(FileSystem.exists(pathWithJgz)) return true;
   			  	}
-
+				// pre compressed file
   				String pathWithGz = path + ".gz";
   				if(FileSystem.exists(pathWithGz)) return true;
 
 	 		}
 	 	}else if(request->method() == HTTP_POST){
-	 		if(request->url() == UPDATE_AUTOMATION_PATH || request->url() == UPDATE_SETTING_PATH)
+	 		if(request->url() == UPDATE_AUTOMATION_PATH 
+			 	|| request->url() == UPDATE_SETTING_PATH){
 	 			return true;
+			}
 	 	}
 	 	return false;
-	 }
+	 } // end of bool canHandle(...)
 };
 
 BmwHandler bmwHandler;
@@ -832,19 +951,26 @@ BmwHandler bmwHandler;
 /**************************************************************************************/
 /* server push  */
 /**************************************************************************************/
-
+#ifndef WL_MAC_ADDR_LENGTH
+#define WL_MAC_ADDR_LENGTH 6
+#endif
 #define ESPAsyncTCP_issue77_Workaround 1
 
 void getSystemInfo(String& json){
-
+	#if ESP32
+	json += String("{\"fid\":") + String(g_rom_flashchip.device_id)
+			+ String(",\"rsize\":") + String(g_rom_flashchip.chip_size)
+			+ String(",\"ssize\":") + String(SPIFFS.totalBytes());
+	#else
 	json += String("{\"fid\":") + String(ESP.getFlashChipId())
 			+ String(",\"rsize\":") + String(ESP.getFlashChipRealSize())
 			+ String(",\"ssize\":") + String(ESP.getFlashChipSize());
-
 	FSInfo fs_info;
 	FileSystem.info(fs_info);
 	json +=  String(", \"fs\":") + String(fs_info.totalBytes);
+	#endif
 
+	json += String(",\"buildtime\":\"") +String(__DATE__) +String(" ")+String(__TIME__) +String("\"");
 
 	uint8_t mac[WL_MAC_ADDR_LENGTH];
 	WiFi.macAddress(mac);
@@ -873,11 +999,11 @@ void getVersionInfo(String& json)
 	json += String(",\"paddle\":0");
 	#endif
 
-	json += String("},\"system\":");
+	json += String(",\"system\":");
 
 	getSystemInfo(json);
 
-	json +="}";
+	json +=" }}";
 }
 
 void greeting(std::function<void(const String&,const char*)> sendFunc){
@@ -894,13 +1020,13 @@ void greeting(std::function<void(const String&,const char*)> sendFunc){
 	bmWeb.getAutomation(automation);
 	sendFunc(automation,"auto");
 
-	char buf[MAX_CONFIG_LEN];
-
-	sprintf(buf,"{\"host\":\"%s\",\"secured\":%d,\"wifi\":%s}",_gHostname,_gSecuredAccess? 1:0,WiFiSetup.status().c_str());
-
+	char buf[256];
+	String netstat;
+	WiFiSetup.status(netstat);
+	sprintf(buf,"{\"host\":\"%s\",\"secured\":%d,\"wifi\":%s}",_gHostname,_gSecuredAccess? 1:0,netstat.c_str());
+	
 	sendFunc(buf,"netcfg");
 	sprintf(buf,"{\"time\":%ld}",TimeKeeper.getTimeSeconds());
-
     sendFunc(String(buf),"timesync");
 	String status;
 	bmWeb.getCurrentStatus(status,true);
@@ -910,7 +1036,32 @@ void greeting(std::function<void(const String&,const char*)> sendFunc){
 #if UseWebSocket == true
 AsyncWebSocket ws(WS_PATH);
 
-void processRemoteCommand( uint8_t *data, size_t len)
+extern void printSensorAddress(char *buf, byte *addr);
+
+
+void wifiConnect(DynamicJsonDocument& root){
+
+	if(root.containsKey("ap")){
+			// AP only mode
+			WiFiSetup.disconnect();
+			// save to config
+	}else if(root.containsKey("nw")){
+		String ssid=root["nw"];
+		if(root.containsKey("ip") && root.containsKey("gw") && root.containsKey("nm")){
+			DBG_PRINTF("static IP\n");
+			WiFiSetup.staConfig(false,scanIP(root["ip"].as<String>().c_str()),
+							scanIP(root["gw"].as<String>().c_str()),
+							scanIP(root["nm"].as<String>().c_str()));
+				// save to config
+		}else{
+			WiFiSetup.staConfig(false,IPAddress(0,0,0,0),IPAddress(0,0,0,0),IPAddress(0,0,0,0));
+		}
+		WiFiSetup.connect(ssid,root.containsKey("pass")? root["pass"]:emptyString);
+	}
+	networkConfig.saveConfig();
+}
+
+void processRemoteCommand(AsyncWebSocketClient * client, uint8_t *data, size_t len)
 {
 	char buf[128];
 	int i;
@@ -940,6 +1091,47 @@ void processRemoteCommand( uint8_t *data, size_t len)
 		}else if(root.containsKey("btnx")){
 			int code = root["btnx"];
 			bmWeb.sendButton(code,false);
+		}else if(root.containsKey("wificmd")){
+			String cmd=root["wificmd"];
+			if(cmd == "scan"){
+				WiFiSetup.requestScanWifi();
+			}else if (cmd =="con"){
+				wifiConnect(root);
+			}
+		}else if(root.containsKey(RPC_TAG)
+				&& root.containsKey(RPCID_TAG)){			
+			String rpcFunc=root[RPC_TAG];
+			String rpcID=root[RPCID_TAG];
+
+#if	MaximumNumberOfSensors	> 1
+#if ARDUINOJSON_VERSION_MAJOR < 6
+#error "ArduinoJson v6 is required"
+#endif
+		// not finished
+			if(rpcFunc == SCAN_SENSOR_CMD){
+				byte addr[MaximumNumberOfSensors][8];
+		 		byte num=bmWeb.scanSensors(MaximumNumberOfSensors,addr);
+
+				StaticJsonDocument<1024> json;
+				json["ok"] = 1;
+				json["id"] = rpcID;
+				JsonObject ret=json.createNestedObject("ret");
+				ret["num"] = num;
+
+				char hex[20];
+				if(num > 0){
+					JsonArray addrs=ret.createNestedArray("sensors");
+					for(int i=0;i<num;i++){
+						printSensorAddress(hex,addr[i]);
+						addrs.add(String("0x") + String(hex));
+					}
+				}
+				String msg;
+				serializeJson(json,msg);
+				client->text(String("rpc:")+ msg);
+				DBG_PRINTF("cmd rsp:%s\n",msg.c_str());
+			}
+#endif
 		}
 	}
 }
@@ -988,8 +1180,8 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
     	if(info->final && info->index == 0 && info->len == len){
       		//the whole message is in a single frame and we got all of it's data
       		DBG_PRINTF("ws[%s][%u] %s-message[%llu]\n", server->url(), client->id(), (info->opcode == WS_TEXT)?"text":"binary", info->len);
-
-			processRemoteCommand(data,info->len);
+			
+			processRemoteCommand(client,data,info->len);
 
 		} else {
       		//message is comprised of multiple frames or the frame is split into multiple packets
@@ -1201,7 +1393,7 @@ AppleCNAHandler appleCNAHandler;
 
 #endif //#if ResponseAppleCNA == true
 
-HttpUpdateHandler httpUpdateHandler(FIRMWARE_UPDATE_URL,JS_UPDATE_URL);
+HttpUpdateHandler httpUpdateHandler(FIRMWARE_UPDATE_URL);
 /*
 bool testFileSystem(void)
 {
@@ -1252,48 +1444,6 @@ void displayIP(bool apmode){
 	}
 }
 
-String checkJSVersion(void){
-
-	String version="0";
-
-	Dir dir=FileSystem.openDir("/");
-	bool indexFileExist=false;
-	bool jsFileExist=false;
-	int lastIndex;
-	#if UseLittleFS
-	#define JS_FILE_START  "bm."
-	#else
-	#define JS_FILE_START  "/bm."
-	#endif
-	#define JS_FILE_EXTEND ".jgz"
-
-	#if UseLittleFS
-	String FullindexFile = String(DEFAULT_INDEX_FILE);
-	#else
-	String FullindexFile = String("/") + String(DEFAULT_INDEX_FILE);
-	#endif
-
-	while (dir.next()) {
-    	String fn=dir.fileName();
-		DBG_PRINTF("file:%s, JS_START:%d Extend:%d\n",fn.c_str(),fn.startsWith(JS_FILE_START),fn.lastIndexOf( JS_FILE_EXTEND));
-		if(fn.compareTo(FullindexFile) == 0 ||
-			fn.compareTo(FullindexFile + ".gz") == 0){ // might be .htm or htm.gz
-			indexFileExist=true;
-			if(jsFileExist) break;
-		}else if((fn.startsWith(JS_FILE_START)) && ((lastIndex=fn.lastIndexOf( JS_FILE_EXTEND)) > 0)){
-			String verstr = fn.substring(strlen(JS_FILE_START),lastIndex);
-			version = verstr.substring(0,1) + String(".") + verstr.substring(1,2) + String(".") + verstr.substring(2);
-			DBG_PRINTF("version:%s\n",version.c_str());
-			jsFileExist = true;
-			if(indexFileExist) break;
-		}
-	}
-	if(!indexFileExist || !jsFileExist){
-		version="0";
-		DBG_PRINTF("missing index:%d  jsfile:%d!\n",indexFileExist,jsFileExist);
-	}
-	return version;
-}
 /**************************************************************************************/
 /* Main procedure */
 /**************************************************************************************/
@@ -1312,7 +1462,11 @@ void setup(void){
 
 	//1.Initialize file system
 	//start SPI Filesystem
+	#if ESP32
+	if(!SPIFFS.begin(true)){
+	#else
   	if(!FileSystem.begin()){
+	#endif
   		// TO DO: what to do?
   		DebugOut("File System begin() failed\n");
   	}else{
@@ -1322,22 +1476,26 @@ void setup(void){
 	//1b. load nsetwork conf
 	networkConfig.loadSetting();
 
-	//DBG_PRINTF("hostname:%s, user:%s, pass:%s, secured:%d\n",_gHostname,_gUsername,_gPassword,_gSecuredAccess);
+	DBG_PRINTF("hostname:%s, user:%s, pass:%s, secured:%d\n",_gHostname,_gUsername,_gPassword,_gSecuredAccess);
 
 	// 2. start brewmaniac part, so that LCD will be ON.
-	brewmaniac_setup();
+	if(brewmaniac_setup()){
+		DBG_PRINTF("recovery mode!\n");
+		WiFiSetup.staConfig(true);
+	}
 
 
 	//3. Start WiFi
-//	WiFiSetup.setBreakCallback(&readSkipNetCfgButton);
-//	WiFiSetup.setAPCallback(&brewmaniac_ApPrompt);
 	WiFiSetup.onEvent(wiFiEvent);
 	WiFiSetup.begin((const char*)_gHostname,(const char*)_gPassword);
 
   	DebugOut("Connected! IP address: ");
   	DebugOut(WiFi.localIP());
-
+	#if ESP32
+	if (!MDNS.begin(_gHostname)) {
+	#else
 	if (!MDNS.begin(_gHostname,WiFi.localIP())) {
+	#endif
 		DebugOut("Error setting mDNS responder");
 	}
 	// TODO: SSDP responder
@@ -1347,26 +1505,12 @@ void setup(void){
 		TimeKeeper.begin("time.nist.gov","time.windows.com","de.pool.ntp.org");
 
 	//4. check version
-	bool forcedUpdate;
-	String jsVersion = checkJSVersion();
 
-	if(jsVersion == "0"){
-  		forcedUpdate=true;
-	}else{
-		forcedUpdate=false;
-	}
+	//5.1 HTTP Update page
+	httpUpdateHandler.setUrl(ONLINE_UPDATE_PATH);
 
-	//5. setup Web Server
-	if(forcedUpdate){
-		//5.1 forced to update
-		httpUpdateHandler.setUrl("/");
-	}else{
-		//5.1 HTTP Update page
-		httpUpdateHandler.setUrl(ONLINE_UPDATE_PATH);
-		httpUpdateHandler.setCredential(_gUsername,_gPassword);
-	}
-
-	httpUpdateHandler.setVersion(BME8266_VERSION,jsVersion);
+	httpUpdateHandler.setCredential(_gUsername,_gPassword);
+	httpUpdateHandler.setVersion(BME8266_VERSION);
 	server.addHandler(&httpUpdateHandler);
 
 
@@ -1392,8 +1536,7 @@ void setup(void){
 		server.addHandler(&bmwHandler);
 
 #if ResponseAppleCNA == true
-	if(! forcedUpdate) //CNAHandler makes Mac thought it connected to the internet
-		server.addHandler(&appleCNAHandler);
+	server.addHandler(&appleCNAHandler);
 #endif
 
 	server.addHandler(&logHandler);
@@ -1401,7 +1544,15 @@ void setup(void){
 	//securedAccess need additional check
 	// server.serveStatic("/", FileSystem, "/","public, max-age=259200"); // 3 days
 
+#if ESP32
+	server.on("/system",[](AsyncWebServerRequest *request){
+		request->send(200,"","totalBytes:" +String(SPIFFS.totalBytes()) +
+		" usedBytes:" + String(SPIFFS.usedBytes()) +
+		" heap:"+String(ESP.getFreeHeap()));
+		//testSPIFFS();
+	});
 
+#else
 	server.on("/system",[](AsyncWebServerRequest *request){
 		FSInfo fs_info;
 		FileSystem.info(fs_info);
@@ -1410,6 +1561,7 @@ void setup(void){
 		+" pageSize:" + String(fs_info.pageSize)
 		+" heap:"+String(ESP.getFreeHeap()));
 	});
+#endif
 #if PROFILING == true
 	server.on("/profile",[](AsyncWebServerRequest *request){
 		request->send(200,"","max loop time:" +String(_profileMaximumLoop));
@@ -1418,7 +1570,7 @@ void setup(void){
 	// 404 NOT found.
   	//called when the url is not defined here
 	server.onNotFound([](AsyncWebServerRequest *request){
-		request->send(404);
+		requestSend(request,404);
 	});
 
 	//6. start Web server
@@ -1465,8 +1617,10 @@ void loop(void){
 
 	ESPUpdateServer_loop();
   	bmWeb.loop();
-
+	
+	#if !ESP32
 	MDNS.update();
+	#endif
 
   	brewmaniac_loop();
 

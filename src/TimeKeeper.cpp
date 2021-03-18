@@ -3,9 +3,12 @@
 #include <FS.h>
 #include "config.h"
 
+#if !ESP32
 extern "C" {
 #include <sntp.h>
 }
+#endif
+
 #include "TimeKeeper.h"
 
 #if SerialDebug == true
@@ -28,11 +31,11 @@ TimeKeeperClass TimeKeeper;
 
 void TimeKeeperClass::setCurrentTime(time_t now)
 {
-	if(_referenceSeconds ==0){
+	//if(_referenceSeconds ==0){
 		_referenceSeconds=now;
   		_referenceSystemTime = millis();
 		_lastSaved=_referenceSeconds;
-	}
+	//}
 //	saveTime(now);
 }
 
@@ -55,18 +58,28 @@ void TimeKeeperClass::begin(bool useSaved)
 void TimeKeeperClass::begin(const char* server1,const char* server2,const char* server3)
 {
 	//_online=true;
+ #ifdef ESP32
+	if(! server1) configTime(0,0,"time.nist.gov");
+	else configTime(0,0,server1,server2,server3);
+
+#else
+
   	if(server1) sntp_setservername(0,(char*)server1);
   	else sntp_setservername(0,(char*)"time.nist.gov");
   	if(server2) sntp_setservername(1,(char*)server2);
   	if(server3) sntp_setservername(2,(char*)server3);
   	sntp_set_timezone(0);
 	sntp_init();
-
-  	unsigned long secs=0;
+#endif
+  	time_t secs=0;
 	int trial;
 	for(trial=0;trial< 20;trial++)
   	{
+		#ifdef ESP32
+		time(&secs);
+		#else
     	secs = sntp_get_current_timestamp();
+		#endif
     	if(secs) break;
     	delay(500);
   	}
@@ -85,7 +98,12 @@ time_t TimeKeeperClass::getTimeSeconds(void) // get Epoch time
 
 	if(diff > RESYNC_TIME){
 //		if( _online){
-			unsigned long newtime=sntp_get_current_timestamp();
+			time_t newtime;
+			#if ESP32
+				time(&newtime);
+			#else
+			newtime=sntp_get_current_timestamp();
+			#endif
 			if(newtime){
   				_referenceSystemTime = millis();
 	  			_referenceSeconds = newtime;

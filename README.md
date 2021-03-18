@@ -31,6 +31,17 @@ The major change in 0.4.9 is adapting of LitteFS, whihch is quiet new to ESP8266
 the stability is in doubt. Please be aware.
 
 ## Update History
+ * 0.5
+   * Rollback framework to 2.2.0. (Newer framework seems to have issues with my new WiFi6 AP.)
+   * New web page theme by bootstrap
+   * Sensor management from web pages
+   * Customizable Recipe Source
+   * embedded HTML/Javascript
+   * (Partial) Russian LCD text 
+   * Bugs fix
+      * Heating is turned on during Hopstand
+      * Time isn't synchronized
+      * Log saving failure for LittleFS.
  * 0.4.9 (pre-release)
    * Update framework to 2.3.3
    * Change File System to LittleFS

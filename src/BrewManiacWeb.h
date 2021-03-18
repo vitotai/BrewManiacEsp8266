@@ -125,8 +125,7 @@ public:
 	void onEvent(BmwEventHandler handler);
 
 #if	MaximumNumberOfSensors > 1
-	void scanSensors(void);
-	void updateSensorSetting(String& json);
+	byte scanSensors(byte max,byte addresses[][8]);
 	float *temperatures(void);
 	byte sensorNumber(void);
 
