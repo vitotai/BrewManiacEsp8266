@@ -293,6 +293,11 @@ void initIOPins(void)
 	setAuxHeaterOut(LOW);
 #endif
 
+#if SecondaryHeaterSupport == true
+	pinMode (AuxHeatControlPin, OUTPUT);
+	setSecondaryHeaterOut(LOW);
+#endif
+
 #if EnableLevelSensor
 #if LevelSensorOnIoExpander != true
 	pinMode (LevelSensorPin, INPUT_PULLUP);
