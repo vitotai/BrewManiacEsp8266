@@ -232,6 +232,10 @@ bool distillingEventHandler(byte);
 #define RemoteEventPumpRest         11
 #define RemoteEventPumpRestEnd      12
 
+#if SpargeHeaterSupport == true
+	#define RemoteEventSpargeWaterAdded	98	// Added to keep track of active sparge for recovery purposes
+#endif
+
 #define RemoteEventBrewFinished 	99
 
 void btReportCurrentStage(byte stage);
@@ -5456,7 +5460,14 @@ void autoModeResumeProcess(void)
 	// get stage
 	byte stage;
 	uint32_t elapsed;
+
+	#if SpargeHeaterSupport == true	
+	bool resume_sparge = false;
+	brewLogger.resumeSession(&stage,&elapsed,&resume_sparge);
+	#else
 	brewLogger.resumeSession(&stage,&elapsed);
+	#endif
+
 	DBG_PRINTF("resume state:%d, elapsed:%d\n",stage, elapsed);
 
 	setEventMask(TemperatureEventMask | ButtonPressedEventMask | TimeoutEventMask | PumpRestEventMask);
@@ -5569,6 +5580,13 @@ void autoModeResumeProcess(void)
 #if SecondaryHeaterSupport
 		setHeatingElementForStage(HeatingStageMashing);
 #endif
+#if SpargeHeaterSupport == true	 
+	if((gEnableSpargeWaterHeatingControl) && (resume_sparge))
+	{
+		// Sparge heating was active, we should resume it
+		startHeatingSpargeWater();	
+	}
+#endif
 		heatOn();
 		_state = AS_Mashing;
 		_askingSkipMashingStage = false;
@@ -5656,6 +5674,7 @@ bool autoModeAskSpargeWaterAddedHandler(byte event)
 {
 	if(btnIsStartPressed)
 	{
+		// No sparge
 		gEnableSpargeWaterHeatingControl = false;
 		#if UsePaddleInsteadOfPump
 		autoModeStartWithoutPumpPrimming();
@@ -5666,8 +5685,9 @@ bool autoModeAskSpargeWaterAddedHandler(byte event)
 	}
 	else if(btnIsEnterPressed)
 	{
-		// no sparge
+		// sparge
 		gEnableSpargeWaterHeatingControl = true;
+		brewLogger.event(RemoteEventSpargeWaterAdded); // Log sparge enabled as event for recovery purposes
 		#if UsePaddleInsteadOfPump
 		autoModeStartWithoutPumpPrimming();
 		#else
