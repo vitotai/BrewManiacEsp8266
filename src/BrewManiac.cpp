@@ -4435,12 +4435,12 @@ void autoModeEnterDoughIn(void)
 	#if MaximumNumberOfSensors > 1
 		brewLogger.startSession(gSensorNumber,TemperatureChartPeriod,gIsUseFahrenheit);
 		#if SpargeHeaterSupport == true
-		if (sparge_stated_flag) brewLogger.event(RemoteEventSpargeWaterAdded); // Log sparge enabled as event for recovery purposes
+		if (sparge_started_flag) brewLogger.event(RemoteEventSpargeWaterAdded); // Log sparge enabled as event for recovery purposes
 		#endif
 	#else
 		brewLogger.startSession(1,TemperatureChartPeriod,gIsUseFahrenheit);
 		#if SpargeHeaterSupport == true
-		if (sparge_stated_flag) brewLogger.event(RemoteEventSpargeWaterAdded); // Log sparge enabled as event for recovery purposes
+		if (sparge_started_flag) brewLogger.event(RemoteEventSpargeWaterAdded); // Log sparge enabled as event for recovery purposes
 		#endif		
 	#endif
 
