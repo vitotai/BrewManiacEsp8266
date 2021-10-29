@@ -463,8 +463,9 @@ private:
 				}else if (b2 == 10){ //RemoteEventBoilFinished
     				_timeRunning=false;
 	    			_pauseSum=0;
+				}
 				#if SpargeHeaterSupport == true
-				}else if (b2 == 98){ // RemoteEventSpargeWaterAdded
+				else if (b2 == 98){ // RemoteEventSpargeWaterAdded
 					_resume_sparge = true;	// Sparge was active, we should resume it
 				}
 				#endif
