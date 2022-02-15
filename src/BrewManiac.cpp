@@ -12,7 +12,8 @@
 #include <pgmspace.h>
 #include <EEPROM.h>
 #include <OneWire.h>
-#include <PID_v1.h>
+//#include <PID_v1.h>
+#include <PID_v2.h>
 
 #include "config.h"
 #include "ps.h"
@@ -1897,10 +1898,15 @@ void heatInitialize(void)
 // the should be call before REAL action instead of system startup
 void heatLoadParameters(void)
 {
+	#if 1
+	thePID.SetTunings((double)readSetting(PS_kP)-100.0,
+					  (double)((readSetting(PS_kI)-100.0) / 250.0),
+					  (double)readSetting(PS_kD)-100.0,P_ON_M);
+	#else
 	thePID.SetTunings((double)readSetting(PS_kP)-100.0,
 					  (double)((readSetting(PS_kI)-100.0) / 250.0),
 					  (double)readSetting(PS_kD)-100.0);
-
+	#endif
 	_heatWindowSize = readSetting(PS_WindowSize);
  	thePID.SetSampleTime((int)readSetting(PS_SampleTime) * 250);
 

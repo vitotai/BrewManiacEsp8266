@@ -640,9 +640,9 @@ public:
 				bool apmode=root["ap"];
 				if(apmode) WiFiSetup.staConfig(true);
 				else{
-					IPAddress ip=root.containsKey("ip")? scanIP(root["ip"].as<String>().c_str()):INADDR_NONE;
-					IPAddress gw=root.containsKey("gw")? scanIP(root["gw"].as<String>().c_str()):INADDR_NONE;
-					IPAddress nm=root.containsKey("nm")? scanIP(root["nm"].as<String>().c_str()):INADDR_NONE;
+					IPAddress ip=root.containsKey("ip")? scanIP(root["ip"].as<String>().c_str()):IPAddress(0,0,0,0);
+					IPAddress gw=root.containsKey("gw")? scanIP(root["gw"].as<String>().c_str()):IPAddress(0,0,0,0);
+					IPAddress nm=root.containsKey("nm")? scanIP(root["nm"].as<String>().c_str()):IPAddress(0,0,0,0);
 					WiFiSetup.staConfig(false,ip,gw,nm);
 				}
 			}else{
