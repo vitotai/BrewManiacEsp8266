@@ -47,7 +47,11 @@ public:
 	bool checkRecovery(void){ return FileSystem.exists(BREWING_TMPFILE);}
 	void clearRecovery(void){ if(checkRecovery()) FileSystem.remove(BREWING_TMPFILE);}
 
+	#if SpargeHeaterSupport == true	
+	void resumeSession(uint8_t *pStage,uint32_t *pTime,bool *resume_sparge)
+	#else
 	void resumeSession(uint8_t *pStage,uint32_t *pTime)
+	#endif
 	{
 		_tmpFile=FileSystem.open(BREWING_TMPFILE,"a+");
 		size_t fsize= _tmpFile.size();
@@ -77,6 +81,10 @@ public:
 		// return value
 		*pStage = _stage;
 		*pTime= _time;
+
+		#if SpargeHeaterSupport == true	
+		*resume_sparge =_resume_sparge;
+		#endif
 	}
 
 	void startSession(uint8_t sensors, unsigned long period,bool fahrenheit, bool saved=true){
@@ -376,6 +384,10 @@ private:
 	size_t _pauseSum;
 	bool   _timeRunning;
 
+	#if SpargeHeaterSupport == true
+		bool   _resume_sparge = false;
+	#endif
+
 	void initProcessingResume(void)
 	{
 		_tempCount=0;
@@ -451,7 +463,11 @@ private:
 				}else if (b2 == 10){ //RemoteEventBoilFinished
     				_timeRunning=false;
 	    			_pauseSum=0;
+				#if SpargeHeaterSupport == true
+				}else if (b2 == 98){ // RemoteEventSpargeWaterAdded
+					_resume_sparge = true;	// Sparge was active, we should resume it
 				}
+				#endif
 			}else if(!(b1 & 0x80)){
 				// temperature reading
 				_tempCount ++;
