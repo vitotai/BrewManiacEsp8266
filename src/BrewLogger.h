@@ -387,7 +387,7 @@ private:
 	#if SpargeHeaterSupport == true
 		bool   _resume_sparge = false;
 	#endif
-
+	
 	void initProcessingResume(void)
 	{
 		_tempCount=0;
@@ -463,11 +463,13 @@ private:
 				}else if (b2 == 10){ //RemoteEventBoilFinished
     				_timeRunning=false;
 	    			_pauseSum=0;
+				}
 				#if SpargeHeaterSupport == true
-				}else if (b2 == 98){ // RemoteEventSpargeWaterAdded
+				else if (b2 == 98){ // RemoteEventSpargeWaterAdded
 					_resume_sparge = true;	// Sparge was active, we should resume it
 				}
 				#endif
+
 			}else if(!(b1 & 0x80)){
 				// temperature reading
 				_tempCount ++;
