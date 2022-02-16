@@ -155,6 +155,7 @@
     "setting_export": "Esporta",
     "setting_import": "Importa",
     "pid_pwm": "PID - PWM",
+    "p_on_measurement":"P sulla misurazione",
     "setting_kp": "kP",
     "setting_ki": "kI",
     "setting_kd": "kD",

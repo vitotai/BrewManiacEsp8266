@@ -2,6 +2,12 @@
     var  TypeSwitchYesNo=1;
     var  TypeSwitchOnOff=2;
         var EEPROM = {
+            "s_pom": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                type: TypeSwitchYesNo
+            },
             "s_kp": {
                 max: 100,
                 min: -100,

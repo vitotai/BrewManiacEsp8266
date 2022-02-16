@@ -156,6 +156,7 @@
     "setting_import": "Импорт",
     "pid_pwm": "ПИД — МОЩНОСТЬ",
     "setting_kp": "Константа kP",
+    "p_on_measurement":"P по измерению",
     "setting_ki": "Константа kI",
     "setting_kd": "Константа kD",
     "primary_heater": "Главный ТЭН",
