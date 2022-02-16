@@ -12,9 +12,17 @@
 #ifndef PS_H
 #define PS_H
 // Persistence Storage
+
+#define kPfromEeprom(p) ((double)(p) - 100.0)
+#define kIfromEeprom(i) (((double)(i) - 100.0)/250.0)
+#define kDfromEeprom(d) ((double)(d)  - 100.0)
+#define kPtoEeprom(p) ((byte)((p) + 100.0))
+#define kItoEeprom(i) ((byte)((i) * 250.0 + 100.0))
+#define kDtoEeprom(d) ((byte)((d) + 100.0))
+
 //  PID MENU
 
-#define PS_SPACE   0  //	reserved
+#define PS_SPACE   0  //	reserved, never used
 #define PS_PidBase PS_SPACE
 
 #define PS_AddrOfPidSetting(i) (PS_PidBase+i)
@@ -59,7 +67,9 @@
 #define PS_SpargeWaterTemperatureAddress	35
 #define PS_SpargeWaterTemperatureDifferenceAddress	36
 
-//     37 -  40 reserved
+#define PS_POM 40
+//     37 -  39 reserved
+
 #define PS_PumpActuatorInverted 41
 #define PS_ButtonFeedback    42
 #define PS_PumpPrimeCount    43

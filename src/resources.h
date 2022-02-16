@@ -242,6 +242,7 @@ StringConst(SecondaryHeater,"#2");
 StringConst(BothHeater,"Both");
 
 #else
+StringConst(PoM,"PonM");
 StringConst( kP, "Constant kP");
 StringConst( kI, "Constant kI");
 StringConst( kD, "Constant kD");

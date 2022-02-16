@@ -226,8 +226,9 @@ static const char* SettingMap[]={
 #else
     NULL,NULL,NULL,NULL,NULL,
 #endif
-	// 37, 28, 39, 40
-	NULL, NULL, NULL, NULL,
+	// 37, 28, 39, 
+	NULL, NULL, NULL, 
+	"s_pom",
 	"s_pinvert",
 	//42
 	"s_btnbuzz",

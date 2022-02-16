@@ -1584,9 +1584,10 @@ void setHeatingElementsInUse(byte elements)
         kd=readSetting(PS_kD_AllOn);
 	}
 
-    thePID.SetTunings((double)kp-100.0,
-					  (double)((ki-100.0) / 250.0),
-					  (double)kd-100.0);
+    thePID.SetTunings(kPfromEeprom(kp),
+					  kIfromEeprom(ki),
+					  kDfromEeprom(kd),
+					  readSetting(PS_POM)? P_ON_M:P_ON_E);
 }
 
 #define HeatingStagePreMash 0
@@ -1626,10 +1627,10 @@ void saveTunning(void)
 	}
 
 
-    updateSetting(kpAddr,(byte)( kp + 100.0));
-	updateSetting(kiAddr,(byte)( ki * 250.0 +100));
-	updateSetting(kdAddr,(byte)( kd + 100.0));
-	wiSettingChanged(kdAddr,(byte)( kd + 100.0));// notify setting change.
+    updateSetting(kpAddr,kPtoEeprom(kp));
+	updateSetting(kiAddr,kItoEeprom(ki));
+	updateSetting(kdAddr,kDtoEeprom(kd));
+	wiSettingChanged(kdAddr,kDtoEeprom(kd));// notify setting change.
 	commitSetting();
 }
 
@@ -1642,10 +1643,10 @@ void saveTunning(void)
     double  kd = autoTune.GetKd();
     thePID.SetTunings(kp,ki,kd);
 
-    updateSetting(PS_kP,(byte)( kp + 100.0));
-	updateSetting(PS_kI,(byte)( ki * 250.0 +100));
-	updateSetting(PS_kD,(byte)( kd + 100.0));
-	wiSettingChanged(PS_kD,(byte)( kd + 100.0));// notify setting change.
+    updateSetting(PS_kP,kPtoEeprom( kp));
+	updateSetting(PS_kI,kItoEeprom( ki ));
+	updateSetting(PS_kD,kDtoEeprom( kd ));
+	wiSettingChanged(PS_kD,kDtoEeprom( kd ));// notify setting change.
 	commitSetting();
 }
 #endif
@@ -1902,15 +1903,10 @@ void heatInitialize(void)
 // the should be call before REAL action instead of system startup
 void heatLoadParameters(void)
 {
-	#if 1
-	thePID.SetTunings((double)readSetting(PS_kP)-100.0,
-					  (double)((readSetting(PS_kI)-100.0) / 250.0),
-					  (double)readSetting(PS_kD)-100.0,P_ON_M);
-	#else
-	thePID.SetTunings((double)readSetting(PS_kP)-100.0,
-					  (double)((readSetting(PS_kI)-100.0) / 250.0),
-					  (double)readSetting(PS_kD)-100.0);
-	#endif
+	thePID.SetTunings(kPfromEeprom(readSetting(PS_kP)),
+					  kIfromEeprom(readSetting(PS_kI)),
+					  kDfromEeprom(readSetting(PS_kD)),
+					  readSetting(PS_POM)? P_ON_M:P_ON_E);
 	_heatWindowSize = readSetting(PS_WindowSize);
  	thePID.SetSampleTime((int)readSetting(PS_SampleTime) * 250);
 
@@ -2765,37 +2761,38 @@ bool distillRecipeEventHandler(byte)
 //**************************************************************
 const SettingItem pidSettingItems[] PROGMEM=
 {
+ {STR(PoM),     &displayYesNo,              PS_POM,1,0},
  #if SecondaryHeaterSupport == true
-/*0*/{STR(kP_1),          & displayOffset100,  PS_kP,200,0},
-/*1*/{STR(kI_1),          & displayOffset100,  PS_kI, 255,0},
-/*2*/{STR(kD_1),          & displayOffset100,  PS_kD, 200,0},
-/*3*/{STR(kP_2),          & displayOffset100,  PS_kP_Secondary,200,0},
-/*4*/{STR(kI_2),          & displayOffset100,  PS_kI_Secondary, 255,0},
-/*5*/{STR(kD_2),          & displayOffset100,  PS_kD_Secondary, 200,0},
-/*6*/{STR(kP_both),          & displayOffset100,  PS_kP_AllOn,200,0},
-/*7*/{STR(kI_both),          & displayOffset100,  PS_kI_AllOn, 255,0},
-/*8*/{STR(kD_both),          & displayOffset100,  PS_kD_AllOn, 200,0},
+/*1*/{STR(kP_1),          & displayOffset100,  PS_kP,200,0},
+/*2*/{STR(kI_1),          & displayOffset100,  PS_kI, 255,0},
+/*3*/{STR(kD_1),          & displayOffset100,  PS_kD, 200,0},
+/*4*/{STR(kP_2),          & displayOffset100,  PS_kP_Secondary,200,0},
+/*5*/{STR(kI_2),          & displayOffset100,  PS_kI_Secondary, 255,0},
+/*6*/{STR(kD_2),          & displayOffset100,  PS_kD_Secondary, 200,0},
+/*7*/{STR(kP_both),          & displayOffset100,  PS_kP_AllOn,200,0},
+/*8*/{STR(kI_both),          & displayOffset100,  PS_kI_AllOn, 255,0},
+/*9*/{STR(kD_both),          & displayOffset100,  PS_kD_AllOn, 200,0},
 #else
-/*0*/{STR(kP),          & displayOffset100,  PS_kP,200,0},
-/*1*/{STR(kI),          & displayOffset100,  PS_kI, 255,0},
-/*2*/{STR(kD),          & displayOffset100,  PS_kD, 200,0},
+/*1*/{STR(kP),          & displayOffset100,  PS_kP,200,0},
+/*2*/{STR(kI),          & displayOffset100,  PS_kI, 255,0},
+/*3*/{STR(kD),          & displayOffset100,  PS_kD, 200,0},
 #endif
-/*3,9*/{STR(SampleTime),  & displayMultiply250,PS_SampleTime,8000/250 /*3500/250*/,1500/250},
-/*4,10*/{STR(WindowSet_ms),& displayMultiply250,PS_WindowSize,40000/250 /*7500/250*/,4000/250},
-/*5,11*/{STR(Heat_in_Boil),& displayPercentage, PS_BoilHeat,100,0},
-/*6,12*/{STR(Start_PID_In),& displayTempDivide10,   PS_PID_Start,35,10},
-/*7,13*/{STR(SensorResolution),&displayResolution, 0 ,12,9,},
+/*4,10*/{STR(SampleTime),  & displayMultiply250,PS_SampleTime,8000/250 /*3500/250*/,1500/250},
+/*5,11*/{STR(WindowSet_ms),& displayMultiply250,PS_WindowSize,40000/250 /*7500/250*/,4000/250},
+/*6,12*/{STR(Heat_in_Boil),& displayPercentage, PS_BoilHeat,100,0},
+/*7,13*/{STR(Start_PID_In),& displayTempDivide10,   PS_PID_Start,35,10},
+/*8,14*/{STR(SensorResolution),&displayResolution, 0 ,12,9,},
 #if MaximumNumberOfSensors > 1
-/*8,14*/{STR(Calibration), & displayTempShift50Divide10,0,100,0}
+/*9,15*/{STR(Calibration), & displayTempShift50Divide10,0,100,0}
 #else
-/*8,14*/{STR(Calibration), & displayTempShift50Divide10,PS_Offset,100,0}
+/*9,15*/{STR(Calibration), & displayTempShift50Divide10,PS_Offset,100,0}
 #endif
 };
 
 #if SecondaryHeaterSupport == true
-#define SensorResolutionIndex 13
+#define SensorResolutionIndex 14
 #else
-#define SensorResolutionIndex 7
+#define SensorResolutionIndex 8
 #endif
 
 byte _pidSettingAux;
