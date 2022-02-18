@@ -219,6 +219,8 @@ StringConst( PID_AUTOTUNE, "PID Auto Tune");
 //StringConst( Use, "Use");
 //StringConst( Electric, "Electric");
 //StringConst( Gas, "Gas");
+StringConst( PoM, "PonM");
+
 #if SecondaryHeaterSupport == true
 StringConst( kP_1, "1st Only kP");
 StringConst( kI_1, "1st Only kI");
@@ -242,7 +244,6 @@ StringConst(SecondaryHeater,"#2");
 StringConst(BothHeater,"Both");
 
 #else
-StringConst(PoM,"PonM");
 StringConst( kP, "Constant kP");
 StringConst( kI, "Constant kI");
 StringConst( kD, "Constant kD");

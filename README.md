@@ -31,6 +31,8 @@ The major change in 0.4.9 is adapting of LitteFS, whihch is quiet new to ESP8266
 the stability is in doubt. Please be aware.
 
 ## Update History
+ * 0.5.1
+   * upgrade(?) PID library to PID V2. Add [Proportional On Measurement(PonM)](http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/) setting.
  * 0.5
    * Rollback framework to 2.2.0. (Newer framework seems to have issues with my new WiFi6 AP.)
    * New web page theme by bootstrap
