@@ -261,7 +261,7 @@ void uiLcdDrawSymbol(byte col,byte row,byte sid)
     	display.fillRect(x,y,FontWidth,FontHeight);
 
 		display.setColor(WHITE);
-		display.drawXbm(x,y,FontWidth,FontHeight,(const char*)SymbolMaps[_reservedChar2SymbolId[sid]]);
+		display.drawXbm(x,y,FontWidth,FontHeight,SymbolMaps[_reservedChar2SymbolId[sid]]);
 	}else{
 	}
 	display.display();
@@ -279,7 +279,7 @@ void uiLcdDrawSymbolBmp(byte col,byte row,SymbolId symbol)
     display.fillRect(x,y,FontWidth,FontHeight);
 
 	display.setColor(WHITE);
-	display.drawXbm(XofCol(col),YofRow(row),FontWidth,FontHeight,(const char*)SymbolMaps[symbol]);
+	display.drawXbm(XofCol(col),YofRow(row),FontWidth,FontHeight,SymbolMaps[symbol]);
 	display.display();
 }
 
@@ -296,7 +296,7 @@ void uiLcdInitialize(void)
     display.clear();
     display.display();
 
-    display.setFont(Cousine_10);
+    display.setFont((const uint8_t*)Cousine_10);
     display.setTextAlignment(TEXT_ALIGN_LEFT);
     display.setContrast(255);
 }

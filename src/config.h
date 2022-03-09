@@ -58,7 +58,7 @@
 #define SpargeHeaterSupport false
 #endif
 
-#define LCD_USE_SSD1306 false
+//#define LCD_USE_SSD1306 true
 
 #if SupportDistilling
 #define PwmHeatingSupport true
