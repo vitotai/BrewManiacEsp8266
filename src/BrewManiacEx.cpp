@@ -1162,7 +1162,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 {
 	if(type == WS_EVT_CONNECT){
     	DBG_PRINTF("ws[%s][%u] connect\n", server->url(), client->id());
-		client->ping();
+		// this would cause ping-pong effect on ESP32 client->ping();
 #if ESPAsyncTCP_issue77_Workaround
 		_lastWsClient=client;
 #else
