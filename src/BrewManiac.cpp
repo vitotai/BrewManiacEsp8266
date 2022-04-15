@@ -57,6 +57,8 @@
 #define DBG_PRINTF(...)
 #endif
 
+
+#define NO_PID_STRIKE true
 //}debug
 // *************************
 //*  global variables
@@ -4420,7 +4422,11 @@ void autoModeEnterDoughIn(void)
 #if SecondaryHeaterSupport
 	setHeatingElementForStage(HeatingStagePreMash);
 #endif
+	#if NO_PID_STRIKE
+	heatOn(false);
+	#else
 	heatOn();
+	#endif
 	if(gIsUseFahrenheit)
 		setAdjustTemperature(167,77);
 	else
@@ -5855,6 +5861,10 @@ bool autoModeDoughInHandler(byte event)
 {
 	if(event == TemperatureEventMask){
 		if(gCurrentTemperature >=gSettingTemperature){
+			#if NO_PID_STRIKE
+			heatOn(); // switch back to PID mode
+			#endif
+
 			// temp reached. ask continue & malt in
 			_state = AS_MashInAskContinue;
 			_mashingTemperatureReached = true;
