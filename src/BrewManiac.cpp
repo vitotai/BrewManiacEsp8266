@@ -5541,10 +5541,11 @@ void autoModeResumeProcess(void)
 	else if (stage == StageWhirlpool) // Whirlpool
 	{
     	heatOff();
-    	if(elapsed != INVALID_RECOVERY_TIME)
+    	if(elapsed != INVALID_RECOVERY_TIME){
     	    autoModeWhirlpool(elapsed);
-    	else
+		}else{
     	    autoModeWhirlpool(0);
+		}
 	    _state = AS_Whirlpool;
 	}
 	else if (stage == StageHopStandChill) // HopStandChill

@@ -1026,7 +1026,7 @@ void greeting(std::function<void(const String&,const char*)> sendFunc){
 	sprintf(buf,"{\"host\":\"%s\",\"secured\":%d,\"wifi\":%s}",_gHostname,_gSecuredAccess? 1:0,netstat.c_str());
 	
 	sendFunc(buf,"netcfg");
-	sprintf(buf,"{\"time\":%ld}",TimeKeeper.getTimeSeconds());
+	sprintf(buf,"{\"time\":%lld}",TimeKeeper.getTimeSeconds());
     sendFunc(String(buf),"timesync");
 	String status;
 	bmWeb.getCurrentStatus(status,true);

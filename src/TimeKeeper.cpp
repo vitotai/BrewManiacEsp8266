@@ -125,7 +125,7 @@ time_t TimeKeeperClass::getTimeSeconds(void) // get Epoch time
 	return now;
 }
 
-static char _dateTimeStrBuff[24];
+static char _dateTimeStrBuff[36];
 
 const char* TimeKeeperClass::getDateTimeStr(void)
 {

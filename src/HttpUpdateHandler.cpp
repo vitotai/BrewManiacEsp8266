@@ -120,9 +120,10 @@ bool HttpUpdateHandler::canHandle(AsyncWebServerRequest *request)
 //    	|| request->url().equals(_url)
     	|| request->url().equals(SPIFFS_FORMAT_PATH)
     	|| request->url().equals(SPIFFS_FORMAT_EXE_PATH)
-    	|| request->url().equals("/system-reboot"))
+    	|| request->url().equals("/system-reboot")){
 
         return true;
+	}
 	return false;
 }
 
