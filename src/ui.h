@@ -122,6 +122,7 @@ void uiLcdAssignSymbol(byte sid,SymbolId symbol);
 void uiLcdDrawSymbol(byte col,byte row,byte sid);
 void uiLcdDrawSymbolBmp(byte col,byte row,SymbolId symbol);
 
+void uiInitCustomChars();
 #include "uiTempTime.h"
 /**********************************************************************
 variables
@@ -493,6 +494,7 @@ void uiLcdInitialize(void)
 #if UseLcdBuffer
 void refreshLcdDisplay(void){
 	lcd.begin(20,4);
+	uiInitCustomChars();
 	lcd.clear();
 
 	for(byte i=0;i<4;i++){
@@ -1137,17 +1139,7 @@ void uiSettingTemperatureBlinking(bool blink)
 	}
 }
 #endif
-
-void uiInitialize(void)
-{
-	// scan addresses before lcd.begin.
-	ipSet = false;
-	uiRunningTimeStop();
-	uiLcdInitialize();
-	#if UseLcdBuffer
-	clearLcdBuffer();
-	#endif
-
+void uiInitCustomChars(){
     if(gIsUseFahrenheit)
     {
        	uiLcdAssignSymbol(LcdCharDegree,SymbolFahrenheit);
@@ -1164,12 +1156,24 @@ void uiInitialize(void)
    	uiLcdAssignSymbol(LcdCharHeating,SymbolHeating);
    	uiLcdAssignSymbol(LcdCharRevHeating,SymbolRevHeating);
    	uiLcdAssignSymbol(LcdCharRevSpargeHeating,SymbolRevSpargeHeating);
+}
+
+void uiInitialize(void)
+{
+	// scan addresses before lcd.begin.
+	ipSet = false;
+	uiRunningTimeStop();
+	uiLcdInitialize();
+	#if UseLcdBuffer
+	clearLcdBuffer();
+	#endif
 
 
 	#if SupportDistilling
 	_uiSettingTemperatureBlinking=false;
 	_uiSettingTemperatureHidden=false;
 	#endif
+	uiInitCustomChars();
 }
 
 

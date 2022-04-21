@@ -292,6 +292,9 @@ StringConst( Pump_Mashout, "Pmp Mashout");
 StringConst( Pump_On_Boil, "Pmp on Boil");
 StringConst( Pump_Stop, "Pump Stop");
 #endif
+
+StringConst( PID_STRIKE, "PID STRIKE");
+
 StringConst( PID_MaltOut, "PID Malt Out");
 StringConst( Active, "Active");
 StringConst( Passive, "Passive");

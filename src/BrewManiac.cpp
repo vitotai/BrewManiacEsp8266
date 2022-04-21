@@ -58,7 +58,6 @@
 #endif
 
 
-#define NO_PID_STRIKE true
 //}debug
 // *************************
 //*  global variables
@@ -2890,14 +2889,16 @@ const SettingItem unitSettingItems[] PROGMEM={
 /* 7 */{STR(Pump_On_Boil), &displayOnOff,              PS_PumpOnBoil,1,0},
 /* 8 */{STR(Pump_Stop),    &displaySimpleTemperature,  PS_TempPumpRest,105,80},  // celius
 /*  *///{STR(Pump_Stop),    &displaySimpleTemperature,  PS_TempPumpRest,221,176}, // fahrenheit
-/* 9 */{STR(PID_Dough_In), &displayOnOff,              PS_PID_DoughIn,1,0},
-/* 10 */{STR(PID_MaltOut),  &displayOnOff,              PS_PidPipe, 1,0},
-/* 11 */{STR(Skip_Add),     &displayYesNo,              PS_SkipAddMalt,1,0},
-/* 12 */{STR(Skip_Remove),  &displayYesNo,              PS_SkipRemoveMalt,1,0},
-/* 13 */{STR(Skip_Iodine),  &displayYesNo,              PS_SkipIodineTest,1,0},
-/* 14 */{STR(IodineTime),   &displayTimeOff,            PS_IodineTime,90,0},
-/* 15 */{STR(Whirlpool),    &displayHotColdOff,         PS_Whirlpool,2,0},
-/* 16 */{STR(HeatOnPump),    &displayYesNo,         PS_HeatOnPump,1,0}}; 
+/* 9 */{STR(PID_STRIKE), &displayOnOff,              PS_PID_STRIKE,1,0},
+
+/* 10 */{STR(PID_Dough_In), &displayOnOff,              PS_PID_DoughIn,1,0},
+/* 11 */{STR(PID_MaltOut),  &displayOnOff,              PS_PidPipe, 1,0},
+/* 12 */{STR(Skip_Add),     &displayYesNo,              PS_SkipAddMalt,1,0},
+/* 13 */{STR(Skip_Remove),  &displayYesNo,              PS_SkipRemoveMalt,1,0},
+/* 14 */{STR(Skip_Iodine),  &displayYesNo,              PS_SkipIodineTest,1,0},
+/* 15 */{STR(IodineTime),   &displayTimeOff,            PS_IodineTime,90,0},
+/* 16 */{STR(Whirlpool),    &displayHotColdOff,         PS_Whirlpool,2,0},
+/* 17 */{STR(HeatOnPump),    &displayYesNo,         PS_HeatOnPump,1,0}}; 
 
 void settingUnitSetup(void)
 {
@@ -4422,11 +4423,10 @@ void autoModeEnterDoughIn(void)
 #if SecondaryHeaterSupport
 	setHeatingElementForStage(HeatingStagePreMash);
 #endif
-	#if NO_PID_STRIKE
-	heatOn(false);
-	#else
-	heatOn();
-	#endif
+	// PID_STRIKE
+	heatOn(readSetting(PS_PID_STRIKE) !=0);
+
+
 	if(gIsUseFahrenheit)
 		setAdjustTemperature(167,77);
 	else
@@ -5862,9 +5862,8 @@ bool autoModeDoughInHandler(byte event)
 {
 	if(event == TemperatureEventMask){
 		if(gCurrentTemperature >=gSettingTemperature){
-			#if NO_PID_STRIKE
-			heatOn(); // switch back to PID mode
-			#endif
+			// PID_STRIKE
+			heatOn(); // switch back to PID mode, whatever it was
 
 			// temp reached. ask continue & malt in
 			_state = AS_MashInAskContinue;
