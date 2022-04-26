@@ -4424,7 +4424,11 @@ void autoModeEnterDoughIn(void)
 	setHeatingElementForStage(HeatingStagePreMash);
 #endif
 	// PID_STRIKE
+	#if PwmHeatingSupport	
+	heatOn(readSetting(PS_PID_STRIKE)? HeatingModeBoil:HeatingModePID);
+	#else
 	heatOn(readSetting(PS_PID_STRIKE) !=0);
+	#endif
 
 
 	if(gIsUseFahrenheit)
