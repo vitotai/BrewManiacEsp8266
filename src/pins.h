@@ -13,14 +13,18 @@
 #define PumpControlPin  16
 #define HeatControlPin  17
 
-//#define CoolControlPin  19
-//#define SecondaryHeatControlPin  27
 
 
 #define ButtonUpPin    32 // P1
 #define ButtonDownPin  33 // p0 NODEMCU_PIN_D4
 #define ButtonStartPin 25 //P3 NODEMCU_PIN_D5
 #define ButtonEnterPin  26 //P2 NODEMCU_PIN_D6
+
+#if EnableLevelSensor
+#define LevelSensorPin 19
+#endif
+
+#define AuxHeatControlPin  27
 
 
 void btnPrepareRead(void){}
