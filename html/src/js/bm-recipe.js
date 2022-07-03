@@ -399,11 +399,18 @@ var Recipes = {
     },
     brewXml: function() {
         var auto = BeerXmlView.getAuto();
-        for (var i = 0; i < 8; i++) {
+        for (var i = 0; i < auto.rest_tp.length; i++) {
             var tp = 0;
             if (auto.rest_tp[i]) tp = this.celius ? auto.rest_tp[i] : C2F(auto.rest_tp[i]);
             auto.rest_tp[i] = Math.round(tp * 10) / 10;
         }
+        if(!this.celius){
+            for (var i = 0; i < auto.hs.length; i++) {
+                auto.hs[i].s=C2F(auto.hs[i].s);
+                auto.hs[i].k=C2F(auto.hs[i].k);
+            }
+        }
+
         //console.log(auto);
         //CALL 
         this.bm.saveAuto(auto,function(success){

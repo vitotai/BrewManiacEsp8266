@@ -227,7 +227,7 @@ var BeerXmlView = {
         var head = $(t.div).find("tr.hop-header");
         if (boil.length > 0) {
             t.bmAuto.hops = t.showSameTimeHop(boil, head, "boil", 1);
-            head = $(t.div).find("tr.hop-row:last");
+            head = $(t.div).find("tr.r-hop-row:last");
         }
         if (aroma.length > 0) {
             // a litt complicated. group temperature first, if exists
@@ -266,7 +266,7 @@ var BeerXmlView = {
                 session.find(".hopstand-time").text("" + hopstandhop[0] + Unit.min);
 
                 aromaOrder += group.length;
-                head = $(t.div).find("tr.hop-row:last");
+                head = $(t.div).find("tr.r-hop-row:last");
 
             });
         }
