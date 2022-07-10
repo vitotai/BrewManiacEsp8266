@@ -48,12 +48,20 @@ public:
 	void clearRecovery(void){ if(checkRecovery()) FileSystem.remove(BREWING_TMPFILE);}
 
 	#if SpargeHeaterSupport == true	
-	void resumeSession(uint8_t *pStage,uint32_t *pTime,bool *resume_sparge)
+	bool resumeSession(uint8_t *pStage,uint32_t *pTime,bool *resume_sparge)
 	#else
-	void resumeSession(uint8_t *pStage,uint32_t *pTime)
+	bool resumeSession(uint8_t *pStage,uint32_t *pTime)
 	#endif
 	{
+		#if ESP32
+		_tmpFile=FileSystem.open(BREWING_TMPFILE,"r");
+		#else
 		_tmpFile=FileSystem.open(BREWING_TMPFILE,"a+");
+		#endif
+		if(!_tmpFile){
+			DBG_PRINTF("Failed to open file\n");
+			return false;
+		}
 		size_t fsize= _tmpFile.size();
 		size_t rsize=0;
 		_savedLength=fsize;
@@ -61,9 +69,12 @@ public:
 		initProcessingResume();
 		while( fsize > 0){
 			rsize= _tmpFile.readBytes(_logBuffer,LogBufferSize);
+			if(rsize ==0){
+				DBG_PRINTF("Failed to read file\n");
+				return false;
+			}
 			// process the content to get correct stage & time
 			processSavedData(_logBuffer,rsize);
-
 			fsize -= rsize;
 		}
 		endProcessingResume();
@@ -71,6 +82,11 @@ public:
 		_logIndex=rsize;
 		_savedLength -= rsize;  // data length in file exclude those in buffer
 		// log a "new start" log
+
+		#if ESP32
+		_tmpFile.close();
+		_tmpFile=FileSystem.open(BREWING_TMPFILE,"a");
+		#endif
 		DBG_PRINTF("resume, total _savedLength:%d, _logIndex:%d\n",_savedLength,_logIndex);
 		_saveLog = true;
 		_lastTempLog=0;
@@ -85,6 +101,7 @@ public:
 		#if SpargeHeaterSupport == true	
 		*resume_sparge =_resume_sparge;
 		#endif
+		return true;
 	}
 
 	void startSession(uint8_t sensors, unsigned long period,bool fahrenheit, bool saved=true){

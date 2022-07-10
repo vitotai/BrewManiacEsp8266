@@ -47,6 +47,7 @@ StringConst( Delay_Start,"Delay Start?");
 StringConst( No_Delay_Start,"No Delay Start");
 
 StringConst( Resume_Process,"Resume Process?");
+StringConst( Resume_Failed,"Resume Failed!");
 
 StringConst( In_Pause,"In Pause");
 StringConst( IODINE_TEST,"IODINE  TEST");

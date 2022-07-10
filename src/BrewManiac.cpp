@@ -5472,12 +5472,22 @@ void autoModeResumeProcess(void)
 
 	#if SpargeHeaterSupport == true	
 	bool resume_sparge = false;
-	brewLogger.resumeSession(&stage,&elapsed,&resume_sparge);
+	bool success=brewLogger.resumeSession(&stage,&elapsed,&resume_sparge);
 	#else
-	brewLogger.resumeSession(&stage,&elapsed);
+	bool success=brewLogger.resumeSession(&stage,&elapsed);
 	#endif
 
 	DBG_PRINTF("resume state:%d, elapsed:%d\n",stage, elapsed);
+
+	if(!success){
+		_state = AS_Finished;
+
+		uiClearScreen();
+		uiPrompt(STR(Resume_Failed));
+		buzzPlaySound(SoundIdWarnning);
+		tmSetTimeoutAfter(BREW_END_STAY_DURATION * 1000);
+		return;
+	}
 
 	setEventMask(TemperatureEventMask | ButtonPressedEventMask | TimeoutEventMask | PumpRestEventMask);
 
@@ -5635,7 +5645,7 @@ void autoModeResumeProcess(void)
 
 bool autoModeAskResumeHandler(byte event)
 {
-
+	if(event != ButtonPressedEventMask) return false;
 	if(btnIsStartPressed){
 		// YES
 		autoModeResumeProcess();
