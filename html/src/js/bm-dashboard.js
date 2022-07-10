@@ -935,6 +935,12 @@ var BMDashBoard={
     p_auto:function(auto){
         this.auto=auto;
         Progress.setAuto(auto);
+
+        if (this.screen == "A") {
+            Progress.clear();
+            Progress.list();
+        }
+
     },
     onDisc:function(){
         console.log("disconnected!");

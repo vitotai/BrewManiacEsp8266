@@ -3892,7 +3892,7 @@ byte _state;
 
 #if SupportManualModeCountDown == true
 unsigned long manualModeChangeCountDownTime;
-bool isCountDownTimeBlinking;
+bool isCountDownTimeBlinking=false;
 bool isManualModeCountDownMode;
 #endif
 //
@@ -4868,6 +4868,7 @@ void autoModeEnterBoiling(void)
 	setSettingTemperature ( gBoilStageTemperature);
 
 	// display time
+	isCountDownTimeBlinking=false;
 	byte boilTime=automation.boilTime();
 
 	brewLogger.stage(StageBoil);
@@ -6173,15 +6174,48 @@ bool autoModeAskMaltRemoveHandler(byte event)
 	return false;
 }
 
+void autoModeBoilingTimeChange(int change){
+	int bt =(int) automation.boilTime();
+	bt +=  change;
+	if(bt < 0) bt=0;
+	if(bt > 240) bt=240;
+	automation.setBoilTime(bt);
+	uiRunningTimeShowInitial(bt * 60);
+}
+
 bool autoModeBoilingHandler(byte event)
 {
 	if(event ==ButtonPressedEventMask){
+		if(isCountDownTimeBlinking){
+			if(btnIsUpPressed){
+				autoModeBoilingTimeChange(1);
+			}else if(btnIsUpContinuousPressed){
+				autoModeBoilingTimeChange(5);
+			}else if(btnIsDownPressed){
+				autoModeBoilingTimeChange(-1);
+			}else if(btnIsDownContinuousPressed){
+				autoModeBoilingTimeChange(-5);
+			}else{
+				// other button actions are considered as ending of time editing
+				isCountDownTimeBlinking=false;
+				uiRunningTimeBlink(false);
+				wiRecipeChange();
+			}
+			return true;
+		}
+		//else
 		if (btnIsEnterPressed){
 			// pump control
 			pump.toggle();
 		}else if(btnIsStartPressed){
 			if(_isBoilTempReached){
 				autoModeBoilingPauseHandler();
+			}
+		}else if(isExactButtonsPressed(ButtonEnterMask | ButtonStartMask)){
+			if(!_isBoilTempReached){
+				// to change boiling time
+				isCountDownTimeBlinking = true;
+				uiRunningTimeBlink(isCountDownTimeBlinking);
 			}
 		}else{
 			processAdjustButtons();
@@ -6223,6 +6257,12 @@ bool autoModeBoilingHandler(byte event)
 				brewLogger.event(RemoteEventTemperatureReached);
 				_isBoilTempReached=true;
 
+				// forced stop time editing
+				if(isCountDownTimeBlinking){
+					isCountDownTimeBlinking = false;
+					uiRunningTimeBlink(isCountDownTimeBlinking);
+					wiRecipeChange();
+				}
 				//buzz temperature reach first
 				// because later "add hop" buzz may interrupt
 				// it
