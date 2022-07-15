@@ -4954,9 +4954,8 @@ void autoModeReStartBoilingTimer(void)
 		byte idx=automation.numberOfHops() - _numHopToBeAdded;
 
 		unsigned long nextHopTime=(unsigned long)automation.timeOfHop(idx) * 60 * 1000;
-
-		unsigned long nextHopTimeout=_remainingBoilTime - nextHopTime;
-		if(nextHopTimeout == 0)
+		
+		if(_remainingBoilTime <= nextHopTime)
 		{
 			// alert directly, start timer to restore
 			autoModeAddHopNotice();
@@ -4964,7 +4963,7 @@ void autoModeReStartBoilingTimer(void)
 		else
 		{
 			recoveryTimer = false;
-			tmSetAuxTimeoutAfter(nextHopTimeout);
+			tmSetAuxTimeoutAfter(_remainingBoilTime - nextHopTime);
 		}
 	}
 }
