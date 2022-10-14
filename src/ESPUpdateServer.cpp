@@ -23,9 +23,11 @@ static  char* _password;
 #if SerialDebug == true
 #define DBG_PRINT(...) DebugPort.print(__VA_ARGS__)
 #define DBG_PRINTLN(...) DebugPort.println(__VA_ARGS__)
+#define DBG_PRINTF(...) DebugPort.printf(__VA_ARGS__)
 #else
 #define DBG_PRINT(...)
 #define DBG_PRINTLN(...)
+#define DBG_PRINTF(...) 
 #endif
 
 #if ESP32
@@ -139,7 +141,73 @@ static void handleFileCreate(void){
   server.send(200, "text/plain", "");
   path = String();
 }
+static void handleFileList(void) {
+  if(!server.hasArg("dir")) {server.send(500, "text/plain", "BAD ARGS"); return;}
 
+  String path = server.arg("dir");
+  DBG_PRINTLN("handleFileList: " + path);
+  // linked list(queue) is needed. 
+  // avoid recursive call, which might open too many directories 
+  #if ESP32
+  File dir = FileSystem.open(path);  
+  #else
+  Dir dir = FileSystem.openDir(path);
+  #endif
+ 
+  DBG_PRINTF("open failed? %d\n",dir? 1:0);
+
+
+  String output = "[";
+  #if ESP32
+
+  File entry = dir.openNextFile();
+  while(entry){
+
+  #else
+  while(dir.next()){
+    File entry = dir.openFile("r");
+  #endif
+    if (output != "[") output += ',';
+    #if UseLittleFS
+    bool isDir = entry.isDirectory();
+    #else
+    bool isDir = false;
+    #endif
+
+    DBG_PRINTF(" %s [%s]\n ", entry.name(),isDir? "DIR":"FILE");
+
+    output += "{\"type\":\"";
+    output += (isDir)? "dir":"file";
+    output += "\",\"name\":\"";
+
+    //DBG_PRINTF("%s, %s, cmp:%d, ", entry.name(),path.c_str(), strncmp(entry.name(),path.c_str(),path.length()));
+    String name=(entry.name());
+    if(name.startsWith(path)){
+      
+      int exlen =path.length();  
+      if(path.charAt(exlen - 1) != '/') exlen ++;
+      output += name.substring(exlen);
+    }else{
+       if(entry.name()[0] == '/'){
+        output += name.substring(1);
+       }else{
+        output += name;
+       }
+    }
+    output += "\"}";
+    entry.close();  
+  #if defined(ESP32)
+    entry = dir.openNextFile();
+  #endif
+
+  }
+
+  output += "]";
+  DBG_PRINTF(" ret: %s \n",output.c_str());
+  server.send(200, "text/json", output);
+}
+
+#if 0
 static void handleFileList(void) {
  	if(_username != NULL && _password != NULL && !server.authenticate(_username, _password))
  		return server.requestAuthentication();
@@ -192,6 +260,7 @@ static void handleFileList(void) {
   output += "]";
   server.send(200, "text/json", output);
 }
+#endif
 
 void ESPUpdateServer_setup(const char* user, const char* pass){
 
