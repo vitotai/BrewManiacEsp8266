@@ -261,6 +261,24 @@ class RecipeFileHandler:public AsyncWebHandler
 		}
 		json += String("]");
 	}
+	void createDirectoryIfNeeded(String path){
+		const char delimitor='/';
+		String rpath=String();
+
+		int from =(path.charAt(0) == delimitor)? 1:0;
+
+		int found;
+		while( (found = path.indexOf(delimitor, from)) >=0){
+			String dir = path.substring(from,found);			
+			rpath = rpath + String(delimitor) + dir;
+			if(! FileSystem.exists(rpath)){
+				DBG_PRINTF("Directory not exists, create %s\n",rpath.c_str());
+				FileSystem.mkdir(rpath);
+			}
+			from = found +1;
+		}
+	}
+
 public:
 	RecipeFileHandler(){}
 
@@ -327,6 +345,8 @@ public:
 			String file=filename;
 			DBG_PRINTF("upload: %s\n", filename.c_str());
 			if(accessAllow(file,WRITE_MASK)){
+				// create path when necessary
+				createDirectoryIfNeeded(file);
 	        	request->_tempFile = FileSystem.open(file, "w");
     	    	_startTime = millis();
       		}
@@ -1462,7 +1482,13 @@ void setup(void){
 	//1.Initialize file system
 	//start SPI Filesystem
 	#if ESP32
+
+	#if UseLittleFS
+	if(!LittleFS.begin(true)){
+	#else
 	if(!SPIFFS.begin(true)){
+	#endif
+
 	#else
   	if(!FileSystem.begin()){
 	#endif
@@ -1470,6 +1496,24 @@ void setup(void){
   		DebugOut("File System begin() failed\n");
   	}else{
   		DebugOut("File System begin() Success\n");
+		//{ test code
+#if 0
+		const char *path="/test/test.txt";
+	    Serial.printf("Writing file: %s\r\n", path);
+
+	    File file = FileSystem.open(path, FILE_WRITE);
+    	if(!file){
+        	Serial.println("- failed to open file for writing");
+        	return;
+    	}
+    	if(file.print("test content")){
+        	Serial.println("- file written");
+    	} else {
+        	Serial.println("- write failed");
+    	}
+    	file.close();
+#endif
+		//} test code
   	}
 
 	//1b. load nsetwork conf

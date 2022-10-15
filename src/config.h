@@ -70,7 +70,7 @@
 
 #ifndef UseLittleFS
 #if ESP32
-#define UseLittleFS false
+#define UseLittleFS true
 #else
 #define UseLittleFS true
 #endif

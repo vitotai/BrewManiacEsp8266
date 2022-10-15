@@ -154,7 +154,7 @@ static void handleFileList(void) {
   Dir dir = FileSystem.openDir(path);
   #endif
  
-  DBG_PRINTF("open failed? %d\n",dir? 1:0);
+  //DBG_PRINTF("open failed? %d\n",dir? 1:0);
 
 
   String output = "[";
