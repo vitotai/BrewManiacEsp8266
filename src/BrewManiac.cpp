@@ -236,6 +236,7 @@ bool distillingEventHandler(byte);
 
 #if SpargeHeaterSupport == true
 	#define RemoteEventSpargeWaterAdded	98	// Added to keep track of active sparge for recovery purposes
+	bool sparge_started_flag = false;		
 #endif
 
 #define RemoteEventBrewFinished 	99
@@ -4441,8 +4442,14 @@ void autoModeEnterDoughIn(void)
 
 	#if MaximumNumberOfSensors > 1
 		brewLogger.startSession(gSensorNumber,TemperatureChartPeriod,gIsUseFahrenheit);
+		#if SpargeHeaterSupport == true
+		if (sparge_started_flag) brewLogger.event(RemoteEventSpargeWaterAdded); // Log sparge enabled as event for recovery purposes
+		#endif
 	#else
 		brewLogger.startSession(1,TemperatureChartPeriod,gIsUseFahrenheit);
+		#if SpargeHeaterSupport == true
+		if (sparge_started_flag) brewLogger.event(RemoteEventSpargeWaterAdded); // Log sparge enabled as event for recovery purposes
+		#endif		
 	#endif
 
 	brewLogger.stage(StageDoughIn);
@@ -5706,7 +5713,7 @@ bool autoModeAskSpargeWaterAddedHandler(byte event)
 	{
 		// sparge
 		gEnableSpargeWaterHeatingControl = true;
-		brewLogger.event(RemoteEventSpargeWaterAdded); // Log sparge enabled as event for recovery purposes
+		sparge_started_flag = true;
 		#if UsePaddleInsteadOfPump
 		autoModeStartWithoutPumpPrimming();
 		#else
