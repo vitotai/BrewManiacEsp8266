@@ -18,8 +18,13 @@
 #include "config.h"
 #include "ps.h"
 
+#if USE_MAX6675
+#include "max6675.h"
+#endif
+
 #include "pins.h"
 #include "automation.h"
+
 
 #define ESP8266 1
 #include "mystrlib.h"
@@ -714,7 +719,21 @@ void temperatureUnitChange(bool useF)
 	}
 */
 }
+class LowPassFilter{
+private:
+	float _filteredValue;
+public:
+	void setInitialValue(float value){
+		_filteredValue = value;
+	}
 
+	float addValue(float value){
+		_filteredValue= _filteredValue + LowPassFilterParameter *(value - _filteredValue);
+		return _filteredValue;
+	}
+};
+
+#if USE_MAX6675 != true
 OneWire ds(SensorPin);
 
 #if MaximumNumberOfSensors > 1
@@ -725,6 +744,7 @@ boolean _isConverting;
 #endif
 
 byte _sensorData[9];
+
 
 
 #if	MaximumNumberOfSensors	> 1
@@ -905,7 +925,7 @@ void tpInitialize(void)
 #endif //#if FakeHeating
 	tpReadInitialTemperature();
 }
-
+#endif
 // the following code basically comes from Open ArdBir
 
 #define DSCMD_CONVERT_T 0x44
@@ -1109,7 +1129,34 @@ void tpReadTemperature(void)
 } // tpReadTemperature
 
 
-#else // #if MaximumNumberOfSensors > 1
+#else //  of  MaximumNumberOfSensors > 1
+
+MAX6675 _max6675(SPI_SCK,SPI_CS,SPI_MISO);
+// single sensor
+#define ResolutionDecode(a) 0
+
+void tpSetSensorResolution(byte *addr, byte res){}
+
+void tpReadTemperature(void){
+	if(gCurrentTimeInMS - _lastTempRead < MinimumTemperatureReadGap) return;
+
+	_lastTempRead = gCurrentTimeInMS;
+
+	gCurrentTemperature = gSensorCalibration + (gIsUseFahrenheit? _max6675.readFahrenheit(): _max6675.readCelsius());
+}
+
+void tpInitialize(void){
+	gCurrentTemperature = INVALID_TEMP_C;
+	gBoilStageTemperature=readSetting(PS_BoilTemp);
+
+	gSensorCalibration= ((float)(readSetting(PS_Offset) - 50) / 10.0);
+	tpReadTemperature();
+}
+
+#if USE_MAX6675
+
+
+#else // of #if USE_MAX6675
 
 float _filteredValue;
 void lpfSetInitialValue(float value){
@@ -1221,7 +1268,7 @@ void tpReadTemperature(void)
     gCurrentTemperature = lpfAddValue(reading) + gSensorCalibration;
     _isConverting = false;
 }
-
+#endif //(not) else of USE_MAX6675
 #endif // #if MaximumNumberOfSensors > 1
 
 // *************************
@@ -1728,7 +1775,7 @@ void heaterSpargeOn(void)
 {
 	DBG_PRINTF("Sparge Heater On\n");
 	gIsPhysicalSpargeWaterHeating=true;
-	setAuxHeaterOut(HIGH);
+	setSpargeHeaterOut(HIGH);
 	uiAuxHeatingStatus(HeatingStatus_On);
 	wiReportAuxHeater(HeatingStatus_On);
 }
@@ -1737,7 +1784,7 @@ void heaterSpargeOff(void)
 {
 	DBG_PRINTF("Sparge Heater OFF\n");
 	gIsPhysicalSpargeWaterHeating=false;
-	setAuxHeaterOut(LOW);
+	setSpargeHeaterOut(LOW);
 
 	if(gHeatSpargeWater){
 		uiAuxHeatingStatus(HeatingStatus_On_PROGRAM_OFF);
@@ -2012,7 +2059,7 @@ void heaterControl(void)
 		return;
 	}
 
-	if(readSetting(PS_HeatOnPump)){
+	if(_isPIDMode && readSetting(PS_HeatOnPump)){
 		if(! pump.isPhysicalOn()){
 			if(_physicalHeattingOn) {
 
@@ -3311,14 +3358,14 @@ const SettingItem miscSettingItems[] PROGMEM=
 /*2*/{STR(PumpPrime), &displaySimpleInteger, PS_PumpPrimeCount,10,0},
 /*3*/{STR(PrimeOn), &displayMultiply250, PS_PumpPrimeOnTime,40,1},
 /*4*/{STR(PrimeOff), &displayMultiply250, PS_PumpPrimeOffTime,40,0},
-	 {STR(Pump_Inverse),&displayYesNo, PS_PumpActuatorInverted,1,0}
+/*5*/	 {STR(Pump_Inverse),&displayYesNo, PS_PumpActuatorInverted,1,0}
 #if SpargeHeaterSupport == true
-/*5*/,{STR(Sparge_Heater),&displayYesNo,PS_SpargeWaterEnableAddress,1,0,}
+/*6*/,{STR(Sparge_Heater),&displayYesNo,PS_SpargeWaterEnableAddress,1,0,}
 #if MaximumNumberOfSensors >1
-/*6*/,{STR(Temp_Ctrl),    &displayYesNo,PS_SpargeWaterTemperatureControlAddress,1,0},
-/*7*/{STR(Sparge_Sensor), &displayIntegerPlusOne,PS_SpargeWaterSensorIndexAddress,0,1,},
-/*8*/{STR(Sparge_Temp),   &displaySimpleTemperature,PS_SpargeWaterTemperatureAddress,80,75,},
-/*9*/{STR(Temp_Diff),    &displayTempDivide10,PS_SpargeWaterTemperatureDifferenceAddress,20,5}
+/*7*/,{STR(Temp_Ctrl),    &displayYesNo,PS_SpargeWaterTemperatureControlAddress,1,0},
+/*8*/{STR(Sparge_Sensor), &displayIntegerPlusOne,PS_SpargeWaterSensorIndexAddress,0,1,},
+/*9*/{STR(Sparge_Temp),   &displaySimpleTemperature,PS_SpargeWaterTemperatureAddress,80,75,},
+/*10*/{STR(Temp_Diff),    &displayTempDivide10,PS_SpargeWaterTemperatureDifferenceAddress,20,5}
 #endif
 #endif
 #if SecondaryHeaterSupport == true
@@ -3334,12 +3381,12 @@ const SettingItem miscSettingItems[] PROGMEM=
 #endif
 };
 
-#define SpargeHeaterEnableIndex 5
-#define SpargeHeaterSettingNumber 5
+#define SpargeHeaterEnableIndex 6
+#define SpargeHeaterSettingNumber 4
 
-#define  SpargeTemperatureControlIndex 6
-#define  SpargeSensorIndex 7
-#define  SpargeTemperatureIndex 8
+#define  SpargeTemperatureControlIndex 7
+#define  SpargeSensorIndex 8
+#define  SpargeTemperatureIndex 9
 
 void miscSettingSetup(void)
 {
@@ -4445,6 +4492,11 @@ void autoModeEnterDoughIn(void)
 		brewLogger.startSession(1,TemperatureChartPeriod,gIsUseFahrenheit);
 	#endif
 
+	#if SpargeHeaterSupport
+		if(gEnableSpargeWaterHeatingControl){
+			brewLogger.event(RemoteEventSpargeWaterAdded); // Log sparge enabled as event for recovery purposes
+		}
+	#endif
 	brewLogger.stage(StageDoughIn);
 
 	#if MaximumNumberOfSensors > 1
@@ -5472,11 +5524,14 @@ void autoModeResumeProcess(void)
 	#if SpargeHeaterSupport == true	
 	bool resume_sparge = false;
 	bool success=brewLogger.resumeSession(&stage,&elapsed,&resume_sparge);
+	DBG_PRINTF("resume state:%d, elapsed:%d, sparge:%d\n",stage, elapsed,resume_sparge);
+
 	#else
 	bool success=brewLogger.resumeSession(&stage,&elapsed);
+	DBG_PRINTF("resume state:%d, elapsed:%d\n",stage, elapsed);
+
 	#endif
 
-	DBG_PRINTF("resume state:%d, elapsed:%d\n",stage, elapsed);
 
 	if(!success){
 		_state = AS_Finished;
@@ -5706,7 +5761,7 @@ bool autoModeAskSpargeWaterAddedHandler(byte event)
 	{
 		// sparge
 		gEnableSpargeWaterHeatingControl = true;
-		brewLogger.event(RemoteEventSpargeWaterAdded); // Log sparge enabled as event for recovery purposes
+		// session not started yet. brewLogger.event(RemoteEventSpargeWaterAdded); // Log sparge enabled as event for recovery purposes
 		#if UsePaddleInsteadOfPump
 		autoModeStartWithoutPumpPrimming();
 		#else

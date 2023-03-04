@@ -369,7 +369,7 @@ private:
 	void addEvent(byte event){
 		char *ptr = allocByte(2);
 		if(ptr == NULL) return;
-//		DBG_PRINTF("**add event:%d **\n",event);
+		DBG_PRINTF("**add event:%d **\n",event);
 		*ptr = EventTag;
 		*(ptr+1)= event;
 		writeToFile(ptr,2);
@@ -468,6 +468,7 @@ private:
 				}
 
 			}else if(b1 == EventTag){
+				DBG_PRINTF("**Resume event:%d **\n",b2);
 				if(b2 == 1){ //RemoteEventTemperatureReached
 					_timerStart= _tempCount;
 					_timeRunning=true;

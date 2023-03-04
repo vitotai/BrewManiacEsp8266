@@ -22,10 +22,29 @@
 
 #if EnableLevelSensor
 #define LevelSensorPin 19
+#if USE_MAX6675
+#error "conflict setting  Max6675 and LevelSensorPin"
 #endif
 
-#define AuxHeatControlPin  27
+#endif
 
+#define SpargeHeatControlPin  27
+#define SecondaryHeatControlPin  28
+
+#if USE_MAX6675
+#if MultipleSensorEnabled
+#error "Conflict setting with Max6675 and Multiple sensor"
+#endif
+
+#undef SensorPin
+#undef  BuzzControlPin
+#define BuzzControlPin 4
+
+#define SPI_SCK  18
+#define SPI_MISO  19
+#define SPI_CS  23
+
+#endif
 
 void btnPrepareRead(void){}
 #define btnReadPin digitalRead
@@ -47,16 +66,16 @@ inline void setBuzzOut(byte v)
 }
 
 #if SpargeHeaterSupport == true
-inline void setAuxHeaterOut(byte v)
+inline void setSpargeHeaterOut(byte v)
 {
-	digitalWrite (AuxHeatControlPin, v);
+	digitalWrite (SpargeHeatControlPin, v);
 }
 #endif
 
 #if SecondaryHeaterSupport == true
 inline void setSecondaryHeaterOut(byte v)
 {
-	digitalWrite (AuxHeatControlPin, v);
+	digitalWrite (SecondaryHeatControlPin, v);
 }
 #endif
 
@@ -78,12 +97,12 @@ void initIOPins(void)
 	setBuzzOut(LOW);
 
 #if SpargeHeaterSupport == true
-	pinMode (AuxHeatControlPin, OUTPUT);
-	setAuxHeaterOut(LOW);
+	pinMode (SpargeHeatControlPin, OUTPUT);
+	setSpargeHeaterOut(LOW);
 #endif
 
 #if SecondaryHeaterSupport == true
-	pinMode (AuxHeatControlPin, OUTPUT);
+	pinMode (SecondaryHeatControlPin, OUTPUT);
 	setSecondaryHeaterOut(LOW);
 #endif
 
@@ -143,7 +162,8 @@ bool isWaterLevelFull(void){
 #define SensorPin    NODEMCU_PIN_D6
 
 
-#define AuxHeatControlPin NODEMCU_PIN_D8
+#define SpargeHeatControlPin NODEMCU_PIN_D8
+#define SecondaryHeatControlPin NODEMCU_PIN_D8
 
 // the following pin are group into Output & Input
 // Input is for button, while output is for heater,pump, and buzzer.
@@ -249,16 +269,16 @@ inline void setBuzzOut(byte v)
 }
 
 #if SpargeHeaterSupport == true
-inline void setAuxHeaterOut(byte v)
+inline void setSpargeHeaterOut(byte v)
 {
-	digitalWrite (AuxHeatControlPin, v);
+	digitalWrite (SpargeHeatControlPin, v);
 }
 #endif
 
 #if SecondaryHeaterSupport == true
 inline void setSecondaryHeaterOut(byte v)
 {
-	digitalWrite (AuxHeatControlPin, v);
+	digitalWrite (SecondaryHeatControlPin, v);
 }
 #endif
 
@@ -293,12 +313,12 @@ void initIOPins(void)
 	setBuzzOut(LOW);
 
 #if SpargeHeaterSupport == true
-	pinMode (AuxHeatControlPin, OUTPUT);
-	setAuxHeaterOut(LOW);
+	pinMode (SpargeHeatControlPin, OUTPUT);
+	setSpargeHeaterOut(LOW);
 #endif
 
 #if SecondaryHeaterSupport == true
-	pinMode (AuxHeatControlPin, OUTPUT);
+	pinMode (SecondaryHeatControlPin, OUTPUT);
 	setSecondaryHeaterOut(LOW);
 #endif
 
