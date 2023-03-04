@@ -22,7 +22,12 @@
 #include "max6675.h"
 #endif
 
+#if ESP32
+#include "pins_esp32.h"
+#else
 #include "pins.h"
+#endif
+
 #include "automation.h"
 
 
@@ -1130,9 +1135,11 @@ void tpReadTemperature(void)
 
 
 #else //  of  MaximumNumberOfSensors > 1
+#if USE_MAX6675
 
 MAX6675 _max6675(SPI_SCK,SPI_CS,SPI_MISO);
 // single sensor
+#undef ResolutionDecode
 #define ResolutionDecode(a) 0
 
 void tpSetSensorResolution(byte *addr, byte res){}
@@ -1152,8 +1159,6 @@ void tpInitialize(void){
 	gSensorCalibration= ((float)(readSetting(PS_Offset) - 50) / 10.0);
 	tpReadTemperature();
 }
-
-#if USE_MAX6675
 
 
 #else // of #if USE_MAX6675
@@ -2059,7 +2064,12 @@ void heaterControl(void)
 		return;
 	}
 
-	if(_isPIDMode && readSetting(PS_HeatOnPump)){
+#if PwmHeatingSupport
+	if(_heatingMode == HeatingModePID
+#else
+	if(_isPIDMode 
+#endif	
+	&& readSetting(PS_HeatOnPump)){
 		if(! pump.isPhysicalOn()){
 			if(_physicalHeattingOn) {
 
