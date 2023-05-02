@@ -924,7 +924,7 @@ public:
 	 		    || request->url() == BUTTON_PATH){
 	 			return true;
 	 		}else{
-				DBG_PRINTF("BmwHandler canHandle file:%s\n",request->url().c_str());
+				//DBG_PRINTF("BmwHandler canHandle file:%s\n",request->url().c_str());
 
 	 		    if(request->url() == AUDIO_PATH){
     	 		    return FileSystem.exists(AUDIO_FILE);

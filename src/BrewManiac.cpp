@@ -213,6 +213,7 @@ bool distillingEventHandler(byte);
 
 #define StageHopStandChill 11
 #define StageHopStand      12
+#define StageAutoResume   13
 
 #define StageDelayStart   99
 #define StageManualMode  100
@@ -3363,19 +3364,20 @@ void displayHeaterSelection(int data)
 
 const SettingItem miscSettingItems[] PROGMEM=
 {
-/*0*/{STR(No_Delay_Start),&displayYesNo, PS_NoDelayStart ,1,0},
-/*1*/{STR(Button_Buzz), &displayYesNo, PS_ButtonFeedback,1,0},
-/*2*/{STR(PumpPrime), &displaySimpleInteger, PS_PumpPrimeCount,10,0},
-/*3*/{STR(PrimeOn), &displayMultiply250, PS_PumpPrimeOnTime,40,1},
-/*4*/{STR(PrimeOff), &displayMultiply250, PS_PumpPrimeOffTime,40,0},
-/*5*/	 {STR(Pump_Inverse),&displayYesNo, PS_PumpActuatorInverted,1,0}
+/*0*/{STR(Auto_Resume),&displayYesNo, PS_AutoResume_Enabled ,1,0},
+/*1*/{STR(No_Delay_Start),&displayYesNo, PS_NoDelayStart ,1,0},
+/*2*/{STR(Button_Buzz), &displayYesNo, PS_ButtonFeedback,1,0},
+/*3*/{STR(PumpPrime), &displaySimpleInteger, PS_PumpPrimeCount,10,0},
+/*4*/{STR(PrimeOn), &displayMultiply250, PS_PumpPrimeOnTime,40,1},
+/*5*/{STR(PrimeOff), &displayMultiply250, PS_PumpPrimeOffTime,40,0},
+/*6*/	 {STR(Pump_Inverse),&displayYesNo, PS_PumpActuatorInverted,1,0}
 #if SpargeHeaterSupport == true
-/*6*/,{STR(Sparge_Heater),&displayYesNo,PS_SpargeWaterEnableAddress,1,0,}
+/*7*/,{STR(Sparge_Heater),&displayYesNo,PS_SpargeWaterEnableAddress,1,0,}
 #if MaximumNumberOfSensors >1
-/*7*/,{STR(Temp_Ctrl),    &displayYesNo,PS_SpargeWaterTemperatureControlAddress,1,0},
-/*8*/{STR(Sparge_Sensor), &displayIntegerPlusOne,PS_SpargeWaterSensorIndexAddress,0,1,},
-/*9*/{STR(Sparge_Temp),   &displaySimpleTemperature,PS_SpargeWaterTemperatureAddress,80,75,},
-/*10*/{STR(Temp_Diff),    &displayTempDivide10,PS_SpargeWaterTemperatureDifferenceAddress,20,5}
+/*8*/,{STR(Temp_Ctrl),    &displayYesNo,PS_SpargeWaterTemperatureControlAddress,1,0},
+/*9*/{STR(Sparge_Sensor), &displayIntegerPlusOne,PS_SpargeWaterSensorIndexAddress,0,1,},
+/*10*/{STR(Sparge_Temp),   &displaySimpleTemperature,PS_SpargeWaterTemperatureAddress,80,75,},
+/*11*/{STR(Temp_Diff),    &displayTempDivide10,PS_SpargeWaterTemperatureDifferenceAddress,20,5}
 #endif
 #endif
 #if SecondaryHeaterSupport == true
@@ -3391,12 +3393,12 @@ const SettingItem miscSettingItems[] PROGMEM=
 #endif
 };
 
-#define SpargeHeaterEnableIndex 6
+#define SpargeHeaterEnableIndex 7
 #define SpargeHeaterSettingNumber 4
 
-#define  SpargeTemperatureControlIndex 7
-#define  SpargeSensorIndex 8
-#define  SpargeTemperatureIndex 9
+#define  SpargeTemperatureControlIndex 9
+#define  SpargeSensorIndex 9
+#define  SpargeTemperatureIndex 10
 
 void miscSettingSetup(void)
 {
@@ -4372,6 +4374,8 @@ bool manualModeEventHandler(byte event)
 #define AS_HopStandChilling       19
 #define AS_HopStand            20
 
+#define AS_AutoResumeWaiting 21
+
 #define HOP_ALTERTING_TIME 10
 #define ADVANCE_BEEP_TIME 5
 #define AutoStateIs(s) (_state==(s))
@@ -4381,9 +4385,31 @@ byte _primePumpCount;
 
 //************************************
 // for recovery
-//
+// ony necessary for StageDelayStart & DoughIn
+// after that, the status can be retrieved from log
+#define InvalidStage 0xFF
+void autoModeEnterAutoResumeWaiting();
+void saveStatus(uint8_t stage,uint16_t time){
+	updateSetting(PS_Saved_Stage,stage);
+	updateSettingWord(PS_Time2Resume,time);
+	commitSetting();
+}
 
-
+void clearStatus(){
+	// clear only if not
+	if(readSetting(PS_Saved_Stage) != InvalidStage){
+		updateSetting(PS_Saved_Stage,InvalidStage);
+		commitSetting();
+	}
+}
+bool checkResume(){
+	if(! readSetting(PS_AutoResume_Enabled)) return false;
+	DBG_PRINTF("checkResume %d\n",readSetting(PS_Saved_Stage));
+	if(readSetting(PS_Saved_Stage) != InvalidStage || brewLogger.checkRecovery()){
+		return true;
+	}
+	return false;
+}
 //**************************
 // Delay start
 
@@ -4426,6 +4452,7 @@ void autoModeSetup(void)
 void autoModeEnterDoughIn(void)
 {
 	_state = AS_DoughIn;
+	saveStatus(AS_DoughIn,0);
 	// setup temperature event mask request after this.
 	#if EnableLevelSensor
 	setEventMask(TemperatureEventMask | ButtonPressedEventMask | PumpRestEventMask);
@@ -4655,6 +4682,7 @@ void autoModeGetMashStepNumber(void)
 void autoModeEnterMashing(void)
 {
 	_state = AS_Mashing;
+	clearStatus();
 	setEventMask(TemperatureEventMask | ButtonPressedEventMask | TimeoutEventMask | PumpRestEventMask);
 
 	_askingSkipMashingStage = false;
@@ -5703,6 +5731,32 @@ void autoModeResumeProcess(void)
 
 	}
 }
+void autoModeDelayWaiting(uint32_t time);
+
+void autoModeAutoResume(){
+	// handles DelayStart & Dough-in, other resuming is performed in autoModeResumeProcess()
+	uint8_t stage=readSetting(PS_Saved_Stage);
+	DBG_PRINTF("\n\n***\nAuto Resume: %d\n",stage);
+	if(stage == AS_DelayWaiting){
+		
+		loadBrewParameters();
+		uint16_t remaining = readSettingWord(PS_Time2Resume);
+		DBG_PRINTF("Resume Delay waiting:%d\n",remaining);
+		if(remaining > 2) remaining--;
+		autoModeDelayWaiting(remaining * 60);
+	}else if(stage == AS_DoughIn){
+		DBG_PRINTF("Resume dough-in\n");
+		loadBrewParameters();
+		autoModeEnterDoughIn();
+	}else if(brewLogger.checkRecovery()){
+		DBG_PRINTF("resume auto\n");
+		autoModeResumeProcess();
+	}else{
+		// error case.		
+		backToMain();
+		return;
+	}
+}
 
 //******************************
 // Auto Mode Event Handling
@@ -5881,22 +5935,29 @@ bool autoModeDelayTimerInputHandler(byte event)
 	return true;
 } 
 
+void autoModeDelayWaiting(uint32_t time){
+	_state = AS_DelayWaiting;
+	uiClearSubTitleRow();
+	uiSubTitle(STR(To_be_started_in));
+	uiButtonLabel(ButtonLabel(x_x_Quit_Go));
+
+	uiRunningTimeSetPosition(RunningTimeDelayInputPosition);
+	tmSetTimeoutAfter(time * 1000);
+	uiRunningTimeStartCountDown(time);
+	setEventMask(TimeoutEventMask | ButtonPressedEventMask );
+
+	wiReportCurrentStage(StageDelayStart);	
+	tmSetAuxTimeoutAfter(60*1000); // one minute
+}
+
 bool autoModeDelayTimerConfirmHandler(byte event)
 {
 	if(event != ButtonPressedEventMask) return false;
 
 	if(btnIsStartPressed){
 		// YES
-		_state = AS_DelayWaiting;
-		uiClearSubTitleRow();
-		uiSubTitle(STR(To_be_started_in));
-		uiButtonLabel(ButtonLabel(x_x_Quit_Go));
-
-		tmSetTimeoutAfter(_delayTime * 15 * 60 * 1000);
-		uiRunningTimeStartCountDown(_delayTime * 15 * 60);
-		setEventMask(TimeoutEventMask | ButtonPressedEventMask );
-
-		wiReportCurrentStage(StageDelayStart);
+		autoModeDelayWaiting(_delayTime * 15 * 60);
+		saveStatus(AS_DelayWaiting,_delayTime * 15 );
 		return true;
 	}else if(btnIsEnterPressed){
 		//NO
@@ -5926,16 +5987,65 @@ bool autoModeDelayWaitingHandler(byte event)
 			return true;
 		}
 	}else if(event == TimeoutEventMask){
-		buzzPlaySound(SoundIdDelayTimeout);
-		uiRunningTimeStop();
-		uiClearSettingRow();
-		autoModeEnterDoughIn();
-		return true;
+		if(IsAuxTimeout){
+			uint32_t remaining=tmGetRemainingTime();
+			saveStatus(AS_DelayWaiting,remaining/(60*1000));
+			tmSetAuxTimeoutAfter(60*1000); // one minute
+		}else{
+			buzzPlaySound(SoundIdDelayTimeout);
+			uiRunningTimeStop();
+			uiClearSettingRow();
+			autoModeEnterDoughIn();
+			return true;
+		}
 	}
 	return false;
 }//AS_DelayWaiting
 
 #endif
+
+// 
+void autoModeEnterAutoResumeWaiting(){
+	_state = AS_AutoResumeWaiting;
+	uiLcdClearAll();
+	uiTitle(STR(AutomaticMode));
+	uiSubTitle(STR(Resume_in));
+	uiButtonLabel(ButtonLabel(x_x_Quit_Go));
+
+
+	tmSetTimeoutAfter( AUTO_RESUME_TIMEOUT  * 1000);
+	uiRunningTimeSetPosition(RunningTimeDelayInputPosition);
+	uiRunningTimeShowInitial(AUTO_RESUME_TIMEOUT);
+	uiRunningTimeStartCountDown(AUTO_RESUME_TIMEOUT);
+	setEventMask(TimeoutEventMask | ButtonPressedEventMask );
+
+	wiReportCurrentStage(StageAutoResume);
+}
+
+bool autoModeAutoResumeHandler(byte event){
+	if(event == ButtonPressedEventMask){
+		if(btnIsStartPressed){
+			// Quit
+			uiRunningTimeStop();
+			tmPauseTimer();
+			backToMain();
+			return true;
+		}else if(btnIsEnterPressed){
+			//GO
+			// cancel timer
+			uiRunningTimeStop();
+			tmPauseTimer();
+			uiClearSettingRow();
+			//_state = AS_DoughIn;
+			autoModeAutoResume();
+			return true;
+		}
+	}else if(event == TimeoutEventMask){
+		autoModeAutoResume();
+		return true;
+	}
+	return false;
+}
 
 bool autoModeDoughInHandler(byte event)
 {
@@ -6630,7 +6740,9 @@ bool autoModeEventHandler(byte event)
 		return autoModeWhirlpoolHandler(event);
 	}else if(AutoStateIs(AS_Finished)){
 		return autoModeFinishedHandler(event);
-	}//AS_Finished
+	}else if(AutoStateIs(AS_AutoResumeWaiting)){
+		return autoModeAutoResumeHandler(event);
+	}
 	return false;
 } // end of autoModeEventHandler
 
@@ -7183,6 +7295,9 @@ bool mainEventHandler(byte event)
 
 
 const CScreen *currentScreen;
+void switchEventHandler(byte screenId){
+	currentScreen=allScreens+screenId;
+}
 void switchApplication(byte screenId)
 {
 	currentScreen=allScreens+screenId;
@@ -7203,6 +7318,7 @@ void switchApplication(byte screenId)
 void backToMain(void)
 {
 	brewLogger.abortSession();
+	clearStatus(); // manually quit won't start "auto resume"
 	// turn pump & heat off
 	heatOff();
 #if SpargeHeaterSupport == true
@@ -7252,6 +7368,13 @@ bool readSkipNetCfgButton(void)
 void startBrewManiac()
 {
 	switchApplication(MAIN_SCREEN);
+	// auto resume if necessary.
+	if(checkResume()){
+
+		DBG_PRINTF("Auto resume waiting\n");
+		autoModeEnterAutoResumeWaiting();
+		switchEventHandler(AUTO_MODE_SCREEN);
+	}
 }
 
 bool brewmaniac_setup() {

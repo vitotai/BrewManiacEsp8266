@@ -193,7 +193,7 @@
 #define UseServerSideEvent false
 
 #define EnableExtendedMashStep true
-
+#define AUTO_RESUME_TIMEOUT  15 //seconds
 /**************************************************************************************/
 /*  version information     														  */
 /**************************************************************************************/

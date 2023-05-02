@@ -86,6 +86,8 @@ StringConst(Timeing_Whirlpool,"Timing Whirlpool");
 
 StringConst(Brewing_Process,"Brewing Process");
 StringConst(Finished,"Finished");
+StringConst(Resume_in,"Resume Process in");
+StringConst(Auto_Resume,"Auto Resume");
 
 //button labels
 

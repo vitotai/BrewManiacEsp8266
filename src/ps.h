@@ -67,7 +67,10 @@
 #define PS_SpargeWaterTemperatureAddress	35
 #define PS_SpargeWaterTemperatureDifferenceAddress	36
 
-//     37 -  38 reserved
+//     37, 38 
+#define PS_AutoResume_Enabled      37
+#define PS_Saved_Stage      38
+
 #define PS_PID_STRIKE 39  // PID_STRIKE
 #define PS_POM 40
 
@@ -95,7 +98,9 @@
 #define PS_kI_AllOn      59  //	kI
 #define PS_kD_AllOn      60  //     kD
 
-// space 
+// 61 & 62
+#define PS_Time2Resume      61
+
 
 
 #define PS_Distill_Base      64  //     7 fields
@@ -158,8 +163,11 @@ const unsigned char  DEFAULT_EEPROM[] PROGMEM={
 #define PS_SpargeWaterTemperatureAddress	35
 #define PS_SpargeWaterTemperatureDifferenceAddress	36 */
 0,0,1,78,1,
-//     37 -  41 reserved
-0,0,0,0,0,
+0, //#define PS_AutoResume_Enabled      37
+255, //#define PS_Saved_Stage      38
+0, //#define PS_PID_STRIKE 39 
+0, // #define PS_POM 40
+0, //#define PS_PumpActuatorInverted 41
 1, //#define PS_ButtonFeedback    42
 5, //#define PS_PumpPrimeCount    43
 10, //#define PS_PumpPrimeOnTime   44
@@ -177,7 +185,9 @@ const unsigned char  DEFAULT_EEPROM[] PROGMEM={
 200,//#define PS_kP_AllOn      58  // 	kP
 200,//#define PS_kI_AllOn      59  //	kI
 200,//#define PS_kD_AllOn      60  //     kD
-0,0,0, // 
+0, //#define PS_Time2Resume      61
+0, //      62
+0, // reserved
 50,70,100,55,83,90,100 //PS_Distill_Base
 };
 #include "FsEeprom.h"
