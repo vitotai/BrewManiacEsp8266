@@ -4390,6 +4390,8 @@ byte _primePumpCount;
 #define InvalidStage 0xFF
 void autoModeEnterAutoResumeWaiting();
 void saveStatus(uint8_t stage,uint16_t time){
+	if(! readSetting(PS_AutoResume_Enabled)) return;
+
 	updateSetting(PS_Saved_Stage,stage);
 	updateSettingWord(PS_Time2Resume,time);
 	commitSetting();
@@ -4397,6 +4399,8 @@ void saveStatus(uint8_t stage,uint16_t time){
 
 void clearStatus(){
 	// clear only if not
+	if(! readSetting(PS_AutoResume_Enabled)) return;
+
 	if(readSetting(PS_Saved_Stage) != InvalidStage){
 		updateSetting(PS_Saved_Stage,InvalidStage);
 		commitSetting();
@@ -4404,6 +4408,7 @@ void clearStatus(){
 }
 bool checkResume(){
 	if(! readSetting(PS_AutoResume_Enabled)) return false;
+	
 	DBG_PRINTF("checkResume %d\n",readSetting(PS_Saved_Stage));
 	if(readSetting(PS_Saved_Stage) != InvalidStage || brewLogger.checkRecovery()){
 		return true;

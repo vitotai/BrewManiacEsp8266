@@ -226,8 +226,8 @@ static const char* SettingMap[]={
 #else
     NULL,NULL,NULL,NULL,NULL,
 #endif
-	// 37, 28,  
-	NULL, NULL,
+	"s_autoresume",  // PS_AutoResume_Enabled 37
+	NULL, // 38, PS_Saved_Stage
 	"s_pidstrike", // PID_STRIKE
 	"s_pom",
 	"s_pinvert",
