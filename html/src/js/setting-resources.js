@@ -219,6 +219,12 @@
                     return v * 10;
                 }
             },
+            "s_pidstrike": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                type: TypeSwitchYesNo
+            },
             "s_piddoughin": {
                 max: 1,
                 min: 0,
@@ -230,6 +236,12 @@
                 min: 0,
                 inc: 1,
                 labels: ["&deg;C", "&deg;F"],
+            },
+            "s_autoresume": {
+                max: 1,
+                min: 0,
+                inc: 1,
+                type: TypeSwitchYesNo
             },
             "s_nodelay": {
                 max: 1,

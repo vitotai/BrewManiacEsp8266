@@ -184,6 +184,7 @@
     "pump_on_boil": "Pump On Boil",
     "minutes": "minutes",
     "pump_stop_temperature": "Pump Stop Temperature",
+    "pid_heating_strike": "PID when heating striking water",
     "pid_when_doughing_in": "PID when Doughing-In",
     "pid_when_remove_malt": "PID when Remove Malt",
     "skip_add": "Skip Add Malt",
@@ -194,8 +195,9 @@
     "heat_on_pump": "Heat@Pump",
 
     "misc_settings": "Misc Settings",
+    "auto_resume": "Auto Resume",
     "disable_delay_start": "Disable Delay Start",
-    "buzz_on_bitton": "Buzz on Button",
+    "buzz_on_button": "Buzz on Button",
     "pump_prime_cycle": "Pump Prime Cycle",
     "pump_prime_on_time": "Pump Prime On Time",
     "pump_prime_off_time": "Pump Prime Off Time",

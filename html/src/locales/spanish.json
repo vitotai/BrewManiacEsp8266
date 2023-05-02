@@ -197,8 +197,9 @@
     "heat_on_pump": "Calentador@BBA",
 
     "misc_settings": "Ajustes varios",
+    "auto_resume": "Auto Resume",
     "disable_delay_start": "Desact. Demorar Comienzo",
-    "buzz_on_bitton": "Buzzer Botones",
+    "buzz_on_button": "Buzzer Botones",
     "pump_prime_cycle": "Ciclo cebado BBA",
     "pump_prime_on_time": "Tiempo ON cebado BBA",
     "pump_prime_off_time": "Tiempo OFF cebado BBA",

@@ -461,6 +461,16 @@
           <div class="col"><div id="s_pumpstop"></div><span class="tmp_unit">&deg;C</span></div>
       </div>
       <div class="row">
+        <div class="col">
+            <%= pid_heating_strike %>
+        </div>
+        <div class="col">
+          <div id="s_pidstrike">
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
           <div class="col">
               <%= pid_when_doughing_in %>
           </div>
@@ -534,16 +544,25 @@
       </div>
       <div class="row">
           <div class="col">
-              <%= disable_delay_start %>
+              <%= auto_resume %>
           </div>
           <div class="col">
-            <div id="s_nodelay">          
+            <div id="s_autoresume">          
             </div>
          </div>
       </div>
       <div class="row">
+        <div class="col">
+            <%= disable_delay_start %>
+        </div>
+        <div class="col">
+          <div id="s_nodelay">          
+          </div>
+       </div>
+    </div>
+      <div class="row">
           <div class="col">
-              <%= buzz_on_bitton %>
+              <%= buzz_on_button %>
           </div>
           <div class="col">
             <div id="s_btnbuzz">          

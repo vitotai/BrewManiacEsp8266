@@ -4408,7 +4408,7 @@ void clearStatus(){
 }
 bool checkResume(){
 	if(! readSetting(PS_AutoResume_Enabled)) return false;
-	
+
 	DBG_PRINTF("checkResume %d\n",readSetting(PS_Saved_Stage));
 	if(readSetting(PS_Saved_Stage) != InvalidStage || brewLogger.checkRecovery()){
 		return true;
@@ -6046,6 +6046,8 @@ bool autoModeAutoResumeHandler(byte event){
 			return true;
 		}
 	}else if(event == TimeoutEventMask){
+		uiRunningTimeStop();
+		uiClearSettingRow();
 		autoModeAutoResume();
 		return true;
 	}
@@ -7372,13 +7374,14 @@ bool readSkipNetCfgButton(void)
 */
 void startBrewManiac()
 {
-	switchApplication(MAIN_SCREEN);
 	// auto resume if necessary.
 	if(checkResume()){
 
 		DBG_PRINTF("Auto resume waiting\n");
 		autoModeEnterAutoResumeWaiting();
 		switchEventHandler(AUTO_MODE_SCREEN);
+	}else{
+		switchApplication(MAIN_SCREEN);
 	}
 }
 

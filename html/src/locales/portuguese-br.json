@@ -194,8 +194,9 @@
     "heat_on_pump": "Bomba OFF se resist. OFF",
 
     "misc_settings": "Outras configurações",
+    "auto_resume": "Auto Resume",
     "disable_delay_start": "Desativar atrasar início",
-    "buzz_on_bitton": "Som no teclado",
+    "buzz_on_button": "Som no teclado",
     "pump_prime_cycle": "Ciclos p/ retirar ar da bomba",
     "pump_prime_on_time": "Tempo do ciclo da bomba ON",
     "pump_prime_off_time": "Tempo do ciclo da bomba OFF",
