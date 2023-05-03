@@ -4409,11 +4409,12 @@ void clearStatus(){
 bool checkResume(){
 	if(! readSetting(PS_AutoResume_Enabled)) return false;
 
-	DBG_PRINTF("checkResume %d\n",readSetting(PS_Saved_Stage));
-	if(readSetting(PS_Saved_Stage) != InvalidStage || brewLogger.checkRecovery()){
-		return true;
-	}
-	return false;
+	uint8_t savedStage=readSetting(PS_Saved_Stage);
+	DBG_PRINTF("checkResume %d\n",savedStage);
+
+	if(savedStage == InvalidStage || (savedStage == AS_Mashing && !brewLogger.checkRecovery())) return false;
+	
+	return true;
 }
 //**************************
 // Delay start
@@ -4687,7 +4688,7 @@ void autoModeGetMashStepNumber(void)
 void autoModeEnterMashing(void)
 {
 	_state = AS_Mashing;
-	clearStatus();
+	saveStatus(AS_Mashing,0);
 	setEventMask(TemperatureEventMask | ButtonPressedEventMask | TimeoutEventMask | PumpRestEventMask);
 
 	_askingSkipMashingStage = false;
@@ -5585,7 +5586,9 @@ void autoModeResumeProcess(void)
 		tmSetTimeoutAfter(BREW_END_STAY_DURATION * 1000);
 		return;
 	}
-
+	// after mashing sharts, the progress is recorded in log file. so just use AS_Mashing
+	saveStatus(AS_Mashing,0);
+	//
 	setEventMask(TemperatureEventMask | ButtonPressedEventMask | TimeoutEventMask | PumpRestEventMask);
 
 	uiClearScreen();
@@ -6164,6 +6167,7 @@ bool autoModeAskAddMaltHandler(byte event)
 	{
 		// YES
 		uiClearPrompt();
+		
 		autoModeEnterMashing();
 		return true;
 	}
