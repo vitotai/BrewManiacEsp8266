@@ -6440,6 +6440,7 @@ bool autoModeBoilingHandler(byte event)
 			wiReportEvent(RemoteEventBoilFinished);
 
 			buzzPlaySoundRepeat(SoundIdWaitUserInteraction);
+			gIsEnterPwm = false;
 
 			if(automation.numberOfHopStandSession() ==0) autoModeCoolingOrWhirlpool();
     		else autoModeStartHopStand();
