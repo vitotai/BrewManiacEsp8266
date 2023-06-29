@@ -46,7 +46,7 @@
 
 
 
-#if SecondaryHeaterSupportEnabled
+#if SecondaryHeaterSupportEnabled == true
 #define SecondaryHeaterSupport true
 #else
 #define SecondaryHeaterSupport false

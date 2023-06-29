@@ -4573,11 +4573,11 @@ void autoModeResetMashExtension(void)
 	uiSetMashExtensionStatus(MashExtensionNone);
 }
 
-void autoModeEnterMashingExtension(void)
+void autoModeEnterMashingExtension(unsigned long seconds)
 {
 	uiSetMashExtensionStatus(MashExtensionRunning);
 	_mashingStageExtending = true;
-	uiRunningTimeStart();
+	uiRunningTimeStartFrom(seconds);
 }
 #endif // #if EnableExtendedMashStep
 
@@ -4735,7 +4735,7 @@ void autoModeEnterIodineTest(void)
 
 }
 
-void autoModeIodineTestToMashExtension(void)
+void autoModeIodineTestToMashExtension(unsigned long time)
 {
     // back to last mashing step.
     _state = AS_Mashing;
@@ -4749,7 +4749,7 @@ void autoModeIodineTestToMashExtension(void)
 	uiAutoModeMashTitle(_mashingStep,_numberMashingStep);
     uiTempDisplaySetPosition(TemperatureAutoModePosition);
 	uiRunningTimeSetPosition(RunningTimeNormalPosition);
-	uiRunningTimeShowInitial(0);
+	uiRunningTimeShowInitial(time);
 	if(gIsUseFahrenheit)
 		setAdjustTemperature(176.0,68.0);
 	else
@@ -4762,7 +4762,7 @@ void autoModeIodineTestToMashExtension(void)
 	#else
 	uiButtonLabel(ButtonLabel(Up_Down_Pause_STP));
 	#endif
-    autoModeEnterMashingExtension();
+    autoModeEnterMashingExtension(time);
     _mashingStageExtendEnable = false;
 }
 
@@ -5725,16 +5725,23 @@ void autoModeResumeProcess(void)
 		if(elapsed != INVALID_RECOVERY_TIME)
 		{
 				byte stagetime = automation.stageTime(_mashingStep);
-				byte time = stagetime - elapsed;
 				_mashingTemperatureReached = true;
-				unsigned long seconds=(unsigned long)time * 60;
 
-				tmSetTimeoutAfter( seconds *1000);
-				tmSetAuxTimeoutAfter((seconds-ADVANCE_BEEP_TIME) *1000);
-				uiRunningTimeStartCountDown(seconds);
-				pump.setRestEnabled(true);
+				if (elapsed > stagetime){
+					// extended mode
+					unsigned long seconds=(unsigned long)(elapsed - stagetime) * 60;
 
-				//wiReportEvent(RemoteEventTemperatureReached);
+					autoModeIodineTestToMashExtension(seconds);
+					pump.setRestEnabled(true);
+				}else{
+					byte time = stagetime - elapsed;
+					unsigned long seconds=(unsigned long)time * 60;
+
+					tmSetTimeoutAfter( seconds *1000);
+					tmSetAuxTimeoutAfter((seconds-ADVANCE_BEEP_TIME) *1000);
+					uiRunningTimeStartCountDown(seconds);
+					pump.setRestEnabled(true);
+				}
 		}
 
 	}
@@ -6291,7 +6298,7 @@ bool autoModeMashingHandler(byte event)
 
 					#if EnableExtendedMashStep
 					if(_mashingStageExtendEnable){
-						autoModeEnterMashingExtension();
+						autoModeEnterMashingExtension(0);
 					}else
 					#endif //#if EnableExtendedMashStep
 					{
@@ -6339,7 +6346,7 @@ bool autoModeIodineTestHandler(byte event)
 			return true;
 		}else  if(btnIsEnterPressed){
 			// extend mash
-			autoModeIodineTestToMashExtension();
+			autoModeIodineTestToMashExtension(0);
 			return true;
 		}
 	}else if(event ==TimeoutEventMask){
