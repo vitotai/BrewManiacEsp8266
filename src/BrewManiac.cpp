@@ -67,6 +67,7 @@
 #define DBG_PRINTF(...)
 #endif
 
+#define ValidSensorValueC(v)  ((v) <120 && (v) > -1)
 
 //}debug
 // *************************
@@ -989,6 +990,7 @@ float  _readTemperature(byte *addr)
 	// 0x60  0.0625C 12bits, 750ms
 
     float temperature = (float)raw * 0.0625;
+	if(!ValidSensorValueC(temperature)) return INVALID_TEMP_C;
     if(gIsUseFahrenheit) temperature = C2F(temperature);
     return temperature;
 }
@@ -1189,6 +1191,7 @@ bool tpSensorDataReady(void){
 	return true;
 }
 
+
 bool tpSensorRead(float* pReading){
 	// reset & "select" again
     ds.reset();
@@ -1218,6 +1221,8 @@ bool tpSensorRead(float* pReading){
 	// 0x60  0.0625C 12bits, 750ms
 
 	float reading = raw  * 0.0625;
+	if(!ValidSensorValueC(reading)) return false;
+
 	if(gIsUseFahrenheit) reading = C2F(reading);
 	*pReading = reading;
 	return true;
