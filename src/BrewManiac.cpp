@@ -4846,7 +4846,12 @@ void autoModeExitPause(void)
 	_state = _stateBeforePause;
 	gIsPaused=false;
 	// restore timer, if any
+
+	#if EnableExtendedMashStep
+	if(!_mashingStageExtending && _savedTime > 0)
+	#else
 	if(_savedTime > 0)
+	#endif
 	{
 		tmSetTimeoutAfter(_savedTime);
 		if(_savedTime > ADVANCE_BEEP_TIME*1000)
@@ -4877,6 +4882,9 @@ void autoModeExitPause(void)
 		{
 			byte time = automation.stageTime(_mashingStep);
 			uiRunningTimeShowInitial(time * 60);
+			#if EnableExtendedMashStep
+			uiSetMashExtensionStatus(_mashingStageExtendEnable? MashExtensionEnabled:MashExtensionNone);
+			#endif
 		}
 	}
 	else //if(_savedTime==0)
@@ -4886,7 +4894,19 @@ void autoModeExitPause(void)
 		if(_state == AS_Mashing)
 		{
 			uiRunningTimeShowInitial(_savedTime/1000);
+
+			#if EnableExtendedMashStep
+			if(_mashingStageExtending){
+				uiSetMashExtensionStatus(MashExtensionRunning);
+				uiRunningTimeStartFrom(_savedTime/1000);
+			}else{
+				uiSetMashExtensionStatus(_mashingStageExtendEnable? MashExtensionEnabled:MashExtensionNone);
+
+				uiRunningTimeStartCountDown(_savedTime/1000);
+			}
+			#else
 			uiRunningTimeStartCountDown(_savedTime/1000);
+			#endif
 		}
 	}
 
@@ -6237,7 +6257,11 @@ bool autoModeMashingHandler(byte event)
 				// if in
 				if(_mashingTemperatureReached){
 					buzzMute();
-					autoModePause(tmPauseTimer());
+					if(_mashingStageExtending){
+						autoModePause(uiGetDisplayTime() * 1000);
+					}else{
+						autoModePause(tmPauseTimer());
+					}
 				}else{
 					autoModePause(0);
 				}
