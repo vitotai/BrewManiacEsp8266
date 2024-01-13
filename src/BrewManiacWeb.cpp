@@ -8,6 +8,7 @@
 #include <ESP8266WiFi.h>
 #endif
 #include <ArduinoJson.h>
+#include "ps.h"
 #include "BrewManiacWeb.h"
 #include "automation.h"
 
@@ -36,10 +37,10 @@ extern void virtualButtonPress(byte mask,boolean longPressed);
 
 
 extern byte readSetting(int addr);
-extern void updateSetting(int addr,byte value);
 
 extern void wiSetDeviceAddress(byte ip[],bool apmode);
 extern void wiUpdateSetting(int address,byte value);
+extern void wiUpdateSettingWord(int address,int16_t value);
 
 #if MaximumNumberOfSensors > 1
 extern byte gSensorAddresses[MaximumNumberOfSensors][8];
@@ -279,6 +280,55 @@ static const char* SettingMap[]={
 	NULL
 };
 
+#define EnableTwoPointCalibrationKey "s_2ptc"
+#define CalibrationReadingP1Key "s_pt1"
+#define CalibrationReferenceP1Key "s_pr1"
+#define CalibrationReadingP2Key "s_pt2"
+#define CalibrationReferenceP2Key "s_pr2"
+
+typedef struct _SettingMapEntry{
+const char* key;
+uint8_t   address;
+uint8_t   size;
+}SettingMapEntry;
+
+#if MaximumNumberOfSensors > 1
+static const SettingMapEntry settingMap2[]={
+{EnableTwoPointCalibrationKey,PS_EnableTwoPointCalibration,1},
+{"s_pt1_1",PS_CalibrationReadingP1Of(0),2},
+{"s_pr1_1",PS_CalibrationReferenceP1Of(0),2},
+{"s_pt2_1",PS_CalibrationReadingP2Of(0),2},
+{"s_pr2_1",PS_CalibrationReferenceP2Of(0),2},
+
+{"s_pt1_2",PS_CalibrationReadingP1Of(1),2},
+{"s_pr1_2",PS_CalibrationReferenceP1Of(1),2},
+{"s_pt2_2",PS_CalibrationReadingP2Of(1),2},
+{"s_pr2_2",PS_CalibrationReferenceP2Of(1),2},
+
+{"s_pt1_3",PS_CalibrationReadingP1Of(2),2},
+{"s_pr1_3",PS_CalibrationReferenceP1Of(2),2},
+{"s_pt2_3",PS_CalibrationReadingP2Of(2),2},
+{"s_pr2_3",PS_CalibrationReferenceP2Of(2),2},
+
+{"s_pt1_4",PS_CalibrationReadingP1Of(3),2},
+{"s_pr1_4",PS_CalibrationReferenceP1Of(3),2},
+{"s_pt2_4",PS_CalibrationReadingP2Of(3),2},
+{"s_pr2_4",PS_CalibrationReferenceP2Of(3),2},
+
+{"s_pt1_5",PS_CalibrationReadingP1Of(4),2},
+{"s_pr1_5",PS_CalibrationReferenceP1Of(4),2},
+{"s_pt2_5",PS_CalibrationReadingP2Of(4),2},
+{"s_pr2_5",PS_CalibrationReferenceP2Of(4),2}
+};
+#else
+static const SettingMapEntry settingMap2[]={
+{EnableTwoPointCalibrationKey,PS_EnableTwoPointCalibration,1},
+{CalibrationReadingP1Key,PS_CalibrationReadingP1,2},
+{CalibrationReferenceP1Key,PS_CalibrationReferenceP1,2},
+{CalibrationReadingP2Key,PS_CalibrationReadingP2,2},
+{CalibrationReferenceP2Key,PS_CalibrationReferenceP2,2}
+};
+#endif
 extern void printSensorAddress(char *buf, byte *addr);
 
 float BrewManiacWeb::temperature(void)
@@ -333,6 +383,18 @@ void BrewManiacWeb::getSettings(String& json)
     		json += "\"" + String(SettingMap[i])  +"\":"+String(readSetting(i));
     	}
     }
+
+    for(int i=0;i<(int)( sizeof(settingMap2)/sizeof(SettingMapEntry));i++)
+    {
+			int value=0;
+			if(settingMap2[i].size ==1){
+				value=readSetting(settingMap2[i].address);
+			}else if(settingMap2[i].size ==2){
+				value=readSettingWord(settingMap2[i].address);
+			}
+    		json += ",\"" + String(settingMap2[i].key)  +"\":"+String(value);
+    }
+
 
 #if MaximumNumberOfSensors > 1
 	char buff[20];
@@ -552,6 +614,19 @@ bool BrewManiacWeb::updateSettings(String& json)
 			DEBUGF("update %s %d to %d\n",SettingMap[i],i,value);
 		}
 	}
+
+	for(int m=0;m<sizeof(settingMap2)/sizeof(SettingMapEntry);m++){
+		if(root.containsKey(settingMap2[m].key)){
+			if(settingMap2[m].size ==1){
+				byte value =  root[settingMap2[m].key].as<byte>();
+				wiUpdateSetting(settingMap2[m].address,value);
+			}else if(settingMap2[m].size ==2){
+				int value =  root[settingMap2[m].key].as<int>();
+				wiUpdateSettingWord(settingMap2[m].address,(int16_t)value);
+			}
+		}
+	}
+	
 #if MaximumNumberOfSensors > 1
 	for(int i=1;i<=MaximumNumberOfSensors;i++){
 		String cal= "s_cal_" + String(i);

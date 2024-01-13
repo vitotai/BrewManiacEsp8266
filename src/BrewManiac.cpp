@@ -85,9 +85,15 @@ float gPidStart;
 
 
 #if MaximumNumberOfSensors > 1
-float gSensorCalibrations[MaximumNumberOfSensors];
+
+float gCorrectionA0s[MaximumNumberOfSensors];
+float gCorrectionA1s[MaximumNumberOfSensors];
+
 #else
-float gSensorCalibration;
+
+float gCorrectionA0;
+float gCorrectionA1;
+
 #endif
 
 byte gBoilHeatOutput;
@@ -689,6 +695,80 @@ boolean btnReadButtons(void)
 #define C2F(d)  ((d) * 1.8 + 32)
 #define F2C(d)  (((d)-32)/1.8)
 
+void calTemperatureCalibration(void){
+	// correction foumula =
+	// Correction Temp = ( Reading - Read1)*(Ref2 - Ref1)/(Read2 - Read1)  + Ref1
+	//  =  Reading *(Ref2 - Ref1)/(Read2 - Read1) - Read1 *(Ref2 - Ref1)/(Read2 - Read1) +Ref1
+	//  Correction Temp = A1 * Reading + A0
+	// A1 =(Ref2 - Ref1)/(Read2 - Read1)
+	// A0 = - Read1 *(Ref2 - Ref1)/(Read2 - Read1) +Ref1
+#if	MaximumNumberOfSensors	> 1
+	if(readSetting(PS_EnableTwoPointCalibration)){
+		for(byte si=0;si < gSensorNumber;si++){
+			float Raw1 = TempFromEeprom(readSettingWord(PS_CalibrationReadingP1Of(si)));
+			float Raw2 = TempFromEeprom(readSettingWord(PS_CalibrationReadingP2Of(si)));
+			float Ref1 = TempFromEeprom(readSettingWord(PS_CalibrationReferenceP1Of(si)));
+			float Ref2 = TempFromEeprom(readSettingWord(PS_CalibrationReferenceP2Of(si)));
+			if( (Raw2 - Raw1) != 0){
+				gCorrectionA1s[si] = (Ref2 - Ref1)/(Raw2 - Raw1);
+				gCorrectionA0s[si] = Ref1 - Raw1 * gCorrectionA1s[si];
+			}else{
+				gCorrectionA1s[si] = 1;
+				gCorrectionA0s[si] =0;
+			}
+		}
+	}else{
+		for(byte si=0;si < gSensorNumber;si++){
+			gCorrectionA0s[si] = ((float)(readSetting(PS_Offset) - 50) / 10.0);
+			gCorrectionA1s[si] = 1.0;
+		}
+	}
+
+
+#else
+	if(readSetting(PS_EnableTwoPointCalibration)){
+		float Raw1 = TempFromEeprom(readSettingWord(PS_CalibrationReadingP1));
+		float Raw2 = TempFromEeprom(readSettingWord(PS_CalibrationReadingP2));
+		float Ref1 = TempFromEeprom(readSettingWord(PS_CalibrationReferenceP1));
+		float Ref2 = TempFromEeprom(readSettingWord(PS_CalibrationReferenceP2));
+		if( (Raw2 - Raw1) != 0){
+			gCorrectionA1 = (Ref2 - Ref1)/(Raw2 - Raw1);
+			gCorrectionA0 = Ref1 - Raw1 * gCorrectionA1;
+		}else{
+			gCorrectionA0=0;	
+			gCorrectionA1 = 1.0;
+		}
+	}else{
+		gCorrectionA0 = ((float)(readSetting(PS_Offset) - 50) / 10.0);
+		gCorrectionA1 = 1.0;
+	}
+#if SerialDebug == true
+
+	Serial.print("calTemperatureCalibration, A1=");
+	Serial.print(gCorrectionA1);
+	Serial.print(" A0=");
+	Serial.println(gCorrectionA0);
+#endif
+#endif
+}
+
+#if	MaximumNumberOfSensors	> 1
+
+void resetSensorCorrection(int si){
+	gCorrectionA0s[si] = 0;
+	gCorrectionA1s[si] = 1.0;
+}
+
+inline float sensorCorrection(float reading,int index){
+	return reading * gCorrectionA1s[index] + gCorrectionA0s[index];
+}
+
+#else
+inline float sensorCorrection(float reading){
+	return reading * gCorrectionA1 + gCorrectionA0;
+}
+#endif
+
 void temperatureUnitChange(bool useF)
 {
 	if(gIsUseFahrenheit == useF) return;
@@ -849,10 +929,7 @@ void loadSensorSetting(void)
 			DBG_PRINTF("invalid sensor address! %x",OneWire::crc8( gSensorAddresses[i], 7));
 			break;
     	}
-
-		gSensorCalibrations[i]=((float)(readSetting(CalibrationAddressOf(i)) - 50) / 10.0);
-
-
+		calTemperatureCalibration();
 	}
 	gSensorNumber=i;
 // if more than one sensor available, use the second as aux by default
@@ -897,6 +974,7 @@ void tpSetSensorResolution(byte *addr, byte res)
 
 void tpReadInitialTemperature(void);
 
+
 void tpInitialize(void)
 {
 
@@ -916,7 +994,8 @@ void tpInitialize(void)
 	}
 #else
 	_isConverting=false;
-	gSensorCalibration= ((float)(readSetting(PS_Offset) - 50) / 10.0);
+
+	calTemperatureCalibration();
 #endif
 
 #if FakeHeating
@@ -1012,7 +1091,7 @@ void tpReadInitialTemperature(void)
 
 				if(! IS_TEMP_INVALID(rawreading)){
 					lpfSetInitialValue(si,rawreading);
-					float reading = rawreading + gSensorCalibrations[si];
+					float reading = rawreading * gCorrectionA1s[si] + gCorrectionA0s[si];
 					gTemperatureReading[si] = reading;
 					if(gPrimarySensorIndex == si) gCurrentTemperature = reading;
 					else if(gAuxSensorIndex == si)  gAuxTemperature = reading;
@@ -1125,7 +1204,7 @@ void tpReadTemperature(void)
 					}
 				}else{
 					gSensorDisconnected[si]=false;
-					reading = lpfAddValue(si,rawreading) + gSensorCalibrations[si];
+					reading =sensorCorrection(lpfAddValue(si,rawreading),si);
 					_lastValidTempRead[si] =  gCurrentTimeInMS;
 					gTemperatureReading[si] = reading;
 					if(gPrimarySensorIndex == si) gCurrentTemperature = reading;
@@ -1152,14 +1231,15 @@ void tpReadTemperature(void){
 
 	_lastTempRead = gCurrentTimeInMS;
 
-	gCurrentTemperature = gSensorCalibration + (gIsUseFahrenheit? _max6675.readFahrenheit(): _max6675.readCelsius());
+	float reading = gIsUseFahrenheit? _max6675.readFahrenheit(): _max6675.readCelsius();
+
+	gCurrentTemperature = sensorCorrection() 
 }
 
 void tpInitialize(void){
 	gCurrentTemperature = INVALID_TEMP_C;
 	gBoilStageTemperature=readSetting(PS_BoilTemp);
-
-	gSensorCalibration= ((float)(readSetting(PS_Offset) - 50) / 10.0);
+	calTemperatureCalibration();
 	tpReadTemperature();
 }
 
@@ -1239,7 +1319,7 @@ void tpReadInitialTemperature(void){
 	float reading;
 	if(tpSensorRead(&reading)){
 		lpfSetInitialValue(reading);
-		gCurrentTemperature= reading +gSensorCalibration;
+		gCurrentTemperature= sensorCorrection(reading);
 	}
 }
 
@@ -1274,9 +1354,8 @@ void tpReadTemperature(void)
       	_isConverting = true;
       	return;
     }
-	//    reading +=  gSensorCalibration; //((float)(readSetting(PS_Offset) - 50) / 10.0);
     //apply calibration
-    gCurrentTemperature = lpfAddValue(reading) + gSensorCalibration;
+    gCurrentTemperature = sensorCorrection(lpfAddValue(reading));
     _isConverting = false;
 }
 #endif //(not) else of USE_MAX6675
@@ -2455,8 +2534,8 @@ typedef struct _SettingItem{
     const char* title;
     void (*display)(int);
     byte address;
-    byte max;
-    byte min;
+    int16_t max;
+    int16_t min;
 } SettingItem;
 
 class SettingEditor{
@@ -2842,28 +2921,56 @@ const SettingItem pidSettingItems[] PROGMEM=
 /*7,13*/{STR(Start_PID_In),& displayTempDivide10,   PS_PID_Start,35,10},
 /*8,14*/{STR(SensorResolution),&displayResolution, 0 ,12,9,},
 #if MaximumNumberOfSensors > 1
-/*9,15*/{STR(Calibration), & displayTempShift50Divide10,0,100,0}
+/*9,15*/{STR(Calibration), & displayTempShift50Divide10,0,100,0},
 #else
-/*9,15*/{STR(Calibration), & displayTempShift50Divide10,PS_Offset,100,0}
+/*9,15*/{STR(Calibration), & displayTempShift50Divide10,PS_Offset,100,0},
 #endif
+/*10,16*/{ STR(TwoPointCalibration), & displayYesNo,PS_EnableTwoPointCalibration,1,0},
+/*11,17*/{STR(CalibrationPoint1), & displayTempDivide10,0,2200,0},
+/*12,18*/{STR(CalibrationRefPoint1), & displayTempDivide10,0,2200,0},
+/*13,19*/{STR(CalibrationPoint2), & displayTempDivide10,0,2200,0},
+/*14,20*/{STR(CalibrationRefPoint2), & displayTempDivide10,0,2200,0}
 };
+
+#define C
 
 #if SecondaryHeaterSupport == true
 #define SensorResolutionIndex 14
+#define SensorCalibrationIndex 15
+
+#define TwoPointCalibrationIndex 16
+#define CalibrationPoint1Index 17
+#define CalibrationRefPoint1Index 18
+#define CalibrationPoint2Index 19
+#define CalibrationRefPoint2Index 20
+
 #else
 #define SensorResolutionIndex 8
+#define SensorCalibrationIndex 9
+
+#define TwoPointCalibrationIndex 10
+#define CalibrationPoint1Index 11
+#define CalibrationRefPoint1Index 12
+#define CalibrationPoint2Index 13
+#define CalibrationRefPoint2Index 14
+
 #endif
 
 byte _pidSettingAux;
+/***********************************/
+/* if 0 is specified in address field, these functions will be call
+ *  to get/set data instead of reading from the address */
+/************************************/
+#if	MaximumNumberOfSensors > 1
 
 int pidGetValue(int index)
 {
-    if(index == SensorResolutionIndex)
-        return ResolutionDecode(gSensorResolution) + 9;
-#if	MaximumNumberOfSensors > 1
-    else
-        return (int)readSetting(CalibrationAddressOf(_pidSettingAux));
-#endif
+    if(index == SensorResolutionIndex) return ResolutionDecode(gSensorResolution) + 9;
+	else if (index == CalibrationPoint1Index)return readSettingWord(PS_CalibrationReadingP1Of(_pidSettingAux));
+	else if (index == CalibrationRefPoint1Index)return readSettingWord(PS_CalibrationReferenceP1Of(_pidSettingAux));
+	else if (index == CalibrationPoint2Index)return readSettingWord(PS_CalibrationReadingP2Of(_pidSettingAux));
+	else if (index == CalibrationRefPoint2Index)return readSettingWord(PS_CalibrationReferenceP2Of(_pidSettingAux));
+    else if (index == SensorCalibrationIndex) return (int)readSetting(CalibrationAddressOf(_pidSettingAux));
 	return 0;
 }
 
@@ -2873,55 +2980,126 @@ void pidSetValue(int index, int value)
 
     byte res= value -9;
     if(index == SensorResolutionIndex){
-#if	MaximumNumberOfSensors > 1
     	for(byte i=0;i<gSensorNumber;i++)
             tpSetSensorResolution(gSensorAddresses[i],res);
-#else
-        tpSetSensorResolution(NULL,res);
-#endif
     }
-#if	MaximumNumberOfSensors > 1
-    else{
+	else if (index == CalibrationPoint1Index){
+		updateSettingWord(PS_CalibrationReadingP1Of(_pidSettingAux),value);
+	}else if (index == CalibrationRefPoint1Index){
+		updateSettingWord(PS_CalibrationReferenceP1Of(_pidSettingAux),value);
+	}else if (index == CalibrationPoint2Index){
+		updateSettingWord(PS_CalibrationReadingP2Of(_pidSettingAux),value);
+	}else if (index == CalibrationRefPoint2Index){
+		updateSettingWord(PS_CalibrationReferenceP2Of(_pidSettingAux),value);
+	}
+    else if (index == SensorCalibrationIndex) {
 		changeSettingValue(CalibrationAddressOf(_pidSettingAux),value);
-		gSensorCalibrations[_pidSettingAux] =((float) value -50)/10.0;
+		calTemperatureCalibration;
     }
-#endif
+}
+#else //MaximumNumberOfSensors > 1
+int pidGetValue(int index)
+{
+    if(index == SensorResolutionIndex) return ResolutionDecode(gSensorResolution) + 9;
+	else if (index == CalibrationPoint1Index)return readSettingWord(PS_CalibrationReadingP1);
+	else if (index == CalibrationRefPoint1Index)return readSettingWord(PS_CalibrationReferenceP1);
+	else if (index == CalibrationPoint2Index)return readSettingWord(PS_CalibrationReadingP2);
+	else if (index == CalibrationRefPoint2Index)return readSettingWord(PS_CalibrationReferenceP2);
+	return 0;
 }
 
+void pidSetValue(int index, int value)
+{
+    // only for sensor resolution
+
+    byte res= value -9;
+    if(index == SensorResolutionIndex){
+        tpSetSensorResolution(NULL,res);
+    }
+	else if (index == CalibrationPoint1Index){
+		updateSettingWord(PS_CalibrationReadingP1,value);
+	}else if (index == CalibrationRefPoint1Index){
+		updateSettingWord(PS_CalibrationReferenceP1,value);
+	}else if (index == CalibrationPoint2Index){
+		updateSettingWord(PS_CalibrationReadingP2,value);
+	}else if (index == CalibrationRefPoint2Index){
+		updateSettingWord(PS_CalibrationReferenceP2,value);
+	}
+}
+#endif // MaximumNumberOfSensors > 1
 void settingPidSetup(void)
 {
 	settingEditor.setup(pidSettingItems,& pidGetValue,& pidSetValue);
 	settingEditor.displayItem();
 }
-
+#if MaximumNumberOfSensors > 1
 bool settingPidEventHandler(byte)
 {
-	if(settingEditor.buttonHandler())
-	{
-	 #if MaximumNumberOfSensors > 1
-    	if(settingEditor.index() == (sizeof(pidSettingItems)/sizeof(SettingItem) -2)){
+	if(settingEditor.buttonHandler()){
+		// 
+    	if(settingEditor.index() == SensorResolutionIndex){
+			// "enter" in resolution, next to SensorCalibrationIndex
             if (0 == gSensorNumber){
+				// if no Sensor detected/assigned, just returns.
 	            switchApplication(SETUP_SCREEN);
                 return true;
             }
+			// start Sesnor Calibration setup. 
             _pidSettingAux=0;
             settingEditor.nextItem();
     	    editItemTitleAppendNumber(_pidSettingAux+1);
     	    return true;
-        }else
-    #endif
-	    if(settingEditor.index() == (sizeof(pidSettingItems)/sizeof(SettingItem) -1)){
-	        // last
-	        #if MaximumNumberOfSensors > 1
+		}else if (settingEditor.index() == SensorCalibrationIndex) {
+	        // process multi sensor calibration
     		_pidSettingAux++;
 	        if(_pidSettingAux < gSensorNumber){
     	        settingEditor.displayItem();
     	        editItemTitleAppendNumber(_pidSettingAux+1);
     	        return true;
-	        }
-	        #else
-	        gSensorCalibration= ((float)(readSetting(PS_Offset) - 50) / 10.0);
-            #endif
+	        }else{
+				// finish sensor calibration, enter 
+				// 2point calibration setup.(next item)
+			}
+		}else if(settingEditor.index() == TwoPointCalibrationIndex){
+			if(readSetting(PS_EnableTwoPointCalibration) == 0){
+				// disable 2 point calibration, back to setup screen
+				// last item
+				calTemperatureCalibration();
+	    	    switchApplication(SETUP_SCREEN);
+            	return true;			
+			}
+			// start complicated 4 points input of each sensors.
+			_pidSettingAux=0;
+            settingEditor.nextItem();
+    	    editItemTitleAppendNumber(_pidSettingAux+1);
+		}else if(settingEditor.index() == CalibrationRefPoint2Index ){
+			_pidSettingAux++;
+	        if(_pidSettingAux < gSensorNumber){
+				// back to point1
+				settingEditor.setIndex(CalibrationPoint1Index);
+    	        settingEditor.displayItem();
+    	        editItemTitleAppendNumber(_pidSettingAux+1);
+    	        return true;
+	        }else{
+				// finish all sensors
+				calTemperatureCalibration();
+		        switchApplication(SETUP_SCREEN);
+	            return true;
+			}	
+	    }
+        settingEditor.nextItem();
+    }
+	return true;
+}
+#else //MaximumNumberOfSensors > 1
+bool settingPidEventHandler(byte)
+{
+	if(settingEditor.buttonHandler())
+	{
+	    if(settingEditor.index() == (sizeof(pidSettingItems)/sizeof(SettingItem) -1)
+			||((settingEditor.index() == TwoPointCalibrationIndex) && (readSetting(PS_EnableTwoPointCalibration) == 0))){
+	        // last
+			calTemperatureCalibration();
 
 	        switchApplication(SETUP_SCREEN);
             return true;
@@ -2931,7 +3109,7 @@ bool settingPidEventHandler(byte)
     }
 	return true;
 }
-
+#endif //MaximumNumberOfSensors > 1
 // *************************
 //*  Unit Parameters settings
 // *************************
@@ -3577,8 +3755,7 @@ void sensorMenuSetup(void)
 	_sensorSettingIndex=0;
 	_sensorSettingAux=0;
 	gSensorNumber=scanSensors(MaximumNumberOfSensors,gSensorAddresses);
-	for(byte i=0;i<MaximumNumberOfSensors;i++)
-		gSensorCalibrations[i]=0;
+	for(byte i=0;i<MaximumNumberOfSensors;i++) resetSensorCorrection(i);
 
 	resetSelection(gSensorNumber);
 	sensorMenuItem();
@@ -3625,7 +3802,7 @@ bool sensorMenuEventHandler(byte)
 		}else if(btnIsEnterPressed){
 			saveSensor(_sensorSettingAux,gSensorAddresses[_sensorSelection]);
 			updateSetting(CalibrationAddressOf(_sensorSettingAux),50); // zero
-			gSensorCalibrations[_sensorSettingAux] = 0;
+			resetSensorCorrection(_sensorSettingAux);
 			_sensorSettingAux++;
 
 			_sensorSelected[_sensorSelection]=true;

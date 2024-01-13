@@ -7,6 +7,7 @@
 
 #include "BrewManiacWeb.h"
 extern BrewManiacWeb bmWeb;
+extern void calTemperatureCalibration(void);
 
 void wiSendButtonLabel(const byte labelId)
 {
@@ -112,7 +113,7 @@ byte wiReadCalibrationOfSensor(byte i)
 void wiUpdateCalibrationOfSensor(byte i,byte value)
 {
 	updateSetting(CalibrationAddressOf(i),value);
-	gSensorCalibrations[i]=((float)value -50.0)/10.0;
+	calTemperatureCalibration();
 	Serial.printf("cal:%d, value:%d\n",i,value);
 }
 
@@ -154,11 +155,24 @@ void wiUpdateSetting(int address,byte value)
 	}
 
 #if	MaximumNumberOfSensors	== 1
-	if(address == PS_Offset){
-		gSensorCalibration = ((float)value -50.0)/10.0;
+	if(address == PS_Offset || 
+	  (address >=PS_EnableTwoPointCalibration && address<=PS_CalibrationReferenceP2)){
+		calTemperatureCalibration();
 	}
 #endif
 }
+
+
+void wiUpdateSettingWord(int address,int16_t value)
+{
+	updateSettingWord(address,value);
+
+	if(address == PS_Offset || 
+	  (address >=PS_EnableTwoPointCalibration && address<=PS_CalibrationReferenceP2)){
+		calTemperatureCalibration();
+	}
+}
+
 void wiLcdBufferBegin(void)
 {
 	bmWeb.holdStatusUpdate();

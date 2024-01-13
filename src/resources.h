@@ -261,6 +261,12 @@ StringConst( Calibration, "Cal.#");
 #else
 StringConst( Calibration, "Calibration");
 #endif
+StringConst( TwoPointCalibration, "2PointCal");
+StringConst( CalibrationPoint1, "Read#1");
+StringConst( CalibrationRefPoint1, "Ref#1");
+StringConst( CalibrationPoint2, "Read#2");
+StringConst( CalibrationRefPoint2, "Ref#2");
+
 
 //StringConst( Hysteresi, "Hysteresi");
 StringConst( Start_PID_In, "Start PID In");
