@@ -198,7 +198,7 @@
 /*  version information     														  */
 /**************************************************************************************/
 
-#define BME8266_VERSION "0.5.2"
+#define BME8266_VERSION "0.5.3"
 
 #if MaximumNumberOfSensors >  1
 	#if LCD_USE_SSD1306 == true
