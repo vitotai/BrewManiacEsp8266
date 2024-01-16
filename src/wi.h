@@ -146,6 +146,7 @@ byte wiScanSensors(byte max,byte addresses[][8])
 #endif //#if	MaximumNumberOfSensors	> 1
 
 extern void temperatureUnitChange(bool useF);
+void loadLpfBeta(void);
 
 void wiUpdateSetting(int address,byte value)
 {
@@ -153,7 +154,9 @@ void wiUpdateSetting(int address,byte value)
 	if(PS_TempUnit ==address){
 		temperatureUnitChange((boolean)value);
 	}
-
+	if(PS_LowPassFilterBeta == address){
+		loadLpfBeta();
+	}
 #if	MaximumNumberOfSensors	== 1
 	if(address == PS_Offset || 
 	  (address >=PS_EnableTwoPointCalibration && address<=PS_CalibrationReferenceP2)){

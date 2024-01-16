@@ -55,7 +55,7 @@
 #define PS_PumpOnMashOut     18  //     Pump on MashOut
 #define PS_PumpOnBoil      19     //  Pump on Boil
 #define PS_TempPumpRest     20    //   Temp Pump Rest °C
-//     21       Temp Pump Rest °F
+#define PS_LowPassFilterBeta 21
 #define PS_PidPipe     22     //  PID Pipe
 #define PS_SkipAddMalt     23  //     Skip Add Malt
 #define PS_SkipRemoveMalt     24  //     Skip Remove Malt
@@ -103,7 +103,6 @@
 
 // 61 & 62
 #define PS_Time2Resume      61
-
 
 
 #define PS_Distill_Base      64  //     7 fields

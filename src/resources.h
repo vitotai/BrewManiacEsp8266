@@ -267,7 +267,7 @@ StringConst( CalibrationRefPoint1, "Ref#1");
 StringConst( CalibrationPoint2, "Read#2");
 StringConst( CalibrationRefPoint2, "Ref#2");
 
-
+StringConst( LPFBeta, "LPF Beta");
 //StringConst( Hysteresi, "Hysteresi");
 StringConst( Start_PID_In, "Start PID In");
 StringConst( PID_Dough_In, "PID DoughIn");

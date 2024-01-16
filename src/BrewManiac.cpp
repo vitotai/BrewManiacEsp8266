@@ -82,7 +82,7 @@ float gCurrentTemperature;
 float gSettingTemperature;
 float gBoilStageTemperature;
 float gPidStart;
-
+float gLpfBeta=1;
 
 #if MaximumNumberOfSensors > 1
 
@@ -809,13 +809,14 @@ void temperatureUnitChange(bool useF)
 class LowPassFilter{
 private:
 	float _filteredValue;
+	float _lpfBeta;
 public:
 	void setInitialValue(float value){
 		_filteredValue = value;
 	}
 
 	float addValue(float value){
-		_filteredValue= _filteredValue + LowPassFilterParameter *(value - _filteredValue);
+		_filteredValue= _filteredValue + gLpfBeta *(value - _filteredValue);
 		return _filteredValue;
 	}
 };
@@ -974,12 +975,18 @@ void tpSetSensorResolution(byte *addr, byte res)
 
 void tpReadInitialTemperature(void);
 
+void loadLpfBeta(void){
+ 	uint8_t lpf= readSetting(PS_LowPassFilterBeta);
+
+	gLpfBeta = (lpf<2 || lpf>20)? 1.0:(0.05 * (float)lpf);
+}
 
 void tpInitialize(void)
 {
 
 	gCurrentTemperature = INVALID_TEMP_C;
 	gBoilStageTemperature=readSetting(PS_BoilTemp);
+	loadLpfBeta();	
 
 #if	MaximumNumberOfSensors	> 1
 
@@ -1026,7 +1033,7 @@ void lpfSetInitialValue(uint8_t idx,float value){
 }
 
 float lpfAddValue(uint8_t idx,float value){
-	_filteredValues[idx]= _filteredValues[idx] + LowPassFilterParameter *(value - _filteredValues[idx]);
+	_filteredValues[idx]= _filteredValues[idx] + gLpfBeta *(value - _filteredValues[idx]);
 	return _filteredValues[idx];
 }
 void tpSensorRequestConvert(uint8_t address[])
@@ -1252,7 +1259,7 @@ void lpfSetInitialValue(float value){
 }
 
 float lpfAddValue(float value){
-	_filteredValue= _filteredValue + LowPassFilterParameter *(value - _filteredValue);
+	_filteredValue= _filteredValue + gLpfBeta *(value - _filteredValue);
 	return _filteredValue;
 }
 
@@ -2686,6 +2693,12 @@ void displayTempDivide10(int data)
 	uiSettingShowTemperature(fvalue,1);
 }
 
+void displayMultiply005(int data)
+{
+	float fvalue=(float)data *0.05;
+	uiSettingDisplayField(fvalue,2,' ');
+}
+
 
 void displayPercentage(int data)
 {
@@ -2919,40 +2932,43 @@ const SettingItem pidSettingItems[] PROGMEM=
 /*5,11*/{STR(WindowSet_ms),& displayMultiply250,PS_WindowSize,40000/250 /*7500/250*/,4000/250},
 /*6,12*/{STR(Heat_in_Boil),& displayPercentage, PS_BoilHeat,100,0},
 /*7,13*/{STR(Start_PID_In),& displayTempDivide10,   PS_PID_Start,35,10},
-/*8,14*/{STR(SensorResolution),&displayResolution, 0 ,12,9,},
+/*8,14*/{STR(LPFBeta),&displayMultiply005 ,PS_LowPassFilterBeta ,20,2},
+/*9,15*/{STR(SensorResolution),&displayResolution, 0 ,12,9,},
 #if MaximumNumberOfSensors > 1
-/*9,15*/{STR(Calibration), & displayTempShift50Divide10,0,100,0},
+/*10,16*/{STR(Calibration), & displayTempShift50Divide10,0,100,0},
 #else
 /*9,15*/{STR(Calibration), & displayTempShift50Divide10,PS_Offset,100,0},
 #endif
-/*10,16*/{ STR(TwoPointCalibration), & displayYesNo,PS_EnableTwoPointCalibration,1,0},
-/*11,17*/{STR(CalibrationPoint1), & displayTempDivide10,0,2200,0},
-/*12,18*/{STR(CalibrationRefPoint1), & displayTempDivide10,0,2200,0},
-/*13,19*/{STR(CalibrationPoint2), & displayTempDivide10,0,2200,0},
-/*14,20*/{STR(CalibrationRefPoint2), & displayTempDivide10,0,2200,0}
+/*11,17*/{ STR(TwoPointCalibration), & displayYesNo,PS_EnableTwoPointCalibration,1,0},
+/*12,18*/{STR(CalibrationPoint1), & displayTempDivide10,0,2200,0},
+/*13,19*/{STR(CalibrationRefPoint1), & displayTempDivide10,0,2200,0},
+/*14,20*/{STR(CalibrationPoint2), & displayTempDivide10,0,2200,0},
+/*15,21*/{STR(CalibrationRefPoint2), & displayTempDivide10,0,2200,0}
 };
 
 #define C
 
 #if SecondaryHeaterSupport == true
-#define SensorResolutionIndex 14
-#define SensorCalibrationIndex 15
+#define LowPassFilterBetaIndex 14
+#define SensorResolutionIndex 15
+#define SensorCalibrationIndex 16
 
-#define TwoPointCalibrationIndex 16
-#define CalibrationPoint1Index 17
-#define CalibrationRefPoint1Index 18
-#define CalibrationPoint2Index 19
-#define CalibrationRefPoint2Index 20
-
+#define TwoPointCalibrationIndex 17
+#define CalibrationPoint1Index 18
+#define CalibrationRefPoint1Index 19
+#define CalibrationPoint2Index 20
+#define CalibrationRefPoint2Index 21
 #else
-#define SensorResolutionIndex 8
-#define SensorCalibrationIndex 9
+#define LowPassFilterBetaIndex 8
 
-#define TwoPointCalibrationIndex 10
-#define CalibrationPoint1Index 11
-#define CalibrationRefPoint1Index 12
-#define CalibrationPoint2Index 13
-#define CalibrationRefPoint2Index 14
+#define SensorResolutionIndex 9
+#define SensorCalibrationIndex 10
+
+#define TwoPointCalibrationIndex 11
+#define CalibrationPoint1Index 12
+#define CalibrationRefPoint1Index 13
+#define CalibrationPoint2Index 14
+#define CalibrationRefPoint2Index 15
 
 #endif
 
@@ -3049,6 +3065,8 @@ bool settingPidEventHandler(byte)
             settingEditor.nextItem();
     	    editItemTitleAppendNumber(_pidSettingAux+1);
     	    return true;
+		}else if(settingEditor.index() ==LowPassFilterBetaIndex){
+			loadLpfBeta();
 		}else if (settingEditor.index() == SensorCalibrationIndex) {
 	        // process multi sensor calibration
     		_pidSettingAux++;

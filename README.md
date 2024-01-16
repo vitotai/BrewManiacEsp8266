@@ -32,6 +32,9 @@ the stability is in doubt. Please be aware.
 
 ## Update History
  * 0.5.2
+   * Two point temperature calibration option
+   * Low Pass Filter setting. (Originally hard-coded.)
+ * 0.5.2
    * Automatic resumption of automation brew process when reset or power shortage.
  * 0.5.1
    * upgrade(?) PID library to PID V2. Add [Proportional On Measurement(PonM)](http://brettbeauregard.com/blog/2017/06/introducing-proportional-on-measurement/) setting.

@@ -191,8 +191,8 @@ static const char* SettingMap[]={
 	"s_pumpboil",
 //#define PS_TempPumpRest     20    //   Temp Pump Rest °C
 	"s_pumpstop",
-//     21       Temp Pump Rest °F
-	NULL,
+//     21       Low Pass Filter beta
+	"s_lpfb",
 //#define PS_PidPipe     22     //  PID Pipe
 	"s_pipe",
 //#define PS_SkipAddMalt     23  //     Skip Add Malt
