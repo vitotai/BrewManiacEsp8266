@@ -4993,7 +4993,7 @@ void autoModeEnterAskRemoveMalt(void)
 	uiRunningTimeStop();
 	//uiClearPrompt();
 	uiPrompt(STR(Remove_Malt));
-	uiButtonLabel(ButtonLabel(Continue_Yes_No));
+	uiButtonLabel(ButtonLabel(Continue_Yes_Pmp));
 	// skip event mask, just filter it out in handling code
 
 	buzzPlaySoundRepeat(SoundIdWaitUserInteraction);
@@ -6592,8 +6592,7 @@ bool autoModeAskMaltRemoveHandler(byte event)
 			autoModeEnterBoiling();
 			return true;
 		}else if(btnIsEnterPressed){
-			// back to main
-			backToMain();
+			pump.toggle();
 			return true;
 		}
 	}

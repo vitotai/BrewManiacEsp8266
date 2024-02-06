@@ -32,7 +32,7 @@ the stability is in doubt. Please be aware.
 
 ## Update History
  * 0.5.2
-   * Two point temperature calibration option
+   * Two-point temperature calibration option
    * Low Pass Filter setting. (Originally hard-coded.)
  * 0.5.2
    * Automatic resumption of automation brew process when reset or power shortage.
